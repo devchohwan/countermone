@@ -1,0 +1,109 @@
+<% content_for :title, @student.name %>
+
+<div class="flex items-center gap-4 mb-6">
+  <%= link_to "← 목록", students_path, class: "text-sm text-gray-500 hover:underline" %>
+  <h2 class="text-xl font-bold"><%= @student.name %></h2>
+  <%= status_badge(@student.status) %>
+  <div class="ml-auto flex gap-2">
+    <%= link_to "수정", edit_student_path(@student), class: "text-sm border px-3 py-1 rounded hover:bg-gray-100" %>
+    <% if @student.status == "active" %>
+      <%= button_to "휴원", leave_student_path(@student), method: :patch, class: "text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200" %>
+      <%= button_to "퇴원", dropout_student_path(@student), method: :patch, class: "text-sm bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200", data: { turbo_confirm: "퇴원 처리하시겠습니까?" } %>
+    <% elsif @student.status == "leave" %>
+      <%= button_to "복귀", return_student_path(@student), method: :patch, class: "text-sm bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-6">
+
+  <!-- 기본 정보 -->
+  <div class="bg-white rounded-lg border shadow-sm p-4">
+    <h3 class="font-semibold text-sm mb-3">기본 정보</h3>
+    <dl class="space-y-1.5 text-sm">
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">전화번호</dt><dd><%= @student.phone %></dd></div>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">나이</dt><dd><%= @student.age %>세</dd></div>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">출결코드</dt><dd class="font-mono"><%= @student.attendance_code %></dd></div>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">랭크</dt><dd><%= @student.rank == "first" ? "1차전직" : "2차전직" %></dd></div>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">자차</dt><dd><%= @student.has_car? ? "있음" : "없음" %></dd></div>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">수강동의서</dt><dd><%= @student.consent_form? ? "✓" : "✗" %></dd></div>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">2차전직서</dt><dd><%= @student.second_transfer_form? ? "✓" : "✗" %></dd></div>
+      <% if @student.memo.present? %>
+        <div class="pt-2 border-t"><dt class="text-gray-400 text-xs mb-1">메모</dt><dd class="text-xs"><%= @student.memo %></dd></div>
+      <% end %>
+    </dl>
+  </div>
+
+  <!-- 상담 정보 -->
+  <div class="bg-white rounded-lg border shadow-sm p-4">
+    <h3 class="font-semibold text-sm mb-3">상담 정보</h3>
+    <dl class="space-y-2 text-sm">
+      <div><dt class="text-gray-400 text-xs">찾아온 이유</dt><dd><%= @student.reason_for_joining %></dd></div>
+      <div><dt class="text-gray-400 text-xs">본인의 문제점</dt><dd><%= @student.own_problem %></dd></div>
+      <div><dt class="text-gray-400 text-xs">하고 싶은 것</dt><dd><%= @student.desired_goal %></dd></div>
+    </dl>
+  </div>
+
+  <!-- 할인/이벤트 -->
+  <div class="bg-white rounded-lg border shadow-sm p-4">
+    <h3 class="font-semibold text-sm mb-3">할인 / 이벤트</h3>
+    <dl class="space-y-1.5 text-sm">
+      <% if @student.referrer %>
+        <div class="flex gap-2"><dt class="text-gray-400 w-24">추천인</dt><dd><%= link_to @student.referrer.name, student_path(@student.referrer), class: "hover:underline" %></dd></div>
+      <% end %>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">후기 할인</dt><dd><%= @student.review_discount_applied? ? "적용" : "-" %></dd></div>
+      <% if @student.review_url.present? %>
+        <div class="flex gap-2"><dt class="text-gray-400 w-24">후기 URL</dt><dd class="truncate"><%= link_to "보기", @student.review_url, target: "_blank", class: "text-blue-600 hover:underline text-xs" %></dd></div>
+      <% end %>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">인터뷰 할인</dt><dd><%= @student.interview_discount_applied? ? "적용" : "-" %></dd></div>
+      <div class="flex gap-2"><dt class="text-gray-400 w-24">상품권</dt><dd><%= @student.gift_voucher_issued? ? "발급됨" : "-" %></dd></div>
+    </dl>
+  </div>
+
+</div>
+
+<!-- 클래스 목록 -->
+<div class="mt-6">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-semibold">수강 클래스</h3>
+    <%= link_to "+ 클래스 추가", new_student_enrollment_path(@student), class: "text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" %>
+  </div>
+
+  <div class="space-y-4">
+    <% @enrollments.each do |enrollment| %>
+      <div class="bg-white rounded-lg border shadow-sm p-4">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="font-medium"><%= enrollment.subject %></span>
+          <span class="text-gray-400 text-sm">/ <%= enrollment.teacher.name %></span>
+          <span class="text-gray-400 text-sm"><%= lesson_day_ko(enrollment.lesson_day) %>요일 <%= enrollment.lesson_time.strftime("%H:%M") %></span>
+          <%= status_badge(enrollment.status) %>
+          <div class="ml-auto flex gap-2 text-xs">
+            <%= link_to "상세", enrollment_path(enrollment), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
+            <% if enrollment.status == "active" %>
+              <%= button_to "결제등록", new_payment_path(enrollment_id: enrollment.id), method: :get, class: "bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200" %>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- 수업 날짜 리스트 (최근 8회) -->
+        <% schedules = enrollment.schedules.order(:lesson_date).last(8) %>
+        <% if schedules.any? %>
+          <div class="flex flex-wrap gap-1.5">
+            <% schedules.each do |s| %>
+              <div class="text-xs border rounded px-2 py-1 <%= s.status == 'attended' ? 'bg-green-50 border-green-200' : s.status == 'scheduled' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50' %>">
+                <span class="font-mono"><%= s.lesson_date.strftime("%m/%d") %></span>
+                <%= schedule_status_badge(s.status) %>
+              </div>
+            <% end %>
+          </div>
+          <div class="mt-2 text-xs text-gray-400">
+            잔여 <%= @student.remaining_lessons_for(enrollment) %>회 |
+            개근 <%= @student.consecutive_weeks_for(enrollment) %>주
+          </div>
+        <% else %>
+          <p class="text-xs text-gray-400">수업 일정이 없습니다.</p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,9 @@
+<% content_for :title, "수강생 등록" %>
+
+<div class="max-w-2xl">
+  <div class="flex items-center gap-3 mb-6">
+    <%= link_to "← 목록", students_path, class: "text-sm text-gray-500 hover:underline" %>
+    <h2 class="text-lg font-bold">수강생 등록</h2>
+  </div>
+  <%= render "form", student: @student %>
+</div>

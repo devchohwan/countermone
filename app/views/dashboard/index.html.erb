@@ -1,0 +1,220 @@
+<% content_for :title, "대시보드 — 모네뮤직" %>
+
+<div class="space-y-6">
+  <!-- 헤더 -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-bold"><%= @today.strftime("%Y년 %m월 %d일 (%a)") %></h2>
+      <p class="text-sm text-gray-500">현재 시간대: <%= @current_hour %>:00</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-6">
+
+    <!-- ① 지금 이 순간 -->
+    <div class="col-span-2 bg-white rounded-lg border shadow-sm p-4">
+      <h3 class="font-semibold text-base mb-3 flex items-center gap-2">
+        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse inline-block"></span>
+        지금 이 순간
+      </h3>
+      <% if @current_schedules.empty? %>
+        <p class="text-sm text-gray-400">현재 진행 중인 수업이 없습니다.</p>
+      <% else %>
+        <table class="w-full text-sm">
+          <thead class="text-xs text-gray-500 border-b">
+            <tr>
+              <th class="pb-1 text-left">수강생</th>
+              <th class="pb-1 text-left">과목</th>
+              <th class="pb-1 text-left">선생님</th>
+              <th class="pb-1 text-left">출석</th>
+              <th class="pb-1 text-left">하원</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <% @current_schedules.each do |s| %>
+              <tr class="py-1">
+                <td class="py-1.5 font-medium"><%= s.student.name %></td>
+                <td><%= s.subject %></td>
+                <td><%= s.teacher.name %></td>
+                <td>
+                  <% if s.attendance&.checked_in_at %>
+                    <span class="text-green-600 text-xs">✓ <%= s.attendance.checked_in_at.strftime("%H:%M") %></span>
+                  <% else %>
+                    <span class="bg-red-100 text-red-700 text-xs px-1.5 py-0.5 rounded">미등원</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if s.attendance&.checked_out_at %>
+                    <span class="text-blue-600 text-xs">✓ <%= s.attendance.checked_out_at.strftime("%H:%M") %></span>
+                  <% else %>
+                    <span class="text-gray-400 text-xs">-</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
+    </div>
+
+    <!-- ④ 오늘 마감 요약 -->
+    <div class="bg-white rounded-lg border shadow-sm p-4">
+      <h3 class="font-semibold text-base mb-3">오늘 마감</h3>
+      <dl class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <dt class="text-gray-500">결제 건수</dt>
+          <dd class="font-medium"><%= @daily_payments.count %>건</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500">결제 합계</dt>
+          <dd class="font-medium"><%= format_amount(@daily_payments.sum(&:amount)) %></dd>
+        </div>
+        <div class="flex justify-between border-t pt-2">
+          <dt class="text-gray-500">당일 휴원</dt>
+          <dd><%= @daily_leaves.count %>명</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500">당일 퇴원</dt>
+          <dd><%= @daily_dropouts.count %>명</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-gray-500">당일 복귀</dt>
+          <dd><%= @daily_returns.count %>명</dd>
+        </div>
+      </dl>
+    </div>
+
+  </div>
+
+  <!-- ② 오늘 해야 할 일 -->
+  <div class="grid grid-cols-3 gap-4">
+
+    <!-- 결제 -->
+    <div class="bg-white rounded-lg border shadow-sm p-4">
+      <h3 class="font-semibold text-sm mb-3">💳 결제 예정</h3>
+      <% if @payment_due_today.empty? %>
+        <p class="text-xs text-gray-400">없음</p>
+      <% else %>
+        <ul class="space-y-2">
+          <% @payment_due_today.each do |item| %>
+            <li class="text-xs border-l-2 pl-2
+              <%= item[:type] == :deposit_first_lesson ? 'border-red-400' : item[:type] == :balance_due ? 'border-orange-400' : 'border-blue-400' %>">
+              <span class="font-medium"><%= item[:student].name %></span>
+              <span class="text-gray-500"> — <%= item[:enrollment].subject %></span>
+              <div class="text-gray-400">
+                <%= case item[:type]
+                    when :deposit_first_lesson then "예약금, 오늘 첫수업 완납 필요"
+                    when :balance_due then "잔금 미납"
+                    when :next_payment_due then "다음 결제 예정"
+                    end %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </div>
+
+    <!-- 연락 -->
+    <div class="bg-white rounded-lg border shadow-sm p-4">
+      <h3 class="font-semibold text-sm mb-3">📞 연락할 리스트</h3>
+      <% if @contact_list.empty? %>
+        <p class="text-xs text-gray-400">없음</p>
+      <% else %>
+        <ul class="space-y-2">
+          <% @contact_list.each do |item| %>
+            <li class="text-xs flex items-start gap-1">
+              <span class="font-medium"><%= item[:student].name %></span>
+              <span class="text-gray-400">
+                <%= case item[:type]
+                    when :contact_due then "— 연락 기한"
+                    when :return_due  then "— 복귀 예정 (#{item[:enrollment]&.subject})"
+                    when :waiting_expired then "— 자리대기 만료"
+                    end %>
+              </span>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </div>
+
+    <!-- 확인 -->
+    <div class="bg-white rounded-lg border shadow-sm p-4">
+      <h3 class="font-semibold text-sm mb-3">✅ 확인 필요</h3>
+      <% if @minus_enrollments.any? %>
+        <div class="mb-2">
+          <p class="text-xs font-medium text-red-600 mb-1">마이너스 수업</p>
+          <% @minus_enrollments.each do |e| %>
+            <p class="text-xs text-gray-600"><%= e.student.name %> (<%= e.minus_lesson_count %>회)</p>
+          <% end %>
+        </div>
+      <% end %>
+      <% if @pending_consents.any? %>
+        <div>
+          <p class="text-xs font-medium text-orange-600 mb-1">동의서 미수령</p>
+          <% @pending_consents.each do |s| %>
+            <p class="text-xs text-gray-600"><%= s.name %></p>
+          <% end %>
+        </div>
+      <% end %>
+      <% if @minus_enrollments.empty? && @pending_consents.empty? %>
+        <p class="text-xs text-gray-400">없음</p>
+      <% end %>
+    </div>
+
+  </div>
+
+  <!-- ③ 오늘 시간표 -->
+  <div class="bg-white rounded-lg border shadow-sm p-4">
+    <h3 class="font-semibold text-base mb-3">📅 오늘 시간표</h3>
+    <% if @today_schedules.empty? && @today_makeups.empty? %>
+      <p class="text-sm text-gray-400">오늘 수업이 없습니다.</p>
+    <% else %>
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 border-b">
+          <tr>
+            <th class="pb-1 text-left w-20">시간</th>
+            <th class="pb-1 text-left">수강생</th>
+            <th class="pb-1 text-left">과목</th>
+            <th class="pb-1 text-left">선생님</th>
+            <th class="pb-1 text-left">상태</th>
+            <th class="pb-1 text-left">처리</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <% @today_schedules.each do |s| %>
+            <tr class="py-1 <%= s.lesson_time.hour == @current_hour ? 'bg-yellow-50' : '' %>">
+              <td class="py-1.5 text-gray-500 font-mono text-xs"><%= s.lesson_time.strftime("%H:%M") %></td>
+              <td class="font-medium">
+                <%= link_to s.student.name, student_path(s.student), class: "hover:underline" %>
+                <%= "★" if s.student.has_car? %>
+              </td>
+              <td><%= s.subject %></td>
+              <td><%= s.teacher.name %></td>
+              <td><%= schedule_status_badge(s.status) %></td>
+              <td class="space-x-1">
+                <% if s.status == "scheduled" %>
+                  <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200" %>
+                  <%= button_to "결강", absent_schedule_path(s),  method: :patch, class: "text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded hover:bg-orange-200" %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+          <% @today_makeups.each do |s| %>
+            <tr class="py-1 bg-indigo-50">
+              <td class="py-1.5 text-gray-500 font-mono text-xs"><%= s.makeup_time&.strftime("%H:%M") %>(보)</td>
+              <td class="font-medium"><%= s.student.name %></td>
+              <td><%= s.subject %></td>
+              <td><%= s.makeup_teacher&.name %></td>
+              <td><%= schedule_status_badge(s.status) %></td>
+              <td>
+                <% if s.status == "makeup_scheduled" %>
+                  <%= button_to "보강완료", complete_makeup_schedule_path(s), method: :patch, class: "text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded" %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+</div>

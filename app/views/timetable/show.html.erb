@@ -1,0 +1,74 @@
+<% content_for :title, "#{@teacher.name} 시간표" %>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-bold"><%= @teacher.name %> 시간표</h2>
+  <div class="flex items-center gap-2 text-sm">
+    <%= link_to "← 이전주", teacher_timetable_path(@teacher.id, date: (@week_start - 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
+    <span class="font-medium"><%= @week_start.strftime("%Y.%m.%d") %> ~ <%= (@week_start + 6.days).strftime("%m.%d") %></span>
+    <%= link_to "다음주 →", teacher_timetable_path(@teacher.id, date: (@week_start + 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
+    <%= link_to "전체 시간표", timetable_path, class: "border px-2 py-1 rounded hover:bg-gray-100 ml-2" %>
+  </div>
+</div>
+
+<div class="overflow-x-auto">
+  <table class="w-full text-sm border-collapse">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="border px-3 py-2 text-left w-20">시간</th>
+        <% @week_days.each do |d| %>
+          <th class="border px-3 py-2 text-center min-w-[140px] <%= d == Date.today ? 'bg-blue-50 font-bold' : '' %>">
+            <%= d.strftime("%m/%d") %>
+            (<%= %w[월 화 수 목 금 토 일][(d.wday + 6) % 7] %>)
+          </th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <% start_hour = @week_days.include?(Date.today) && Date.today.monday? ? 14 : 13 %>
+      <% (start_hour..21).each do |hour| %>
+        <% is_break = (hour == 18) %>
+        <tr class="<%= is_break ? 'bg-gray-100 opacity-60' : '' %>">
+          <td class="border px-3 py-2 text-gray-400 font-mono text-xs">
+            <%= sprintf("%02d:00", hour) %>
+            <% if is_break %><span class="block text-gray-400 text-xs">브레이크</span><% end %>
+          </td>
+          <% @week_days.each do |d| %>
+            <% is_breaktime_open = @breaktime_openings.include?(d) %>
+            <td class="border px-2 py-1 align-top <%= is_break && !is_breaktime_open ? 'bg-gray-100' : '' %>">
+              <% if is_break && !is_breaktime_open %>
+                <span class="text-xs text-gray-400">-</span>
+              <% else %>
+                <%# 정규 수업 %>
+                <% regular = @schedule_data[:regular].select { |s| s.lesson_date == d && s.lesson_time.hour == hour } %>
+                <%# 보강 %>
+                <% makeups = @schedule_data[:makeups].select { |s| s.makeup_date == d && s.makeup_time&.hour == hour } %>
+                <% slot_total = regular.count + makeups.count %>
+                <% regular.each do |s| %>
+                  <div class="text-xs rounded px-1.5 py-0.5 mb-1 <%= slot_total >= 3 ? 'bg-green-100 border border-green-300' : 'bg-blue-50 border border-blue-200' %>">
+                    <span class="font-medium"><%= s.student.name %></span>
+                    <%= "(★)" if s.student.has_car? %>
+                    <%= schedule_status_badge(s.status) %>
+                  </div>
+                <% end %>
+                <% makeups.each do |s| %>
+                  <div class="text-xs rounded px-1.5 py-0.5 mb-1 bg-indigo-50 border border-indigo-200">
+                    <span class="font-medium"><%= s.student.name %>(보)</span>
+                  </div>
+                <% end %>
+                <% if slot_total >= 3 %>
+                  <div class="text-xs text-green-600 font-medium mt-0.5">FULL</div>
+                <% end %>
+
+                <%# 주차 대수 %>
+                <% car_count = (regular + makeups).count { |s| s.student.has_car? } %>
+                <% if car_count > 0 %>
+                  <div class="text-xs text-gray-400 mt-1">🚗 <%= car_count %>대</div>
+                <% end %>
+              <% end %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

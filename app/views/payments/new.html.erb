@@ -1,0 +1,93 @@
+<% content_for :title, "결제 등록" %>
+
+<div class="max-w-2xl">
+  <div class="flex items-center gap-3 mb-6">
+    <h2 class="text-lg font-bold">결제 등록</h2>
+  </div>
+
+  <%= form_with model: @payment, class: "space-y-4" do |f| %>
+    <% if @payment.errors.any? %>
+      <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+        <% @payment.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+      </div>
+    <% end %>
+
+    <div class="bg-white rounded-lg border shadow-sm p-4 space-y-4">
+      <% if @enrollment %>
+        <%= f.hidden_field :enrollment_id, value: @enrollment.id %>
+        <%= f.hidden_field :student_id, value: @enrollment.student_id %>
+        <%= f.hidden_field :subject, value: @enrollment.subject %>
+        <div class="text-sm text-gray-600">
+          <span class="font-medium"><%= @enrollment.student.name %></span> — <%= @enrollment.subject %> / <%= @enrollment.teacher.name %>
+        </div>
+        <% if @enrollment.remaining_on_leave > 0 %>
+          <div class="text-sm text-blue-600 bg-blue-50 rounded px-3 py-2">
+            복귀 결제: 잔여 <%= @enrollment.remaining_on_leave %>회 자동 적용됩니다.
+          </div>
+        <% end %>
+      <% end %>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <%= f.label :payment_type, "결제 유형", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.select :payment_type, [["일반결제","new"],["예약금","deposit"]], {}, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+        <div>
+          <%= f.label :payment_method, "결제 수단", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.select :payment_method, [["카드","card"],["이체","transfer"],["현금","cash"]], {}, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+        <div>
+          <%= f.label :months, "개월 수", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.select :months, [["1개월",1],["3개월",3],["4개월",4]], { prompt: "선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+        <div>
+          <%= f.label :total_lessons, "총 수업 횟수", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.number_field :total_lessons, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+        <div>
+          <%= f.label :amount, "결제 금액", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.number_field :amount, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+        <div>
+          <%= f.label :starts_at, "수강 시작일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.date_field :starts_at, value: Date.today, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+      </div>
+
+      <div class="border-t pt-3 space-y-3">
+        <h4 class="text-sm font-medium">예약금 설정 (예약금 결제 시)</h4>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <%= f.label :deposit_amount, "예약금", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.number_field :deposit_amount, class: "w-full border rounded px-3 py-2 text-sm" %>
+          </div>
+          <div>
+            <%= f.label :balance_amount, "잔금", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= f.number_field :balance_amount, class: "w-full border rounded px-3 py-2 text-sm" %>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 text-sm">
+          <%= f.check_box :fully_paid %> 완납
+        </label>
+        <label class="flex items-center gap-2 text-sm">
+          <%= f.check_box :before_lesson %> 수업 전 결제
+        </label>
+      </div>
+    </div>
+
+    <!-- 가격표 참고 -->
+    <div class="bg-gray-50 rounded-lg border p-3">
+      <h4 class="text-xs font-medium text-gray-500 mb-2">가격표 참고</h4>
+      <div class="grid grid-cols-3 gap-2 text-xs text-gray-600">
+        <% @price_plans.each do |pp| %>
+          <div><%= pp.subject %> <%= pp.months %>개월: <%= format_amount(pp.amount) %></div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <%= f.submit "결제 등록", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
+      <%= link_to "취소", :back, class: "border px-4 py-2 rounded text-sm hover:bg-gray-100" %>
+    </div>
+  <% end %>
+</div>

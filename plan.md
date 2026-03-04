@@ -684,31 +684,31 @@ end
 **목표**: 핵심 원천 데이터 구축. 이 단계 없이 나머지 불가.
 
 **작업 목록**
-- [ ] PostgreSQL 연결 및 DB 설정
-- [ ] Rails 8 기본 인증 설정
-- [ ] teachers 테이블 + Model + CRUD
-- [ ] price_plans 테이블 + Model + 관리자 CRUD
+- [x] PostgreSQL 연결 및 DB 설정
+- [x] Rails 8 기본 인증 설정
+- [x] teachers 테이블 + Model + CRUD
+- [x] price_plans 테이블 + Model + 관리자 CRUD
   - 기본 금액 seed 데이터 입력
   - 결제 등록 화면에서 subject + months 선택 시 amount 자동 조회
-- [ ] students 테이블 + Model
+- [x] students 테이블 + Model
   - attendance_code 생성 로직 (뒷 4자리 → 중복 시 5자리 → 중간자리)
   - attendance_code_unique_among_active validation
   - 휴원자 복귀 시 코드 중복 체크 및 상담원 알림
   - second_transfer_form → rank 자동 변경 before_save callback
   - waiting_expires_at: 신규 등록 시 자동 설정 (등록일 + 14일), 결제 완료 시 nil로 초기화
   - remaining_lessons, consecutive_weeks, total_attended_weeks 계산 메서드
-- [ ] students CRUD 화면
+- [x] students CRUD 화면
   - 수강생 목록 (상태별 필터)
   - 수강생 상세 (enrollment 목록 + 수업 날짜 리스트 + 전체 히스토리)
   - 등록/수정 폼
   - 휴원/복귀/퇴원 처리 버튼
-- [ ] enrollments 테이블 + Model
+- [x] enrollments 테이블 + Model
   - 수강생당 N개 enrollment 가능
   - status별 클래스 상태 관리 (active/leave/dropout)
   - 중복 수강 할인 계산 기준 (active enrollment 수)
   - returnable? 메서드 (완납 여부 체크, 복귀 처리 전 검증)
   - 복귀 결제 화면에서 remaining_on_leave 자동 표시
-- [ ] payments 테이블 + Model
+- [x] payments 테이블 + Model
   - enrollment_id 참조
   - after_create :generate_schedules callback
   - calculate_nth_lesson_date 메서드 (starts_at + lesson_day 기반)
@@ -725,9 +725,9 @@ end
   - ends_at 동적 계산 메서드
   - 잔금 납부 시 fully_paid → true, balance_paid_at 업데이트 (별도 action)
   - 복귀 결제 화면에서 enrollment.remaining_on_leave 자동 표시
-- [ ] payments 등록/환불 화면
-- [ ] discounts 테이블 + Model
-- [ ] schedules 테이블 + Model
+- [x] payments 등록/환불 화면
+- [x] discounts 테이블 + Model
+- [x] schedules 테이블 + Model
   - enrollment_id 참조
   - makeup_available_range 메서드
   - slot_count 메서드

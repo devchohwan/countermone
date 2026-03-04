@@ -1,0 +1,42 @@
+<% content_for :title, "클래스 등록" %>
+
+<div class="max-w-lg">
+  <div class="flex items-center gap-3 mb-6">
+    <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-gray-500 hover:underline" %>
+    <h2 class="text-lg font-bold">클래스 등록</h2>
+  </div>
+
+  <%= form_with model: [@student, @enrollment], class: "space-y-4" do |f| %>
+    <% if @enrollment.errors.any? %>
+      <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+        <% @enrollment.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>
+      </div>
+    <% end %>
+
+    <div class="bg-white rounded-lg border shadow-sm p-4 space-y-4">
+      <div>
+        <%= f.label :subject, "과목", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
+      </div>
+      <div>
+        <%= f.label :teacher_id, "선생님", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.select :teacher_id, @teachers.map { |t| [t.name, t.id] }, { prompt: "선생님 선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <%= f.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+        <div>
+          <%= f.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.time_field :lesson_time, class: "w-full border rounded px-3 py-2 text-sm" %>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <%= f.submit "등록", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
+      <%= link_to "취소", student_path(@student), class: "border px-4 py-2 rounded text-sm hover:bg-gray-100" %>
+    </div>
+  <% end %>
+</div>

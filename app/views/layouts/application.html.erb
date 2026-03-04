@@ -21,11 +21,12 @@
             <h1 class="text-sm font-bold text-white">모네뮤직 카운터</h1>
           </div>
           <ul class="flex-1 px-2 py-4 space-y-1 text-sm">
-            <li><%= link_to "대시보드",    root_path,       class: nav_link_class(root_path) %></li>
-            <li><%= link_to "수강생",      students_path,   class: nav_link_class(students_path) %></li>
-            <li><%= link_to "결제",        payments_path,   class: nav_link_class(payments_path) %></li>
-            <li><%= link_to "시간표",      timetable_path,  class: nav_link_class(timetable_path) %></li>
-            <li><%= link_to "통계/마감",   statistics_path, class: nav_link_class(statistics_path) %></li>
+            <li><%= link_to "대시보드",    root_path,        class: nav_link_class(root_path) %></li>
+            <li><%= link_to "수강생",      students_path,    class: nav_link_class(students_path) %></li>
+            <li><%= link_to "결제",        payments_path,    class: nav_link_class(payments_path) %></li>
+            <li><%= link_to "출결 관리",   schedules_path,   class: nav_link_class(schedules_path) %></li>
+            <li><%= link_to "시간표",      timetable_path,   class: nav_link_class(timetable_path) %></li>
+            <li><%= link_to "통계/마감",   statistics_path,  class: nav_link_class(statistics_path) %></li>
             <li><%= link_to "가격표",      price_plans_path, class: nav_link_class(price_plans_path) %></li>
             <li class="border-t border-gray-700 pt-2 mt-2">
               <%= link_to "키패드", keypad_path, class: "block px-3 py-2 rounded text-gray-300 hover:bg-gray-700 hover:text-white" %>

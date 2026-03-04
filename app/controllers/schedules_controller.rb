@@ -2,8 +2,10 @@ class SchedulesController < ApplicationController
   before_action :set_schedule, only: %i[show edit update destroy attend late absent deduct pass emergency_pass makeup complete_makeup]
 
   def index
-    @schedules = Schedule.includes(:student, :teacher, :enrollment)
-                         .where(lesson_date: Date.today)
+    date = params[:date] ? Date.parse(params[:date]) : Date.today
+    @schedules = Schedule.includes(:student, :teacher, :enrollment, :attendance)
+                         .where(lesson_date: date)
+                         .where(status: %w[scheduled attended late absent makeup_scheduled makeup_done deducted])
                          .order(:lesson_time)
   end
 

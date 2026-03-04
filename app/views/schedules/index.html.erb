@@ -1,0 +1,85 @@
+<% content_for :title, "출결 관리" %>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-bold">출결 관리</h2>
+  <div class="flex gap-2 text-sm">
+    <%= form_with url: schedules_path, method: :get, class: "flex gap-2" do |f| %>
+      <%= f.date_field :date, value: params[:date] || Date.today, class: "border rounded px-2 py-1 text-sm" %>
+      <%= f.submit "조회", class: "bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 cursor-pointer" %>
+    <% end %>
+  </div>
+</div>
+
+<div id="schedules-list">
+  <% grouped = @schedules.group_by { |s| s.lesson_time.strftime("%H:%M") } %>
+  <% grouped.each do |time, schedules| %>
+    <div class="mb-4">
+      <h3 class="text-sm font-semibold text-gray-600 mb-2 flex items-center gap-2">
+        <span class="bg-gray-200 px-2 py-0.5 rounded font-mono"><%= time %></span>
+        <span class="text-gray-400"><%= schedules.count %>명</span>
+        <% car_count = schedules.count { |s| s.student.has_car? } %>
+        <% if car_count > 0 %><span class="text-gray-400">🚗 <%= car_count %>대</span><% end %>
+      </h3>
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b text-xs text-gray-500">
+            <tr>
+              <th class="px-4 py-2 text-left">수강생</th>
+              <th class="px-4 py-2 text-left">과목</th>
+              <th class="px-4 py-2 text-left">선생님</th>
+              <th class="px-4 py-2 text-left">회차</th>
+              <th class="px-4 py-2 text-left">상태</th>
+              <th class="px-4 py-2 text-left">등원</th>
+              <th class="px-4 py-2 text-left">처리</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <% schedules.each do |s| %>
+              <tr id="schedule-<%= s.id %>" class="hover:bg-gray-50">
+                <td class="px-4 py-2.5">
+                  <span class="font-medium"><%= s.student.name %></span>
+                  <%= "(★)" if s.student.has_car? %>
+                </td>
+                <td class="px-4 py-2.5"><%= s.subject %></td>
+                <td class="px-4 py-2.5 text-gray-500"><%= s.teacher.name %></td>
+                <td class="px-4 py-2.5 text-gray-400 text-xs"><%= s.sequence %>회</td>
+                <td class="px-4 py-2.5"><%= schedule_status_badge(s.status) %></td>
+                <td class="px-4 py-2.5 text-xs">
+                  <% if s.attendance&.checked_in_at %>
+                    <span class="text-green-600"><%= s.attendance.checked_in_at.strftime("%H:%M") %></span>
+                  <% else %>
+                    <span class="text-gray-300">-</span>
+                  <% end %>
+                </td>
+                <td class="px-4 py-2.5">
+                  <% if s.status == "scheduled" %>
+                    <div class="flex gap-1 flex-wrap">
+                      <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200" %>
+                      <%= button_to "지각", late_schedule_path(s),   method: :patch, class: "text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded hover:bg-yellow-200" %>
+                      <%= button_to "결강", absent_schedule_path(s), method: :patch, class: "text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded hover:bg-orange-200" %>
+                      <%= button_to "결석", deduct_schedule_path(s), method: :patch, class: "text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200" %>
+                      <%= link_to "패스", "#",                       class: "text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded" %>
+                    </div>
+                  <% elsif s.status == "absent" %>
+                    <div class="flex gap-1">
+                      <%= link_to "보강등록", "#", class: "text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded" %>
+                      <%= button_to "결석차감", deduct_schedule_path(s), method: :patch, class: "text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded" %>
+                    </div>
+                  <% elsif s.status == "makeup_scheduled" %>
+                    <%= button_to "보강완료", complete_makeup_schedule_path(s), method: :patch, class: "text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% end %>
+
+  <% if @schedules.empty? %>
+    <div class="bg-white rounded-lg border shadow-sm p-8 text-center text-gray-400 text-sm">
+      오늘 수업이 없습니다.
+    </div>
+  <% end %>
+</div>

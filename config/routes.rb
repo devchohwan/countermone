@@ -5,6 +5,9 @@ Rails.application.routes.draw do
   resources :passwords, param: :token
 
   resources :students do
+    collection do
+      get :check_attendance_code
+    end
     member do
       patch :leave
       patch :return
@@ -29,8 +32,6 @@ Rails.application.routes.draw do
   resources :schedules do
     member do
       patch :attend
-      patch :late
-      patch :absent
       patch :deduct
       patch :pass
       patch :emergency_pass

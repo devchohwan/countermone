@@ -8,6 +8,8 @@ class Enrollment < ApplicationRecord
   has_many :schedules, through: :payments
   has_many :gift_vouchers, dependent: :destroy
 
+  accepts_nested_attributes_for :payments
+
   validates :subject,     presence: true, inclusion: { in: TeacherSubject::SUBJECTS }
   validates :lesson_day,  presence: true, inclusion: { in: LESSON_DAYS }
   validates :lesson_time, presence: true

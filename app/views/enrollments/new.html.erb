@@ -1,10 +1,12 @@
-<% content_for :title, "클래스 등록" %>
+<% content_for :title, "클래스 및 결제 등록" %>
 
-<div class="max-w-lg">
+<% unless params[:modal] == '1' %>
+<div class="max-w-4xl">
   <div class="flex items-center gap-3 mb-6">
     <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-gray-500 hover:underline" %>
-    <h2 class="text-lg font-bold">클래스 등록</h2>
+    <h2 class="text-lg font-bold">클래스 및 결제 등록</h2>
   </div>
+<% end %>
 
   <%= form_with model: [@student, @enrollment], class: "space-y-4" do |f| %>
     <% if @enrollment.errors.any? %>
@@ -13,30 +15,100 @@
       </div>
     <% end %>
 
+    <%= hidden_field_tag :modal, params[:modal] %>
+
     <div class="bg-white rounded-lg border shadow-sm p-4 space-y-4">
-      <div>
-        <%= f.label :subject, "과목", class: "block text-sm font-medium text-gray-700 mb-1" %>
-        <%= f.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
-      </div>
-      <div>
-        <%= f.label :teacher_id, "선생님", class: "block text-sm font-medium text-gray-700 mb-1" %>
-        <%= f.select :teacher_id, @teachers.map { |t| [t.name, t.id] }, { prompt: "선생님 선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
-      </div>
+      <h3 class="font-semibold text-sm">클래스 정보</h3>
       <div class="grid grid-cols-2 gap-4">
         <div>
+          <%= f.label :subject, "과목", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_subject" %>
+        </div>
+        <div>
+          <%= f.label :teacher_id, "선생님", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.select :teacher_id, [], { prompt: "선생님 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_teacher" %>
+        </div>
+        <div>
           <%= f.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-gray-700 mb-1" %>
-          <%= f.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <%= f.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_lesson_day" %>
         </div>
         <div>
           <%= f.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-gray-700 mb-1" %>
-          <%= f.time_field :lesson_time, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <%= f.select :lesson_time, [], { prompt: "시간 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_lesson_time" %>
         </div>
       </div>
     </div>
 
+    <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
+      💡 클래스 등록 후, 결제는 별도로 "결제 추가" 버튼을 통해 등록할 수 있습니다.
+    </div>
+
     <div class="flex gap-3">
       <%= f.submit "등록", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
-      <%= link_to "취소", student_path(@student), class: "border px-4 py-2 rounded text-sm hover:bg-gray-100" %>
+      <% if params[:modal] != '1' %>
+        <%= link_to "취소", student_path(@student), class: "border px-4 py-2 rounded text-sm hover:bg-gray-100" %>
+      <% end %>
     </div>
   <% end %>
+
+<% unless params[:modal] == '1' %>
 </div>
+<% end %>
+
+<script>
+  const subjectSelect = document.getElementById('enrollment_subject');
+  const teacherSelect = document.getElementById('enrollment_teacher');
+  const lessonDaySelect = document.getElementById('enrollment_lesson_day');
+  const lessonTimeSelect = document.getElementById('enrollment_lesson_time');
+
+  const teachersBySubject = {};
+  <% @teachers.each do |teacher| %>
+    <% teacher.teacher_subjects.each do |ts| %>
+      if (!teachersBySubject['<%= ts.subject %>']) teachersBySubject['<%= ts.subject %>'] = [];
+      teachersBySubject['<%= ts.subject %>'].push({id: <%= teacher.id %>, name: '<%= teacher.name %>'});
+    <% end %>
+  <% end %>
+
+  function updateTeacherOptions() {
+    const subject = subjectSelect.value;
+    teacherSelect.innerHTML = '<option value="">선생님 선택</option>';
+
+    if (!subject) return;
+
+    const teachers = teachersBySubject[subject] || [];
+    teachers.forEach(t => {
+      const option = document.createElement('option');
+      option.value = t.id;
+      option.textContent = t.name;
+      teacherSelect.appendChild(option);
+    });
+  }
+
+  function updateTimeOptions() {
+    const day = lessonDaySelect.value;
+    lessonTimeSelect.innerHTML = '<option value="">시간 선택</option>';
+
+    if (!day) return;
+
+    let hours = [];
+    if (day === 'monday') {
+      hours = [14, 15, 16, 17];
+    } else {
+      hours = [13, 14, 15, 16, 17, 18, 19, 20, 21];
+    }
+
+    hours.forEach(h => {
+      const option = document.createElement('option');
+      const timeStr = `${h.toString().padStart(2, '0')}:00`;
+      option.value = timeStr;
+      option.textContent = `${h}:00`;
+      lessonTimeSelect.appendChild(option);
+    });
+  }
+
+  subjectSelect.addEventListener('change', updateTeacherOptions);
+  lessonDaySelect.addEventListener('change', updateTimeOptions);
+
+  updateTeacherOptions();
+  updateTimeOptions();
+</script>

@@ -11,6 +11,8 @@ class Student < ApplicationRecord
   has_many :attendances, through: :schedules
   has_many :gift_vouchers, dependent: :destroy
 
+  accepts_nested_attributes_for :enrollments
+
   validates :name,            presence: true
   validates :phone,           presence: true
   validates :attendance_code, presence: true

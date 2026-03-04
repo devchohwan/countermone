@@ -24,6 +24,8 @@ module Counter
     config.time_zone = "Seoul"
     config.active_record.default_timezone = :local
     config.active_job.queue_adapter = :solid_queue
+    config.i18n.default_locale = :ko
+    config.i18n.available_locales = [:ko, :en]
     # config.eager_load_paths << Rails.root.join("extras")
   end
 end

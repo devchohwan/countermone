@@ -1,5 +1,5 @@
 class PaymentsController < ApplicationController
-  before_action :set_payment, only: %i[show edit update destroy refund pay_balance]
+  before_action :set_payment, only: %i[show refund pay_balance]
 
   def index
     @payments = Payment.includes(:student, :enrollment, :discounts)

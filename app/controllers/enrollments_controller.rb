@@ -17,7 +17,11 @@ class EnrollmentsController < ApplicationController
     @enrollment = @student.enrollments.build(enrollment_params)
 
     if @enrollment.save
-      redirect_to student_path(@student), notice: "클래스가 등록되었습니다."
+      if params[:modal] == '1'
+        render inline: "<script>window.parent.postMessage('enrollment_created', '*'); window.parent.location.reload();</script>"
+      else
+        redirect_to student_path(@student), notice: "클래스가 등록되었습니다."
+      end
     else
       @teachers = Teacher.includes(:teacher_subjects).all
       render :new, status: :unprocessable_entity

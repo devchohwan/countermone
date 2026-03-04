@@ -55,15 +55,17 @@
                   <% if s.status == "scheduled" %>
                     <div class="flex gap-1 flex-wrap">
                       <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200" %>
-                      <%= button_to "지각", late_schedule_path(s),   method: :patch, class: "text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded hover:bg-yellow-200" %>
-                      <%= button_to "결강", absent_schedule_path(s), method: :patch, class: "text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded hover:bg-orange-200" %>
+                      <%= link_to "보강", "#", 
+                          data: { 
+                            action: "click->makeup#open",
+                            schedule_id: s.id,
+                            student_name: s.student.name,
+                            subject: s.subject,
+                            lesson_date: s.lesson_date.to_s
+                          },
+                          class: "text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded hover:bg-indigo-200" %>
                       <%= button_to "결석", deduct_schedule_path(s), method: :patch, class: "text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200" %>
                       <%= link_to "패스", "#",                       class: "text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded" %>
-                    </div>
-                  <% elsif s.status == "absent" %>
-                    <div class="flex gap-1">
-                      <%= link_to "보강등록", "#", class: "text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded" %>
-                      <%= button_to "결석차감", deduct_schedule_path(s), method: :patch, class: "text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded" %>
                     </div>
                   <% elsif s.status == "makeup_scheduled" %>
                     <%= button_to "보강완료", complete_makeup_schedule_path(s), method: :patch, class: "text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded" %>

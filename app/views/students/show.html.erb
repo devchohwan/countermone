@@ -10,14 +10,13 @@
       <%= button_to "휴원", leave_student_path(@student), method: :patch, class: "text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded hover:bg-yellow-200" %>
       <%= button_to "퇴원", dropout_student_path(@student), method: :patch, class: "text-sm bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200", data: { turbo_confirm: "퇴원 처리하시겠습니까?" } %>
     <% elsif @student.status == "leave" %>
-      <%= button_to "복귀", return_student_path(@student), method: :patch, class: "text-sm bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200" %>
+      <%= button_to "복귀", return_student_path(@student), method: :patch, class: "text-sm bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200", id: "return-btn", form: { onsubmit: "return handleReturn(event, #{@student.id}, '#{@student.attendance_code}')" } %>
     <% end %>
+    <%= button_to "삭제", student_path(@student), method: :delete, class: "text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200", data: { turbo_confirm: "정말 삭제하시겠습니까? 모든 클래스, 결제, 출결 데이터가 함께 삭제됩니다." } %>
   </div>
 </div>
 
-<div class="grid grid-cols-3 gap-6">
-
-  <!-- 기본 정보 -->
+<div class="grid grid-cols-3 gap-6 mb-6">
   <div class="bg-white rounded-lg border shadow-sm p-4">
     <h3 class="font-semibold text-sm mb-3">기본 정보</h3>
     <dl class="space-y-1.5 text-sm">
@@ -26,25 +25,24 @@
       <div class="flex gap-2"><dt class="text-gray-400 w-24">출결코드</dt><dd class="font-mono"><%= @student.attendance_code %></dd></div>
       <div class="flex gap-2"><dt class="text-gray-400 w-24">랭크</dt><dd><%= @student.rank == "first" ? "1차전직" : "2차전직" %></dd></div>
       <div class="flex gap-2"><dt class="text-gray-400 w-24">자차</dt><dd><%= @student.has_car? ? "있음" : "없음" %></dd></div>
-      <div class="flex gap-2"><dt class="text-gray-400 w-24">수강동의서</dt><dd><%= @student.consent_form? ? "✓" : "✗" %></dd></div>
-      <div class="flex gap-2"><dt class="text-gray-400 w-24">2차전직서</dt><dd><%= @student.second_transfer_form? ? "✓" : "✗" %></dd></div>
-      <% if @student.memo.present? %>
-        <div class="pt-2 border-t"><dt class="text-gray-400 text-xs mb-1">메모</dt><dd class="text-xs"><%= @student.memo %></dd></div>
+    </dl>
+  </div>
+
+  <div class="bg-white rounded-lg border shadow-sm p-4">
+    <h3 class="font-semibold text-sm mb-3">상담 정보</h3>
+    <dl class="space-y-2 text-sm">
+      <% if @student.reason_for_joining.present? %>
+        <div><dt class="text-gray-400 text-xs">찾아온 이유</dt><dd class="text-xs"><%= @student.reason_for_joining %></dd></div>
+      <% end %>
+      <% if @student.own_problem.present? %>
+        <div><dt class="text-gray-400 text-xs">본인의 문제점</dt><dd class="text-xs"><%= @student.own_problem %></dd></div>
+      <% end %>
+      <% if @student.desired_goal.present? %>
+        <div><dt class="text-gray-400 text-xs">하고 싶은 것</dt><dd class="text-xs"><%= @student.desired_goal %></dd></div>
       <% end %>
     </dl>
   </div>
 
-  <!-- 상담 정보 -->
-  <div class="bg-white rounded-lg border shadow-sm p-4">
-    <h3 class="font-semibold text-sm mb-3">상담 정보</h3>
-    <dl class="space-y-2 text-sm">
-      <div><dt class="text-gray-400 text-xs">찾아온 이유</dt><dd><%= @student.reason_for_joining %></dd></div>
-      <div><dt class="text-gray-400 text-xs">본인의 문제점</dt><dd><%= @student.own_problem %></dd></div>
-      <div><dt class="text-gray-400 text-xs">하고 싶은 것</dt><dd><%= @student.desired_goal %></dd></div>
-    </dl>
-  </div>
-
-  <!-- 할인/이벤트 -->
   <div class="bg-white rounded-lg border shadow-sm p-4">
     <h3 class="font-semibold text-sm mb-3">할인 / 이벤트</h3>
     <dl class="space-y-1.5 text-sm">
@@ -52,58 +50,236 @@
         <div class="flex gap-2"><dt class="text-gray-400 w-24">추천인</dt><dd><%= link_to @student.referrer.name, student_path(@student.referrer), class: "hover:underline" %></dd></div>
       <% end %>
       <div class="flex gap-2"><dt class="text-gray-400 w-24">후기 할인</dt><dd><%= @student.review_discount_applied? ? "적용" : "-" %></dd></div>
-      <% if @student.review_url.present? %>
-        <div class="flex gap-2"><dt class="text-gray-400 w-24">후기 URL</dt><dd class="truncate"><%= link_to "보기", @student.review_url, target: "_blank", class: "text-blue-600 hover:underline text-xs" %></dd></div>
-      <% end %>
       <div class="flex gap-2"><dt class="text-gray-400 w-24">인터뷰 할인</dt><dd><%= @student.interview_discount_applied? ? "적용" : "-" %></dd></div>
       <div class="flex gap-2"><dt class="text-gray-400 w-24">상품권</dt><dd><%= @student.gift_voucher_issued? ? "발급됨" : "-" %></dd></div>
     </dl>
   </div>
-
 </div>
 
-<!-- 클래스 목록 -->
-<div class="mt-6">
-  <div class="flex items-center justify-between mb-3">
-    <h3 class="font-semibold">수강 클래스</h3>
-    <%= link_to "+ 클래스 추가", new_student_enrollment_path(@student), class: "text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" %>
-  </div>
+<div class="flex items-center justify-between mb-4">
+  <h3 class="text-lg font-bold">수강 클래스 및 결제 내역</h3>
+  <%= link_to "+ 클래스 추가", new_student_enrollment_path(@student), class: "text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" %>
+</div>
 
-  <div class="space-y-4">
-    <% @enrollments.each do |enrollment| %>
-      <div class="bg-white rounded-lg border shadow-sm p-4">
-        <div class="flex items-center gap-3 mb-3">
-          <span class="font-medium"><%= enrollment.subject %></span>
-          <span class="text-gray-400 text-sm">/ <%= enrollment.teacher.name %></span>
-          <span class="text-gray-400 text-sm"><%= lesson_day_ko(enrollment.lesson_day) %>요일 <%= enrollment.lesson_time.strftime("%H:%M") %></span>
+<% @enrollments.each do |enrollment| %>
+  <div class="bg-white rounded-lg border shadow-sm p-6 mb-4">
+    <div class="flex items-start gap-8">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-5 pb-4 border-b">
+          <span class="text-lg font-semibold"><%= enrollment.subject %></span>
+          <span class="text-gray-500 text-sm">/ <%= enrollment.teacher.name %></span>
+          <span class="text-gray-500 text-sm"><%= lesson_day_ko(enrollment.lesson_day) %>요일 <%= enrollment.lesson_time.strftime("%H:%M") %></span>
           <%= status_badge(enrollment.status) %>
           <div class="ml-auto flex gap-2 text-xs">
-            <%= link_to "상세", enrollment_path(enrollment), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
-            <% if enrollment.status == "active" %>
-              <%= button_to "결제등록", new_payment_path(enrollment_id: enrollment.id), method: :get, class: "bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200" %>
-            <% end %>
+            <%= link_to "상세", enrollment_path(enrollment), class: "border px-3 py-1.5 rounded hover:bg-gray-100" %>
           </div>
         </div>
 
-        <!-- 수업 날짜 리스트 (최근 8회) -->
-        <% schedules = enrollment.schedules.order(:lesson_date).last(8) %>
-        <% if schedules.any? %>
-          <div class="flex flex-wrap gap-1.5">
-            <% schedules.each do |s| %>
-              <div class="text-xs border rounded px-2 py-1 <%= s.status == 'attended' ? 'bg-green-50 border-green-200' : s.status == 'scheduled' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50' %>">
-                <span class="font-mono"><%= s.lesson_date.strftime("%m/%d") %></span>
-                <%= schedule_status_badge(s.status) %>
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <h4 class="text-sm font-semibold mb-3 text-gray-700">결제 내역</h4>
+            <div class="space-y-3">
+              <% enrollment.payments.order(created_at: :desc).each do |payment| %>
+                <div class="text-sm bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-medium"><%= payment.months %>개월 / <%= payment.total_lessons %>회</span>
+                    <span class="text-gray-600"><%= number_to_currency(payment.amount, unit: '₩', precision: 0) %></span>
+                    <span class="text-xs px-2 py-0.5 rounded <%= payment.fully_paid? ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' %>">
+                      <%= payment.fully_paid? ? '완납' : '예약금' %>
+                    </span>
+                    <%= link_to "상세", payment_path(payment), class: "text-xs text-blue-600 hover:underline ml-auto" %>
+                  </div>
+                  <div class="text-xs text-gray-500 mb-1">
+                    시작: <%= payment.starts_at&.strftime("%Y-%m-%d") %>
+                    <% if payment.ends_at %>
+                      ~ <%= payment.ends_at.strftime("%Y-%m-%d") %>
+                    <% end %>
+                  </div>
+                  <% if payment.discounts.any? %>
+                    <div class="text-xs text-purple-600">
+                      할인: <%= payment.discounts.map { |d| "#{d.memo} (-#{number_to_currency(d.amount, unit: '₩', precision: 0)})" }.join(', ') %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+              <% if enrollment.status == "active" %>
+                <%= link_to "+ 결제 추가", new_payment_path(enrollment_id: enrollment.id), class: "inline-block text-xs text-blue-600 hover:underline mt-2" %>
+              <% end %>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold mb-3 text-gray-700">최근 출결</h4>
+            <% schedules = enrollment.schedules.order(:lesson_date).last(8) %>
+            <% if schedules.any? %>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <% schedules.each do |s| %>
+                  <div 
+                    class="text-xs border rounded px-2 py-1 <%= s.status == 'attended' ? 'bg-green-50 border-green-200' : s.status == 'scheduled' ? 'bg-blue-50 border-blue-200 cursor-pointer hover:bg-blue-100' : 'bg-gray-50' %>"
+                    <% if s.status == 'scheduled' %>
+                      data-schedule-id="<%= s.id %>"
+                      data-student-name="<%= s.student.name %>"
+                      data-lesson-date="<%= s.lesson_date.strftime('%Y-%m-%d') %>"
+                      data-lesson-time="<%= s.lesson_time.strftime('%H:%M') %>"
+                      onclick="openScheduleModal(this.dataset.scheduleId, this.dataset.studentName, this.dataset.lessonDate, this.dataset.lessonTime)"
+                    <% end %>
+                  >
+                    <span class="font-mono"><%= s.lesson_date.strftime("%m/%d") %></span>
+                    <%= schedule_status_badge(s.status) %>
+                  </div>
+                <% end %>
               </div>
+              <div class="text-xs text-gray-600 space-y-1.5 bg-gray-50 rounded p-3">
+                <div>💼 잔여 수업: <span class="font-medium"><%= @student.remaining_lessons_for(enrollment) %>회</span></div>
+                <div>🔥 연속 개근: <span class="font-medium"><%= @student.consecutive_weeks_for(enrollment) %>주</span></div>
+                <div>✅ 총 출석: <span class="font-medium"><%= @student.total_attended_weeks_for(enrollment) %>회</span></div>
+              </div>
+            <% else %>
+              <p class="text-xs text-gray-400">수업 일정이 없습니다.</p>
             <% end %>
           </div>
-          <div class="mt-2 text-xs text-gray-400">
-            잔여 <%= @student.remaining_lessons_for(enrollment) %>회 |
-            개근 <%= @student.consecutive_weeks_for(enrollment) %>주
-          </div>
-        <% else %>
-          <p class="text-xs text-gray-400">수업 일정이 없습니다.</p>
-        <% end %>
+        </div>
       </div>
-    <% end %>
+    </div>
+  </div>
+<% end %>
+
+<% if @enrollments.empty? %>
+  <div class="bg-gray-50 border border-dashed rounded-lg p-8 text-center">
+    <p class="text-gray-500 mb-3">등록된 클래스가 없습니다.</p>
+    <%= link_to "첫 클래스 등록하기", new_student_enrollment_path(@student), class: "inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" %>
+  </div>
+<% end %>
+
+<div id="scheduleModal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center;">
+  <div class="bg-white rounded-lg shadow-xl" style="max-width: 28rem; width: 100%; margin: 0 1rem; background: white; border-radius: 0.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+    <div class="p-6 border-b">
+      <h3 class="text-lg font-bold" id="modalTitle">출결 처리</h3>
+      <p class="text-sm text-gray-500 mt-1" id="modalSubtitle"></p>
+    </div>
+    <div class="p-6">
+      <div class="space-y-3">
+        <button onclick="handleScheduleAction('makeup')" class="w-full text-left px-4 py-3 border rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition">
+          <div class="font-medium text-indigo-700">보강</div>
+          <div class="text-xs text-gray-500 mt-1">다른 날짜/시간으로 수업 변경</div>
+        </button>
+        <button onclick="handleScheduleAction('pass')" class="w-full text-left px-4 py-3 border rounded-lg hover:bg-purple-50 hover:border-purple-300 transition">
+          <div class="font-medium text-purple-700">패스</div>
+          <div class="text-xs text-gray-500 mt-1">사전 공지로 수업 건너뛰기</div>
+        </button>
+        <button onclick="handleScheduleAction('deduct')" class="w-full text-left px-4 py-3 border rounded-lg hover:bg-red-50 hover:border-red-300 transition">
+          <div class="font-medium text-red-700">결석</div>
+          <div class="text-xs text-gray-500 mt-1">회차 차감 처리</div>
+        </button>
+      </div>
+    </div>
+    <div class="p-4 border-t flex justify-end">
+      <button onclick="closeScheduleModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">
+        닫기
+      </button>
+    </div>
   </div>
 </div>
+
+<script>
+  let currentScheduleId = null;
+
+  function openScheduleModal(scheduleId, studentName, lessonDate, lessonTime) {
+    currentScheduleId = scheduleId;
+    document.getElementById('modalTitle').textContent = `${studentName} - 출결 처리`;
+    document.getElementById('modalSubtitle').textContent = `${lessonDate} ${lessonTime}`;
+    const modal = document.getElementById('scheduleModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+
+  function closeScheduleModal() {
+    const modal = document.getElementById('scheduleModal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    currentScheduleId = null;
+  }
+
+  function handleScheduleAction(action) {
+    if (!currentScheduleId) return;
+
+    if (action === 'makeup') {
+      alert('보강 기능은 다음 단계에서 구현됩니다.');
+    } else if (action === 'pass') {
+      alert('패스 기능은 다음 단계에서 구현됩니다.');
+    } else if (action === 'deduct') {
+      if (confirm('결석 처리하시겠습니까? 회차가 차감됩니다.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/schedules/${currentScheduleId}/deduct`;
+        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'authenticity_token';
+        csrfInput.value = csrfToken;
+        
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'patch';
+        
+        form.appendChild(csrfInput);
+        form.appendChild(methodInput);
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
+  }
+
+  document.getElementById('scheduleModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeScheduleModal();
+    }
+  });
+</script>
+
+<script>
+  async function handleReturn(event, studentId, currentCode) {
+    event.preventDefault();
+    
+    try {
+      const response = await fetch(`/students/check_attendance_code?code=${encodeURIComponent(currentCode)}&student_id=${studentId}`);
+      const data = await response.json();
+      
+      if (!data.available) {
+        const newCode = prompt('출결코드 중복입니다. 새 출결코드를 지정해주세요.', currentCode);
+        
+        if (newCode === null) {
+          return false;
+        }
+        
+        if (!newCode.trim()) {
+          alert('출결코드를 입력해주세요.');
+          return false;
+        }
+        
+        const checkResponse = await fetch(`/students/check_attendance_code?code=${encodeURIComponent(newCode)}&student_id=${studentId}`);
+        const checkData = await checkResponse.json();
+        
+        if (!checkData.available) {
+          alert(`'${newCode}'도 이미 사용 중입니다 (${checkData.student_name}). 다른 코드를 사용해주세요.`);
+          return false;
+        }
+        
+        const form = event.target;
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'new_attendance_code';
+        input.value = newCode;
+        form.appendChild(input);
+      }
+      
+      event.target.submit();
+      return true;
+    } catch (error) {
+      console.error('Error checking attendance code:', error);
+      return event.target.submit();
+    }
+  }
+</script>

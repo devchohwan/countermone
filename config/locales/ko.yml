@@ -1,0 +1,58 @@
+ko:
+  activerecord:
+    errors:
+      messages:
+        blank: "입력해주세요"
+        required: "필수 항목입니다"
+        taken: "이미 사용 중입니다"
+        invalid: "올바르지 않습니다"
+        not_a_number: "숫자를 입력해주세요"
+        not_included: "목록에 포함되어 있지 않습니다"
+      models:
+        student:
+          attributes:
+            name:
+              blank: "이름을 입력해주세요"
+            phone:
+              blank: "전화번호를 입력해주세요"
+            attendance_code:
+              blank: "출결코드를 입력해주세요"
+        enrollment:
+          attributes:
+            subject:
+              blank: "과목을 선택해주세요"
+              not_included: "올바른 과목을 선택해주세요"
+            teacher:
+              required: "선생님을 선택해주세요"
+            teacher_id:
+              required: "선생님을 선택해주세요"
+            lesson_day:
+              blank: "수업 요일을 선택해주세요"
+              not_included: "올바른 요일을 선택해주세요"
+            lesson_time:
+              blank: "수업 시간을 선택해주세요"
+        payment:
+          attributes:
+            amount:
+              not_a_number: "금액을 입력해주세요"
+              blank: "금액을 입력해주세요"
+    models:
+      student: "수강생"
+      enrollment: "클래스"
+      payment: "결제"
+    attributes:
+      student:
+        name: "이름"
+        phone: "전화번호"
+        attendance_code: "출결코드"
+        age: "나이"
+      enrollment:
+        subject: "과목"
+        teacher: "선생님"
+        teacher_id: "선생님"
+        lesson_day: "수업 요일"
+        lesson_time: "수업 시간"
+      payment:
+        amount: "금액"
+        months: "개월"
+        total_lessons: "총 수업 횟수"

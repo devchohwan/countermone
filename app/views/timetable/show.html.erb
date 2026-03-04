@@ -6,8 +6,13 @@
     <%= link_to "← 이전주", teacher_timetable_path(@teacher.id, date: (@week_start - 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
     <span class="font-medium"><%= @week_start.strftime("%Y.%m.%d") %> ~ <%= (@week_start + 6.days).strftime("%m.%d") %></span>
     <%= link_to "다음주 →", teacher_timetable_path(@teacher.id, date: (@week_start + 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
-    <%= link_to "전체 시간표", timetable_path, class: "border px-2 py-1 rounded hover:bg-gray-100 ml-2" %>
   </div>
+</div>
+
+<div class="flex gap-2 mb-4 overflow-x-auto">
+  <% @teachers.each do |t| %>
+    <%= link_to t.name, teacher_timetable_path(t.id, date: @date.to_s), class: "shrink-0 px-3 py-1 border rounded text-sm hover:bg-gray-100 #{t.id == @teacher.id ? 'bg-blue-100 border-blue-400 font-medium' : ''}" %>
+  <% end %>
 </div>
 
 <div class="overflow-x-auto">

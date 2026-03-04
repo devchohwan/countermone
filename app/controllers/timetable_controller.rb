@@ -1,17 +1,11 @@
 class TimetableController < ApplicationController
   def index
-    @teachers = Teacher.all.order(:name)
-    @date     = params[:date] ? Date.parse(params[:date]) : Date.today
-    @week_start = @date.beginning_of_week(:monday)
-    @week_days  = (0..6).map { |i| @week_start + i.days }
-
-    @schedules_by_teacher = {}
-    @teachers.each do |teacher|
-      @schedules_by_teacher[teacher.id] = weekly_schedules_for(teacher, @week_days)
-    end
+    first_teacher = Teacher.order(:name).first
+    redirect_to teacher_timetable_path(first_teacher.id, date: params[:date])
   end
 
   def show
+    @teachers   = Teacher.all.order(:name)
     @teacher    = Teacher.find(params[:teacher_id])
     @date       = params[:date] ? Date.parse(params[:date]) : Date.today
     @week_start = @date.beginning_of_week(:monday)

@@ -1,6 +1,6 @@
 class Schedule < ApplicationRecord
   STATUSES = %w[
-    scheduled attended late absent deducted
+    scheduled attended deducted
     pass emergency_pass makeup_scheduled makeup_done
     minus_lesson
   ].freeze

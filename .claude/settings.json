@@ -12,7 +12,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"$p = Join-Path $env:CLAUDE_PROJECT_DIR '.claude/hooks/auto-commit.ps1'; & $p\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/auto-commit.sh\""
           }
         ]
       }

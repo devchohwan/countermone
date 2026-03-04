@@ -1,3 +1,27 @@
 .commit_message.txt
+
 # Ignore master key for decrypting credentials and more.
 /config/master.key
+
+# Rails standard ignores
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+/tmp/pids/*
+!/tmp/pids/.keep
+/tmp/storage/*
+!/tmp/storage/.keep
+/storage/*
+!/storage/.keep
+/.bundle
+/vendor/bundle
+node_modules/
+yarn-error.log
+/public/assets
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+.env
+.env.*
+*.orig

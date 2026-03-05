@@ -56,19 +56,19 @@ module ApplicationHelper
       "minus_lesson"     => "badge-error badge-outline"
     }
     cls = daisy[status] || "badge-ghost"
-    content_tag(:span, SCHEDULE_STATUS_KO[status] || status, class: "badge badge-xs #{cls}")
+    content_tag(:span, ApplicationHelper::SCHEDULE_STATUS_KO[status] || status, class: "badge badge-xs #{cls}")
   end
 
   def status_badge_text(status)
-    STATUS_KO[status] || status
+    ApplicationHelper::STATUS_KO[status] || status
   end
 
   def schedule_status_ko(status)
-    SCHEDULE_STATUS_KO[status] || status
+    ApplicationHelper::SCHEDULE_STATUS_KO[status] || status
   end
 
   def lesson_day_ko(day)
-    LESSON_DAY_KO[day] || day
+    ApplicationHelper::LESSON_DAY_KO[day] || day
   end
 
   def format_amount(amount)
@@ -115,12 +115,12 @@ module ApplicationHelper
   def timetable_makeup_label(schedule, current_teacher)
     s    = schedule.student
     date = schedule.makeup_date
-    d    = date.strftime("%-m.%-d")
+    d    = date&.strftime("%-m.%-d") || "?"
 
     if schedule.makeup_teacher_id == schedule.teacher_id
       "#{s.name}(#{d}보)"
     else
-      initial = schedule.teacher.name.first
+      initial = schedule.teacher&.name&.first || "?"
       "#{s.name}(#{d}보/#{initial})"
     end
   end

@@ -1,0 +1,36 @@
+<% content_for :title, "선생님 관리" %>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-bold">선생님 관리</h2>
+  <%= link_to "+ 선생님 등록", new_teacher_path, class: "btn btn-sm btn-primary" %>
+</div>
+
+<div class="grid grid-cols-3 gap-4">
+  <% @teachers.each do |teacher| %>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold"><%= teacher.name %></h3>
+          <div class="flex gap-1">
+            <%= link_to "수정", edit_teacher_path(teacher), class: "btn btn-xs btn-ghost" %>
+            <%= button_to "삭제", teacher_path(teacher), method: :delete,
+                  class: "btn btn-xs btn-ghost text-error",
+                  data: { turbo_confirm: "#{teacher.name} 선생님을 삭제합니까?" } %>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-1 mb-3">
+          <% if teacher.teacher_subjects.any? %>
+            <% teacher.teacher_subjects.each do |ts| %>
+              <span class="badge badge-sm badge-outline"><%= ts.subject %></span>
+            <% end %>
+          <% else %>
+            <span class="text-xs text-base-content/40">담당 과목 없음</span>
+          <% end %>
+        </div>
+        <div class="text-xs text-base-content/50">
+          재원 수강생 <%= teacher.enrollments.count { |e| e.status == "active" } %>명
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

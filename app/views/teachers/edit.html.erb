@@ -1,0 +1,14 @@
+<% content_for :title, "선생님 수정" %>
+
+<div class="max-w-md">
+  <div class="flex items-center gap-3 mb-4">
+    <%= link_to "← 선생님 관리", teachers_path, class: "text-sm text-base-content/50 hover:underline" %>
+    <h2 class="text-lg font-bold"><%= @teacher.name %> 수정</h2>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <%= render "form", teacher: @teacher %>
+    </div>
+  </div>
+</div>

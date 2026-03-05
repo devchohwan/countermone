@@ -62,5 +62,9 @@ Rails.application.routes.draw do
 
   resources :price_plans
 
+  resources :teachers do
+    resources :teacher_subjects, only: %i[create destroy], shallow: true
+  end
+
   get "up" => "rails/health#show", as: :rails_health_check
 end

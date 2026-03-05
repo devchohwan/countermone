@@ -34,6 +34,7 @@ Rails.application.routes.draw do
     member do
       patch :attend
       patch :absent
+      patch :late
       patch :deduct
       patch :pass
       patch :emergency_pass
@@ -47,6 +48,7 @@ Rails.application.routes.draw do
 
   get  "timetable",             to: "timetable#index"
   get  "timetable/:teacher_id", to: "timetable#show", as: :teacher_timetable
+  get  "pass_sheet",            to: "timetable#pass_sheet"
 
   get  "keypad",          to: "keypad#index"
   post "keypad/checkin",  to: "keypad#checkin"

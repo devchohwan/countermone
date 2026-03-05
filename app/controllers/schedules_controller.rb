@@ -55,6 +55,15 @@ class SchedulesController < ApplicationController
     if enrollment.subject == "믹싱"
       return redirect_back fallback_location: schedules_path, alert: "믹싱 수업은 패스 불가합니다."
     end
+    # 2주 이상 선패스: 잔여 횟수 체크
+    weeks_ahead = (@schedule.lesson_date - Date.today).to_i / 7
+    if weeks_ahead >= 2
+      remaining = enrollment.student.remaining_lessons_for(enrollment)
+      if remaining <= weeks_ahead
+        return redirect_back fallback_location: schedules_path,
+          alert: "선패스 경고: #{weeks_ahead}주 후 수업이나 잔여 횟수가 #{remaining}회입니다. 결제 먼저 진행하세요."
+      end
+    end
     @schedule.update!(status: "pass", pass_reason: params[:pass_reason])
     redirect_back fallback_location: schedules_path, notice: "패스 처리되었습니다. 개근 카운트가 리셋됩니다."
   end

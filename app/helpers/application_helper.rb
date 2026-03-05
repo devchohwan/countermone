@@ -59,6 +59,14 @@ module ApplicationHelper
     content_tag(:span, SCHEDULE_STATUS_KO[status] || status, class: "badge badge-xs #{cls}")
   end
 
+  def status_badge_text(status)
+    STATUS_KO[status] || status
+  end
+
+  def schedule_status_ko(status)
+    SCHEDULE_STATUS_KO[status] || status
+  end
+
   def lesson_day_ko(day)
     LESSON_DAY_KO[day] || day
   end

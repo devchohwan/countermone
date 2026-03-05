@@ -1,6 +1,5 @@
 <% content_for :title, "대시보드 — 모네뮤직" %>
 
-<%# 실시간 갱신: 30초마다 ① 섹션 새로고침 %>
 <%= turbo_stream_from "dashboard_current" %>
 
 <div class="space-y-4">
@@ -8,28 +7,25 @@
   <%# 헤더 %>
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-xl font-bold" id="dashboard-date"><%= @today.strftime("%Y년 %m월 %d일 (%A)") %></h2>
+      <h2 class="text-xl font-bold"><%= @today.strftime("%Y년 %m월 %d일 (%A)") %></h2>
       <p class="text-sm text-base-content/60" id="dashboard-time">현재 시간대: <%= @current_hour %>:00</p>
     </div>
-    <div class="flex gap-2">
+    <div class="flex gap-2 items-center">
+      <% if @attendance_events.any? %>
+        <div class="badge badge-accent gap-1">🔥 개근달성 <%= @attendance_events.count %>명</div>
+      <% end %>
       <% if @payment_due_today.count > 0 %>
-        <div class="indicator">
-          <span class="indicator-item badge badge-error badge-xs"><%= @payment_due_today.count %></span>
-          <span class="btn btn-ghost btn-sm">💳</span>
-        </div>
+        <div class="indicator"><span class="indicator-item badge badge-error badge-xs"><%= @payment_due_today.count %></span><span class="btn btn-ghost btn-sm">💳</span></div>
       <% end %>
       <% if @contact_list.count > 0 %>
-        <div class="indicator">
-          <span class="indicator-item badge badge-warning badge-xs"><%= @contact_list.count %></span>
-          <span class="btn btn-ghost btn-sm">📞</span>
-        </div>
+        <div class="indicator"><span class="indicator-item badge badge-warning badge-xs"><%= @contact_list.count %></span><span class="btn btn-ghost btn-sm">📞</span></div>
       <% end %>
     </div>
   </div>
 
   <div class="grid grid-cols-3 gap-4">
 
-    <%# ① 지금 이 순간 (Turbo Frame — 출석처리 후 자동 갱신) %>
+    <%# ① 지금 이 순간 (Turbo Frame) %>
     <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>
       <%= render "current_schedules" %>
     <% end %>
@@ -41,12 +37,19 @@
         <table class="table table-xs">
           <tbody>
             <tr><td class="text-base-content/60">결제 건수</td><td class="font-bold"><%= @daily_payments.count %>건</td></tr>
-            <tr><td class="text-base-content/60">결제 합계</td><td class="font-bold"><%= format_amount(@daily_payments.sum(&:amount)) %></td></tr>
+            <tr><td class="text-base-content/60">결제 합계</td><td class="font-bold text-primary"><%= format_amount(@daily_payments.sum(&:amount)) %></td></tr>
             <tr><td class="text-base-content/60">당일 휴원</td><td><%= @daily_leaves.count %>명</td></tr>
             <tr><td class="text-base-content/60">당일 퇴원</td><td><%= @daily_dropouts.count %>명</td></tr>
             <tr><td class="text-base-content/60">당일 복귀</td><td><%= @daily_returns.count %>명</td></tr>
           </tbody>
         </table>
+        <% if @attendance_events.any? %>
+          <div class="divider my-1"></div>
+          <p class="text-xs font-bold text-accent mb-1">🔥 개근 달성자</p>
+          <% @attendance_events.each do |e| %>
+            <p class="text-sm"><%= e.student.name %> — <%= e.subject %></p>
+          <% end %>
+        <% end %>
       </div>
     </div>
 
@@ -57,8 +60,8 @@
     <div class="card-body p-4">
       <div role="tablist" class="tabs tabs-bordered tabs-sm">
 
-        <%# 결제 탭 %>
-        <input type="radio" name="todo-tabs" role="tab" class="tab" aria-label="💳 결제 (<%= @payment_due_today.count %>)" checked />
+        <input type="radio" name="todo-tabs" role="tab" class="tab"
+               aria-label="💳 결제 (<%= @payment_due_today.count %>)" checked />
         <div role="tabpanel" class="tab-content pt-3">
           <% if @payment_due_today.empty? %>
             <p class="text-sm text-base-content/40">오늘 결제 예정 없음</p>
@@ -66,14 +69,14 @@
             <ul class="space-y-2">
               <% @payment_due_today.each do |item| %>
                 <% color = item[:type] == :deposit_first_lesson ? "border-error" : item[:type] == :balance_due ? "border-warning" : "border-info" %>
-                <li class="flex items-start gap-2 text-sm border-l-2 pl-2 <%= color %>">
+                <li class="flex items-center gap-2 text-sm border-l-2 pl-2 <%= color %>">
                   <span class="font-medium"><%= item[:student].name %></span>
                   <span class="text-base-content/50">— <%= item[:enrollment].subject %></span>
                   <span class="badge badge-xs <%= item[:type] == :deposit_first_lesson ? 'badge-error' : item[:type] == :balance_due ? 'badge-warning' : 'badge-info' %>">
                     <%= case item[:type]
                         when :deposit_first_lesson then "오늘 첫수업, 완납필요"
-                        when :balance_due then "잔금미납"
-                        when :next_payment_due then "다음결제예정"
+                        when :balance_due          then "잔금미납"
+                        when :next_payment_due     then "다음결제예정"
                         end %>
                   </span>
                 </li>
@@ -82,8 +85,8 @@
           <% end %>
         </div>
 
-        <%# 연락 탭 %>
-        <input type="radio" name="todo-tabs" role="tab" class="tab" aria-label="📞 연락 (<%= @contact_list.count %>)" />
+        <input type="radio" name="todo-tabs" role="tab" class="tab"
+               aria-label="📞 연락 (<%= @contact_list.count %>)" />
         <div role="tabpanel" class="tab-content pt-3">
           <% if @contact_list.empty? %>
             <p class="text-sm text-base-content/40">오늘 연락할 대상 없음</p>
@@ -94,8 +97,8 @@
                   <span class="font-medium"><%= item[:student].name %></span>
                   <span class="badge badge-xs badge-outline">
                     <%= case item[:type]
-                        when :contact_due    then "연락기한"
-                        when :return_due     then "복귀예정"
+                        when :contact_due     then "연락기한"
+                        when :return_due      then "복귀예정"
                         when :waiting_expired then "자리대기만료"
                         end %>
                   </span>
@@ -108,13 +111,12 @@
           <% end %>
         </div>
 
-        <%# 확인 탭 %>
         <input type="radio" name="todo-tabs" role="tab" class="tab" aria-label="✅ 확인" />
         <div role="tabpanel" class="tab-content pt-3">
           <% if @minus_enrollments.any? %>
             <p class="text-xs font-bold text-error mb-1">마이너스 수업</p>
             <% @minus_enrollments.each do |e| %>
-              <p class="text-sm"><%= e.student.name %> — <%= e.subject %> (<%= e.minus_lesson_count %>회 미결제)</p>
+              <p class="text-sm"><%= e.student.name %> — <%= e.subject %> (<%= e.minus_lesson_count %>회)</p>
             <% end %>
           <% end %>
           <% if @pending_consents.any? %>
@@ -124,7 +126,7 @@
             <% end %>
           <% end %>
           <% if @minus_enrollments.empty? && @pending_consents.empty? %>
-            <p class="text-sm text-base-content/40">확인 필요 항목 없음</p>
+            <p class="text-sm text-base-content/40">없음</p>
           <% end %>
         </div>
 
@@ -132,55 +134,28 @@
     </div>
   </div>
 
-  <%# ③ 오늘 전체 시간표 %>
+  <%# ③ 오늘 전체 시간표 (선생님별 탭) %>
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body p-4">
-      <h3 class="card-title text-sm mb-3">📅 오늘 시간표</h3>
+      <h3 class="card-title text-sm mb-2">📅 오늘 시간표</h3>
       <% if @today_schedules.empty? && @today_makeups.empty? %>
         <p class="text-sm text-base-content/40">오늘 수업이 없습니다.</p>
       <% else %>
-        <div class="overflow-x-auto">
-          <table class="table table-xs">
-            <thead>
-              <tr>
-                <th>시간</th><th>수강생</th><th>과목</th><th>선생님</th><th>상태</th><th>처리</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @today_schedules.each do |s| %>
-                <tr id="schedule-row-<%= s.id %>" class="<%= s.lesson_time.hour == @current_hour ? 'bg-primary/5' : '' %>">
-                  <td class="font-mono text-xs text-base-content/50"><%= s.lesson_time.strftime("%H:%M") %></td>
-                  <td class="font-medium">
-                    <%= link_to s.student.name, student_path(s.student), class: "link link-hover" %>
-                    <%= "(★)".html_safe if s.student.has_car? %>
-                  </td>
-                  <td><%= s.subject %></td>
-                  <td><%= s.teacher.name %></td>
-                  <td><%= schedule_status_badge(s.status) %></td>
-                  <td>
-                    <% if s.status == "scheduled" %>
-                      <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "btn btn-xs btn-success" %>
-                      <%= button_to "결강", absent_schedule_path(s), method: :patch, class: "btn btn-xs btn-warning btn-outline" %>
-                    <% end %>
-                  </td>
-                </tr>
-              <% end %>
-              <% @today_makeups.each do |s| %>
-                <tr class="bg-secondary/5">
-                  <td class="font-mono text-xs text-base-content/50"><%= s.makeup_time&.strftime("%H:%M") %>(보)</td>
-                  <td class="font-medium"><%= s.student.name %></td>
-                  <td><%= s.subject %></td>
-                  <td><%= s.makeup_teacher&.name %></td>
-                  <td><%= schedule_status_badge(s.status) %></td>
-                  <td>
-                    <% if s.status == "makeup_scheduled" %>
-                      <%= button_to "보강완료", complete_makeup_schedule_path(s), method: :patch, class: "btn btn-xs btn-primary" %>
-                    <% end %>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
+        <div role="tablist" class="tabs tabs-bordered tabs-sm mb-3">
+          <%# 전체 탭 %>
+          <input type="radio" name="timetable-tabs" role="tab" class="tab" aria-label="전체" checked />
+          <div role="tabpanel" class="tab-content pt-2">
+            <%= render "today_schedule_table", schedules: @today_schedules, makeups: @today_makeups, current_hour: @current_hour %>
+          </div>
+          <%# 선생님별 탭 %>
+          <% @teachers_today.each do |teacher| %>
+            <input type="radio" name="timetable-tabs" role="tab" class="tab" aria-label="<%= teacher.name %>" />
+            <div role="tabpanel" class="tab-content pt-2">
+              <% teacher_schedules = @today_schedules.select { |s| s.teacher_id == teacher.id } %>
+              <% teacher_makeups   = @today_makeups.select   { |s| s.makeup_teacher_id == teacher.id } %>
+              <%= render "today_schedule_table", schedules: teacher_schedules, makeups: teacher_makeups, current_hour: @current_hour %>
+            </div>
+          <% end %>
         </div>
       <% end %>
     </div>
@@ -188,7 +163,6 @@
 
 </div>
 
-<%# 30초마다 현재 시간 갱신 %>
 <script>
   function updateTime() {
     const now = new Date();

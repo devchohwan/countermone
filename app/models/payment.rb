@@ -17,6 +17,7 @@ class Payment < ApplicationRecord
   after_create  :generate_schedules
   after_create  :apply_attendance_event_if_pending
   after_create  :apply_referral_discount_if_pending
+  after_create  :reset_minus_lesson_count
   after_commit  :set_review_due_if_applicable, on: :create
   after_save    :trigger_return_if_fully_paid
 
@@ -87,6 +88,10 @@ class Payment < ApplicationRecord
   def trigger_return_if_fully_paid
     return unless saved_change_to_fully_paid? && fully_paid?
     enrollment.return! if enrollment.status == "leave"
+  end
+
+  def reset_minus_lesson_count
+    enrollment.update_column(:minus_lesson_count, 0) if enrollment.minus_lesson_count > 0
   end
 
   def set_review_due_if_applicable

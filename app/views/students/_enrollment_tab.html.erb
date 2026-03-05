@@ -1,0 +1,229 @@
+<%# enrollment 탭 내용 partial %>
+<div class="card bg-base-100 shadow-sm mt-0 rounded-tl-none" id="enrollment-<%= enrollment.id %>">
+  <div class="card-body p-4">
+
+    <%# 클래스 헤더 %>
+    <div class="flex items-center gap-3 mb-3 pb-3 border-b border-base-200">
+      <span class="font-semibold"><%= enrollment.subject %></span>
+      <span class="text-base-content/50 text-sm"><%= enrollment.teacher.name %></span>
+      <span class="text-base-content/50 text-sm"><%= lesson_day_ko(enrollment.lesson_day) %>요일 <%= enrollment.lesson_time.strftime("%H:%M") %></span>
+      <%= status_badge(enrollment.status) %>
+      <% if enrollment.minus_lesson_count > 0 %>
+        <span class="badge badge-sm badge-error">마이너스 <%= enrollment.minus_lesson_count %>회</span>
+      <% end %>
+      <div class="ml-auto flex gap-2">
+        <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
+        <% if enrollment.status == "active" %>
+          <%= button_to "휴원", leave_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-warning btn-outline" %>
+        <% elsif enrollment.status == "leave" %>
+          <%= button_to "복귀", return_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-success btn-outline" %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+
+      <%# 왼쪽: 현황 + 결제 내역 %>
+      <div>
+        <%# 현황 통계 %>
+        <div class="stats stats-horizontal shadow-none border border-base-200 rounded-lg mb-4 w-full">
+          <div class="stat py-2 px-3">
+            <div class="stat-title text-xs">잔여</div>
+            <div class="stat-value text-lg"><%= student.remaining_lessons_for(enrollment) %><span class="text-sm font-normal">회</span></div>
+          </div>
+          <div class="stat py-2 px-3">
+            <div class="stat-title text-xs">연속개근</div>
+            <div class="stat-value text-lg"><%= student.consecutive_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></div>
+          </div>
+          <div class="stat py-2 px-3">
+            <div class="stat-title text-xs">총출석</div>
+            <div class="stat-value text-lg"><%= student.total_attended_weeks_for(enrollment) %><span class="text-sm font-normal">회</span></div>
+          </div>
+        </div>
+
+        <%# 결제 내역 (최근 1건 기본, 접기/펼치기) %>
+        <h4 class="text-sm font-semibold mb-2">결제 내역</h4>
+        <% payments = enrollment.payments.order(created_at: :desc) %>
+        <% if payments.any? %>
+          <% payments.each_with_index do |payment, idx| %>
+            <div class="<%= idx > 0 ? 'payment-extra-' + enrollment.id.to_s + ' hidden' : '' %>">
+              <div class="text-sm bg-base-200 rounded-lg p-3 mb-2">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-medium"><%= payment.months %>개월 / <%= payment.total_lessons %>회</span>
+                  <span class="font-bold"><%= format_amount(payment.amount) %></span>
+                  <span class="badge badge-xs <%= payment.fully_paid? ? 'badge-success' : 'badge-warning' %>">
+                    <%= payment.fully_paid? ? "완납" : "예약금" %>
+                  </span>
+                  <%= link_to "상세", payment_path(payment), class: "btn btn-xs btn-ghost ml-auto" %>
+                </div>
+                <div class="text-xs text-base-content/50">
+                  <%= payment.starts_at&.strftime("%Y.%m.%d") %>
+                  <% if payment.ends_at %> ~ <%= payment.ends_at.strftime("%Y.%m.%d") %><% end %>
+                </div>
+                <% if payment.discounts.any? %>
+                  <div class="text-xs text-secondary mt-1">
+                    <%= payment.discounts.map { |d| "#{d.memo}" }.join(" / ") %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+          <% if payments.count > 1 %>
+            <button onclick="togglePayments('<%= enrollment.id %>')" id="payment-toggle-<%= enrollment.id %>"
+                    class="btn btn-xs btn-ghost text-base-content/50 w-full">
+              전체보기 (<%= payments.count %>건) ∨
+            </button>
+          <% end %>
+          <% if enrollment.status == "active" %>
+            <%= link_to "+ 결제 추가", new_payment_path(enrollment_id: enrollment.id), class: "btn btn-xs btn-outline btn-primary mt-1" %>
+          <% end %>
+        <% else %>
+          <p class="text-sm text-base-content/40">결제 내역 없음</p>
+          <%= link_to "+ 결제 등록", new_payment_path(enrollment_id: enrollment.id), class: "btn btn-xs btn-primary mt-1" %>
+        <% end %>
+      </div>
+
+      <%# 오른쪽: 수업 이력 (필터) %>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-sm font-semibold">수업 이력</h4>
+          <%# 필터 버튼 %>
+          <div class="flex gap-1" id="filter-btns-<%= enrollment.id %>">
+            <% [["전체", "all"], ["예정", "scheduled"], ["출석", "attended"], ["보강", "makeup"], ["패스", "pass"]].each do |label, key| %>
+              <button onclick="filterSchedules('<%= enrollment.id %>', '<%= key %>')"
+                      class="btn btn-xs <%= key == 'all' ? 'btn-neutral' : 'btn-ghost' %>"
+                      data-filter="<%= key %>"
+                      id="filter-<%= enrollment.id %>-<%= key %>">
+                <%= label %>
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <%# 결제분 단위 청킹 %>
+        <% enrollment.payments.order(:starts_at).each do |payment| %>
+          <% schedules = payment.schedules.order(:lesson_date) %>
+          <% next if schedules.empty? %>
+          <div class="payment-chunk-<%= enrollment.id %> mb-3">
+            <p class="text-xs text-base-content/40 mb-1">
+              <%= payment.starts_at&.strftime("%Y.%m") %> — <%= payment.months %>개월 (<%= schedules.count %>회)
+            </p>
+            <div class="flex flex-wrap gap-1">
+              <% schedules.each do |s| %>
+                <%# 필터용 data 속성 %>
+                <% filter_key = case s.status
+                   when "attended", "late" then "attended"
+                   when "makeup_scheduled", "makeup_done" then "makeup"
+                   when "pass", "emergency_pass" then "pass"
+                   when "scheduled" then "scheduled"
+                   else "other"
+                   end %>
+                <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline cursor-pointer hover:badge-primary"
+                     data-filter="<%= filter_key %>"
+                     title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %>"
+                     onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>')">
+                  <%= s.lesson_date.strftime("%-m/%-d") %>
+                  <span class="<%= case s.status
+                    when 'attended', 'makeup_done' then 'text-success'
+                    when 'scheduled' then 'text-info'
+                    when 'absent' then 'text-warning'
+                    when 'deducted' then 'text-error'
+                    when 'pass', 'emergency_pass' then 'text-secondary'
+                    else 'text-base-content/40'
+                    end %>">●</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%# 수업 처리 모달 (DaisyUI modal) %>
+<dialog id="schedule-modal-<%= enrollment.id %>" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg" id="modal-title-<%= enrollment.id %>">출결 처리</h3>
+    <p class="text-sm text-base-content/60 mb-4" id="modal-date-<%= enrollment.id %>"></p>
+    <div id="modal-actions-<%= enrollment.id %>" class="space-y-2">
+      <%# JS로 채워짐 %>
+    </div>
+    <div class="modal-action">
+      <form method="dialog"><button class="btn btn-sm">닫기</button></form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+(function() {
+  // 결제 접기/펼치기
+  window.togglePayments = window.togglePayments || function(enrollmentId) {
+    const extras = document.querySelectorAll('.payment-extra-' + enrollmentId);
+    const btn    = document.getElementById('payment-toggle-' + enrollmentId);
+    const hidden = extras[0]?.classList.contains('hidden');
+    extras.forEach(el => el.classList.toggle('hidden', !hidden));
+    if (btn) btn.textContent = hidden ? '접기 ∧' : `전체보기 (${extras.length + 1}건) ∨`;
+  };
+
+  // 수업이력 필터
+  window.filterSchedules = window.filterSchedules || function(enrollmentId, filterKey) {
+    const items = document.querySelectorAll('.schedule-item-' + enrollmentId);
+    items.forEach(el => {
+      const match = filterKey === 'all' || el.dataset.filter === filterKey;
+      el.style.display = match ? '' : 'none';
+    });
+    document.querySelectorAll('#filter-btns-' + enrollmentId + ' button').forEach(btn => {
+      btn.classList.toggle('btn-neutral', btn.dataset.filter === filterKey);
+      btn.classList.toggle('btn-ghost',   btn.dataset.filter !== filterKey);
+    });
+  };
+
+  // 수업 처리 모달
+  window.openScheduleAction = window.openScheduleAction || function(scheduleId, dateLabel, status) {
+    // 현재 enrollment id를 찾기
+    const el = document.querySelector(`[onclick*="openScheduleAction('${scheduleId}'"]`);
+    if (!el) return;
+    // enrollment id를 클래스에서 추출
+    const classMatch = el.className.match(/schedule-item-(\d+)/);
+    if (!classMatch) return;
+    const enrollmentId = classMatch[1];
+    const modal = document.getElementById('schedule-modal-' + enrollmentId);
+    if (!modal) return;
+
+    document.getElementById('modal-title-' + enrollmentId).textContent = '출결 처리';
+    document.getElementById('modal-date-'  + enrollmentId).textContent = dateLabel;
+
+    const actionsEl = document.getElementById('modal-actions-' + enrollmentId);
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    function patchBtn(label, url, cls) {
+      return `<button onclick="submitPatch('${url}','${csrf}')" class="btn btn-sm ${cls} w-full">${label}</button>`;
+    }
+
+    let html = '';
+    if (status === 'scheduled') {
+      html += patchBtn('출석', `/schedules/${scheduleId}/attend`,         'btn-success');
+      html += patchBtn('지각', `/schedules/${scheduleId}/late`,           'btn-warning');
+      html += patchBtn('결강 (보강 예정)', `/schedules/${scheduleId}/absent`, 'btn-warning btn-outline');
+      html += patchBtn('결석 차감', `/schedules/${scheduleId}/deduct`,    'btn-error btn-outline');
+      html += patchBtn('패스', `/schedules/${scheduleId}/pass`,           'btn-secondary btn-outline');
+    } else if (status === 'absent') {
+      html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">보강 등록하기</a>`;
+    }
+    actionsEl.innerHTML = html;
+    modal.showModal();
+  };
+
+  window.submitPatch = window.submitPatch || function(url, csrf) {
+    const form = document.createElement('form');
+    form.method = 'POST'; form.action = url;
+    form.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf}">
+                      <input type="hidden" name="_method" value="patch">`;
+    document.body.appendChild(form);
+    form.submit();
+  };
+})();
+</script>

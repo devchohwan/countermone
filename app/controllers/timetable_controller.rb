@@ -14,6 +14,20 @@ class TimetableController < ApplicationController
     @breaktime_openings = BreaktimeOpening.where(teacher: @teacher, date: @week_days).pluck(:date)
   end
 
+  def pass_sheet
+    @teachers = Teacher.all.order(:name)
+    @month    = params[:month] ? Date.parse("#{params[:month]}-01") : Date.today.beginning_of_month
+    range     = @month.beginning_of_month..@month.end_of_month
+
+    @pass_data = @teachers.map do |teacher|
+      passes = Schedule.includes(:student, :enrollment)
+                       .where(teacher: teacher, lesson_date: range)
+                       .where(status: %w[pass emergency_pass])
+                       .order(:lesson_date)
+      { teacher: teacher, passes: passes }
+    end.reject { |d| d[:passes].empty? }
+  end
+
   private
 
   def weekly_schedules_for(teacher, week_days)

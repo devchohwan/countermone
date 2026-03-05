@@ -1,0 +1,122 @@
+<%# 오늘 시간표 테이블 (선생님별/전체 공용 partial) %>
+<% all_schedules = schedules.to_a + makeups.to_a %>
+<% if all_schedules.empty? %>
+  <p class="text-sm text-base-content/40 py-2">수업 없음</p>
+<% else %>
+  <div class="overflow-x-auto">
+    <table class="table table-xs">
+      <thead>
+        <tr><th>시간</th><th>수강생</th><th>과목</th><th>선생님</th><th>상태</th><th>처리</th></tr>
+      </thead>
+      <tbody>
+        <%# 브레이크타임 표시용으로 시간순 정렬 %>
+        <% sorted = schedules.sort_by { |s| s.lesson_time.hour * 60 + s.lesson_time.min } %>
+        <% prev_hour = nil %>
+        <% sorted.each do |s| %>
+          <%# 브레이크타임 행 (18시 직전) %>
+          <% if prev_hour && prev_hour < 18 && s.lesson_time.hour >= 18 %>
+            <tr class="bg-base-200 opacity-50">
+              <td class="text-xs text-base-content/40 font-mono">18:00</td>
+              <td colspan="5" class="text-xs text-base-content/30 text-center">— 브레이크타임 —</td>
+            </tr>
+          <% end %>
+          <% prev_hour = s.lesson_time.hour %>
+
+          <tr id="schedule-row-<%= s.id %>"
+              class="<%= s.lesson_time.hour == current_hour ? 'bg-primary/5' : 'hover' %>">
+            <td class="font-mono text-xs text-base-content/50"><%= s.lesson_time.strftime("%H:%M") %></td>
+            <td class="font-medium">
+              <%= link_to s.student.name, student_path(s.student), class: "link link-hover" %>
+              <%= "(★)".html_safe if s.student.has_car? %>
+            </td>
+            <td><%= s.subject %></td>
+            <td><%= s.teacher.name %></td>
+            <td>
+              <%= schedule_status_badge(s.status) %>
+              <% if s.status == "scheduled" && s.lesson_time.hour == current_hour && s.attendance.nil? %>
+                <span class="badge badge-xs badge-error">미등원</span>
+              <% end %>
+              <% if s.attendance&.checked_in_at && s.attendance.checked_out_at.nil? && Time.now.min >= 55 %>
+                <span class="badge badge-xs badge-warning">미하원</span>
+              <% end %>
+            </td>
+            <td>
+              <% if s.status == "scheduled" %>
+                <%# 출석 버튼 %>
+                <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "btn btn-xs btn-success" %>
+                <%# 더보기 드롭다운 %>
+                <div class="dropdown dropdown-end">
+                  <label tabindex="0" class="btn btn-xs btn-ghost">⋯</label>
+                  <ul tabindex="0" class="dropdown-content z-20 menu shadow bg-base-100 rounded-box text-xs border w-36">
+                    <li>
+                      <%= button_to "지각", late_schedule_path(s), method: :patch,
+                            class: "text-warning text-left w-full px-3 py-1.5 hover:bg-base-200" %>
+                    </li>
+                    <li>
+                      <button onclick="showAbsentInline(<%= s.id %>)" class="text-left w-full px-3 py-1.5 hover:bg-base-200">
+                        결강 (보강예정)
+                      </button>
+                    </li>
+                    <li>
+                      <%= button_to "결석 차감", deduct_schedule_path(s), method: :patch,
+                            class: "text-error text-left w-full px-3 py-1.5 hover:bg-base-200",
+                            data: { turbo_confirm: "결석 차감 처리하시겠습니까?" } %>
+                    </li>
+                    <li>
+                      <a href="<%= schedule_path(s) %>" class="text-left w-full px-3 py-1.5 hover:bg-base-200">
+                        패스/보강 상세
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              <% elsif s.status == "makeup_scheduled" %>
+                <%= button_to "보강완료", complete_makeup_schedule_path(s), method: :patch, class: "btn btn-xs btn-primary" %>
+              <% end %>
+            </td>
+          </tr>
+
+          <%# 결강 인라인 슬라이드다운 (결강 버튼 클릭 시 표시) %>
+          <% if s.status == "scheduled" %>
+            <tr id="absent-inline-<%= s.id %>" class="hidden bg-warning/10">
+              <td colspan="6" class="py-2 px-4">
+                <div class="flex items-center gap-3 text-sm">
+                  <span class="font-medium text-warning">결강 처리</span>
+                  <span class="text-base-content/60">보강 일정을 바로 등록하거나 결강만 처리:</span>
+                  <%= button_to "결강만 처리", absent_schedule_path(s), method: :patch,
+                        class: "btn btn-xs btn-warning" %>
+                  <%= link_to "보강 날짜 선택 →", schedule_path(s), class: "btn btn-xs btn-outline btn-warning" %>
+                  <button onclick="hideAbsentInline(<%= s.id %>)" class="btn btn-xs btn-ghost">취소</button>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        <% end %>
+
+        <%# 보강 수업 %>
+        <% makeups.each do |s| %>
+          <tr class="bg-secondary/5">
+            <td class="font-mono text-xs text-base-content/50"><%= s.makeup_time&.strftime("%H:%M") %>(보)</td>
+            <td class="font-medium"><%= s.student.name %></td>
+            <td><%= s.subject %></td>
+            <td><%= s.makeup_teacher&.name %></td>
+            <td><%= schedule_status_badge(s.status) %></td>
+            <td>
+              <% if s.status == "makeup_scheduled" %>
+                <%= button_to "보강완료", complete_makeup_schedule_path(s), method: :patch, class: "btn btn-xs btn-primary" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+
+<script>
+  function showAbsentInline(id) {
+    document.getElementById('absent-inline-' + id)?.classList.remove('hidden');
+  }
+  function hideAbsentInline(id) {
+    document.getElementById('absent-inline-' + id)?.classList.add('hidden');
+  }
+</script>

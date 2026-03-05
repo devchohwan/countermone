@@ -52,6 +52,15 @@ class DashboardController < ApplicationController
     @daily_leaves    = Enrollment.where(leave_at: @today)
     @daily_returns   = Enrollment.where(return_at: @today).where(status: "active")
     @daily_dropouts  = Enrollment.where(status: "dropout").where("DATE(updated_at) = ?", @today)
+
+    # 개근 달성자 (attendance_event_pending = true)
+    @attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
+
+    # 오늘 시간표 선생님별 그룹
+    @teachers_today = Teacher.joins(:schedules)
+                             .where(schedules: { lesson_date: @today })
+                             .distinct.order(:name)
+    @today_schedules_by_teacher = @today_schedules.group_by(&:teacher_id)
   end
 
   private

@@ -60,7 +60,7 @@ Rails.application.routes.draw do
   get "statistics/daily",   to: "statistics#daily"
   get "statistics/monthly", to: "statistics#monthly"
 
-  resources :price_plans
+  resources :price_plans, except: [:show]
 
   resources :teachers do
     resources :teacher_subjects, only: %i[create destroy], shallow: true

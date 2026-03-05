@@ -8,6 +8,8 @@ ko:
         invalid: "올바르지 않습니다"
         not_a_number: "숫자를 입력해주세요"
         not_included: "목록에 포함되어 있지 않습니다"
+        inclusion: "목록에 없는 값입니다"
+        record_invalid: "유효성 검사에 실패했습니다: %{errors}"
       models:
         student:
           attributes:

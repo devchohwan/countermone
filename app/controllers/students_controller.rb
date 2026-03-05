@@ -4,7 +4,7 @@ class StudentsController < ApplicationController
   def index
     @students = Student.includes(:enrollments, :teachers)
     @students = @students.where(status: params[:status]) if params[:status].present?
-    @students = @students.where("name LIKE ?", "%#{params[:q]}%") if params[:q].present?
+    @students = @students.where("name LIKE ? OR attendance_code LIKE ?", "%#{params[:q]}%", "%#{params[:q]}%") if params[:q].present?
     @students = @students.order(:name)
   end
 

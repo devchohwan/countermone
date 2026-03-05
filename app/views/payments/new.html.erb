@@ -38,7 +38,7 @@
         </div>
         <div>
           <%= f.label :months, "개월 수", class: "block text-sm font-medium text-gray-700 mb-1" %>
-          <%= f.select :months, [["1개월",1],["3개월",3],["4개월",4]], { prompt: "선택" }, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <%= f.select :months, [["1개월",1],["3개월",3],["4개월",4]], { prompt: "선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "payment_months" %>
         </div>
         <div>
           <%= f.label :total_lessons, "총 수업 횟수", class: "block text-sm font-medium text-gray-700 mb-1" %>
@@ -46,13 +46,48 @@
         </div>
         <div>
           <%= f.label :amount, "결제 금액", class: "block text-sm font-medium text-gray-700 mb-1" %>
-          <%= f.number_field :amount, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <div class="relative">
+            <%= f.number_field :amount, class: "w-full border rounded px-3 py-2 text-sm", id: "payment_amount" %>
+            <span id="price-hint" class="absolute right-2 top-2 text-xs text-blue-500 hidden"></span>
+          </div>
         </div>
         <div>
           <%= f.label :starts_at, "수강 시작일", class: "block text-sm font-medium text-gray-700 mb-1" %>
           <%= f.date_field :starts_at, value: Date.today, class: "w-full border rounded px-3 py-2 text-sm" %>
         </div>
       </div>
+
+      <%# 금액 자동 조회용 데이터 %>
+      <script>
+        const PRICE_TABLE = {
+          <% @price_plans.each do |pp| %>
+            "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
+          <% end %>
+        };
+        const ENROLLMENT_SUBJECT = "<%= @enrollment&.subject %>";
+
+        document.addEventListener("DOMContentLoaded", function() {
+          const monthsEl  = document.getElementById("payment_months");
+          const amountEl  = document.getElementById("payment_amount");
+          const hintEl    = document.getElementById("price-hint");
+
+          function lookupPrice() {
+            const months  = monthsEl?.value;
+            const subject = ENROLLMENT_SUBJECT || "";
+            if (!months || !subject) return;
+            const key   = subject + "_" + months;
+            const price = PRICE_TABLE[key];
+            if (price) {
+              amountEl.value = price;
+              hintEl.textContent = "자동 입력";
+              hintEl.classList.remove("hidden");
+              setTimeout(() => hintEl.classList.add("hidden"), 2000);
+            }
+          }
+
+          monthsEl?.addEventListener("change", lookupPrice);
+        });
+      </script>
 
       <div class="border-t pt-3 space-y-3">
         <h4 class="text-sm font-medium">예약금 설정 (예약금 결제 시)</h4>

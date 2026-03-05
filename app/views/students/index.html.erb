@@ -2,57 +2,61 @@
 
 <div class="flex items-center justify-between mb-4">
   <h2 class="text-lg font-bold">수강생</h2>
-  <%= link_to "+ 등록", new_student_path, class: "bg-blue-600 text-white text-sm px-3 py-1.5 rounded hover:bg-blue-700" %>
+  <%= link_to "+ 등록", new_student_path, class: "btn btn-sm btn-primary" %>
 </div>
 
-<!-- 필터 -->
-<div class="flex gap-2 mb-4 text-sm">
-  <%= link_to "전체", students_path, class: "px-3 py-1 rounded border #{params[:status].blank? ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}" %>
-  <%= link_to "재원", students_path(status: "active"),       class: "px-3 py-1 rounded border #{params[:status] == 'active' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}" %>
-  <%= link_to "휴원", students_path(status: "leave"),        class: "px-3 py-1 rounded border #{params[:status] == 'leave' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}" %>
-  <%= link_to "퇴원", students_path(status: "dropout"),      class: "px-3 py-1 rounded border #{params[:status] == 'dropout' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}" %>
-  <%= link_to "대기", students_path(status: "pending"),      class: "px-3 py-1 rounded border #{params[:status] == 'pending' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}" %>
+<%# 필터 + 검색 %>
+<div class="flex flex-wrap gap-2 mb-4">
+  <div class="join">
+    <%= link_to "전체", students_path,                     class: "join-item btn btn-sm #{params[:status].blank? ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "재원", students_path(status: "active"),   class: "join-item btn btn-sm #{params[:status] == 'active'  ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "휴원", students_path(status: "leave"),    class: "join-item btn btn-sm #{params[:status] == 'leave'   ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "퇴원", students_path(status: "dropout"),  class: "join-item btn btn-sm #{params[:status] == 'dropout' ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "대기", students_path(status: "pending"),  class: "join-item btn btn-sm #{params[:status] == 'pending' ? 'btn-neutral' : 'btn-ghost'}" %>
+  </div>
 
   <%= form_with url: students_path, method: :get, class: "ml-auto flex gap-2" do |f| %>
     <%= f.hidden_field :status, value: params[:status] %>
-    <%= f.text_field :q, value: params[:q], placeholder: "이름 검색", class: "border rounded px-2 py-1 text-sm" %>
-    <%= f.submit "검색", class: "bg-gray-100 px-3 py-1 rounded text-sm hover:bg-gray-200" %>
+    <%= f.text_field :q, value: params[:q], placeholder: "이름/코드 검색", class: "input input-sm input-bordered w-40" %>
+    <%= f.submit "검색", class: "btn btn-sm btn-ghost" %>
   <% end %>
 </div>
 
-<div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-  <table class="w-full text-sm">
-    <thead class="bg-gray-50 border-b">
-      <tr class="text-xs text-gray-500">
-        <th class="px-4 py-2 text-left">이름</th>
-        <th class="px-4 py-2 text-left">상태</th>
-        <th class="px-4 py-2 text-left">과목/선생님</th>
-        <th class="px-4 py-2 text-left">출결코드</th>
-        <th class="px-4 py-2 text-left">전화번호</th>
-        <th class="px-4 py-2 text-left">등록일</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y">
-      <% @students.each do |student| %>
-        <tr class="hover:bg-gray-50">
-          <td class="px-4 py-2.5">
-            <%= link_to student.name, student_path(student), class: "font-medium hover:underline" %>
-            <% if student.rank == "second" %><span class="text-xs text-purple-600 ml-1">2차</span><% end %>
-          </td>
-          <td class="px-4 py-2.5"><%= status_badge(student.status) %></td>
-          <td class="px-4 py-2.5">
-            <% student.enrollments.where(status: "active").each do |e| %>
-              <div class="text-xs"><%= e.subject %> / <%= e.teacher.name %></div>
-            <% end %>
-          </td>
-          <td class="px-4 py-2.5 font-mono text-xs"><%= student.attendance_code %></td>
-          <td class="px-4 py-2.5 text-gray-500"><%= student.phone %></td>
-          <td class="px-4 py-2.5 text-gray-400 text-xs"><%= student.first_enrolled_at&.strftime("%Y.%m.%d") %></td>
+<div class="card bg-base-100 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>이름</th>
+          <th>상태</th>
+          <th>과목/선생님</th>
+          <th>출결코드</th>
+          <th>전화번호</th>
+          <th>등록일</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
-  <% if @students.empty? %>
-    <p class="text-center text-gray-400 py-8 text-sm">수강생이 없습니다.</p>
-  <% end %>
+      </thead>
+      <tbody>
+        <% @students.each do |student| %>
+          <tr class="hover">
+            <td>
+              <%= link_to student.name, student_path(student), class: "font-medium link link-hover" %>
+              <% if student.rank == "second" %><span class="badge badge-xs badge-secondary ml-1">2차</span><% end %>
+            </td>
+            <td><%= status_badge(student.status) %></td>
+            <td>
+              <% student.enrollments.where(status: "active").each do |e| %>
+                <div class="text-xs"><%= e.subject %> / <%= e.teacher.name %></div>
+              <% end %>
+            </td>
+            <td class="font-mono text-xs"><%= student.attendance_code %></td>
+            <td class="text-base-content/60 text-sm"><%= student.phone %></td>
+            <td class="text-base-content/40 text-xs"><%= student.first_enrolled_at&.strftime("%Y.%m.%d") %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <% if @students.empty? %>
+      <p class="text-center text-base-content/40 py-8 text-sm">수강생이 없습니다.</p>
+    <% end %>
+  </div>
 </div>

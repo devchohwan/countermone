@@ -18,6 +18,7 @@ class Payment < ApplicationRecord
   after_create  :apply_attendance_event_if_pending
   after_create  :apply_referral_discount_if_pending
   after_create  :reset_minus_lesson_count
+  after_create  :clear_waiting_expires_at
   after_commit  :set_review_due_if_applicable, on: :create
   after_save    :trigger_return_if_fully_paid
 
@@ -92,6 +93,10 @@ class Payment < ApplicationRecord
 
   def reset_minus_lesson_count
     enrollment.update_column(:minus_lesson_count, 0) if enrollment.minus_lesson_count > 0
+  end
+
+  def clear_waiting_expires_at
+    student.update_column(:waiting_expires_at, nil) if student.waiting_expires_at.present?
   end
 
   def set_review_due_if_applicable

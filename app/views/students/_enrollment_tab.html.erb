@@ -54,7 +54,28 @@
                   <span class="badge badge-xs <%= payment.fully_paid? ? 'badge-success' : 'badge-warning' %>">
                     <%= payment.fully_paid? ? "완납" : "예약금" %>
                   </span>
-                  <%= link_to "상세", payment_path(payment), class: "btn btn-xs btn-ghost ml-auto" %>
+                  <div class="ml-auto flex items-center gap-1">
+                    <%= link_to "상세", payment_path(payment), class: "btn btn-xs btn-ghost" %>
+                    <div class="dropdown dropdown-end">
+                      <label tabindex="0" class="btn btn-xs btn-ghost">⋯</label>
+                      <ul tabindex="0" class="dropdown-content z-20 menu shadow bg-base-100 rounded-box text-xs border w-32">
+                        <% unless payment.refunded? %>
+                          <li>
+                            <%= button_to "환불 처리", refund_payment_path(payment), method: :post,
+                                  class: "text-error text-left w-full px-3 py-1.5 hover:bg-base-200",
+                                  data: { turbo_confirm: "환불 금액: #{format_amount(payment.refund_amount_calculated)}. 환불 처리하시겠습니까?" } %>
+                          </li>
+                        <% end %>
+                        <% unless payment.fully_paid? %>
+                          <li>
+                            <%= button_to "잔금 납부", pay_balance_payment_path(payment), method: :patch,
+                                  class: "text-success text-left w-full px-3 py-1.5 hover:bg-base-200",
+                                  data: { turbo_confirm: "잔금 납부 완료 처리하시겠습니까?" } %>
+                          </li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
                 <div class="text-xs text-base-content/50">
                   <%= payment.starts_at&.strftime("%Y.%m.%d") %>

@@ -233,6 +233,12 @@
       html += patchBtn('패스', `/schedules/${scheduleId}/pass`,           'btn-secondary btn-outline');
     } else if (status === 'absent') {
       html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">보강 등록하기</a>`;
+    } else if (status === 'deducted') {
+      html += `<p class="text-xs text-error mb-2">결석 차감 처리됨</p>`;
+      html += patchBtn('차감 취소', `/schedules/${scheduleId}/undo_deduct`, 'btn-warning btn-outline');
+      html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-ghost w-full mt-1">수업 상세 보기</a>`;
+    } else if (status === 'makeup_scheduled' || status === 'pass' || status === 'emergency_pass') {
+      html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">수업 상세 / 전환</a>`;
     }
     actionsEl.innerHTML = html;
     modal.showModal();

@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend absent late deduct pass emergency_pass makeup complete_makeup]
+  before_action :set_schedule, only: %i[show attend absent late deduct pass emergency_pass makeup approve_makeup complete_makeup undo_deduct]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -39,22 +39,45 @@ class SchedulesController < ApplicationController
   end
 
   def deduct
-    @schedule.update!(status: "deducted")
+    # 패스 → 차감 전환 시 from_pass schedule 삭제
+    remove_pass_schedule_if_needed(@schedule)
+    @schedule.update!(status: "deducted",
+                      makeup_date: nil, makeup_time: nil, makeup_teacher_id: nil)
     redirect_back fallback_location: schedules_path, notice: "결석 차감 처리되었습니다."
   end
 
   def pass
     enrollment = @schedule.enrollment
-    available  = available_passes(enrollment)
+
+    # 당일 패스 → 보강 유도 → 차감 3단계 안내
+    if @schedule.lesson_date == Date.today
+      range = @schedule.makeup_available_range
+      if range
+        return redirect_to schedule_path(@schedule),
+          alert: "당일 패스는 불가합니다. 보강 등록을 먼저 시도해 보세요. 보강도 불가하면 결석 차감으로 처리하세요."
+      else
+        return redirect_back fallback_location: schedules_path,
+          alert: "당일 패스 및 보강이 불가합니다. 결석 차감으로 처리해 주세요."
+      end
+    end
+
+    # 믹싱 패스 불가 → 보강 유도
+    if enrollment.subject == "믹싱"
+      range = @schedule.makeup_available_range
+      if range
+        return redirect_to schedule_path(@schedule),
+          alert: "믹싱 수업은 패스 불가합니다. 보강 등록을 시도해 보세요. 불가하면 결석 차감으로 처리하세요."
+      else
+        return redirect_back fallback_location: schedules_path,
+          alert: "믹싱 패스 및 보강이 불가합니다. 결석 차감으로 처리해 주세요."
+      end
+    end
+
+    available = available_passes(enrollment)
     if available <= 0
       return redirect_back fallback_location: schedules_path, alert: "잔여 패스가 없습니다."
     end
-    if @schedule.lesson_date == Date.today
-      return redirect_back fallback_location: schedules_path, alert: "당일 패스는 불가합니다."
-    end
-    if enrollment.subject == "믹싱"
-      return redirect_back fallback_location: schedules_path, alert: "믹싱 수업은 패스 불가합니다."
-    end
+
     # 2주 이상 선패스: 잔여 횟수 체크
     weeks_ahead = (@schedule.lesson_date - Date.today).to_i / 7
     if weeks_ahead >= 2
@@ -64,12 +87,21 @@ class SchedulesController < ApplicationController
           alert: "선패스 경고: #{weeks_ahead}주 후 수업이나 잔여 횟수가 #{remaining}회입니다. 결제 먼저 진행하세요."
       end
     end
+
+    # 보강 → 패스 전환 시 보강 정보 초기화
+    if @schedule.status == "makeup_scheduled"
+      @schedule.update!(makeup_date: nil, makeup_time: nil, makeup_teacher_id: nil, makeup_approved: false)
+    end
+
     @schedule.update!(status: "pass", pass_reason: params[:pass_reason])
-    redirect_back fallback_location: schedules_path, notice: "패스 처리되었습니다. 개근 카운트가 리셋됩니다."
+    create_pass_schedule(@schedule)
+    redirect_back fallback_location: schedules_path,
+      notice: "패스 처리되었습니다. ⚠️ 개근 카운트가 리셋됩니다."
   end
 
   def emergency_pass
     @schedule.update!(status: "emergency_pass", pass_reason: params[:pass_reason])
+    create_pass_schedule(@schedule)
     redirect_back fallback_location: schedules_path, notice: "긴급패스 처리되었습니다."
   end
 
@@ -78,14 +110,13 @@ class SchedulesController < ApplicationController
     makeup_time = params[:makeup_time]
     teacher_id  = params[:makeup_teacher_id].to_i
 
-    # 당일 취소 보강 불가
-    if @schedule.lesson_date == Date.today
-      return redirect_back fallback_location: schedules_path, alert: "당일 취소 보강은 불가합니다."
-    end
+    # 당일 수업 보강: 경고 후 허용 (막지 않음)
+    today_warning = @schedule.lesson_date == Date.today
 
     range = @schedule.makeup_available_range
     if range && !range.cover?(makeup_date)
-      return redirect_back fallback_location: schedules_path, alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{range.last})"
+      return redirect_back fallback_location: schedules_path,
+        alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{range.last})"
     end
 
     slot = Schedule.slot_count(teacher_id, @schedule.subject, makeup_date)
@@ -93,53 +124,48 @@ class SchedulesController < ApplicationController
       return redirect_back fallback_location: schedules_path, alert: "해당 슬롯이 이미 3명입니다."
     end
 
+    # 패스 → 보강 전환 시 from_pass schedule 삭제
+    remove_pass_schedule_if_needed(@schedule)
+
     # 믹싱 보강 승인 플로우
-    needs_approval = (@schedule.subject == "믹싱")
+    needs_approval = @schedule.subject == "믹싱"
+    approved = true
     if needs_approval
       rank = @schedule.enrollment.student.rank
       if rank == "first"
-        # 1차전직: 같은 주차인 다른 반 슬롯 자동 확인
+        # 1차전직: 같은 주차 미라쿠도 반 슬롯 확인
         week_start = makeup_date.beginning_of_week(:monday)
         week_end   = makeup_date.end_of_week(:monday)
         same_week_slot = Schedule.where(
-          teacher_id: teacher_id,
-          subject:    @schedule.subject,
+          teacher_id:  teacher_id,
+          subject:     @schedule.subject,
           lesson_date: week_start..week_end
         ).where.not(id: @schedule.id).exists?
 
-        if same_week_slot
-          # 같은 주차 슬롯 있음 → 바로 배정 (승인 불필요)
-          approved = true
-        else
-          # 슬롯 없음 → 승인 대기
-          approved = false
-        end
+        approved = same_week_slot
       else
-        # 2차전직: 주차 무관, 항상 승인 대기
+        # 2차전직: 항상 승인 대기
         approved = false
       end
-    else
-      approved = true
     end
 
     @schedule.update!(
-      status:            approved ? "makeup_scheduled" : "makeup_scheduled",
+      status:            "makeup_scheduled",
       makeup_date:       makeup_date,
       makeup_time:       makeup_time,
       makeup_teacher_id: teacher_id,
       makeup_approved:   approved
     )
 
+    notice = today_warning ? "⚠️ 당일 취소 보강 처리 (상담원 확인 필요). " : "보강 일정이 등록되었습니다. "
     if needs_approval && !approved
-      redirect_back fallback_location: schedules_path,
-        notice: "보강 일정이 등록되었습니다. 믹싱 #{@schedule.enrollment.student.rank == 'second' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."
-    else
-      redirect_back fallback_location: schedules_path, notice: "보강 일정이 등록되었습니다."
+      rank = @schedule.enrollment.student.rank
+      notice += "믹싱 #{rank == 'second' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."
     end
+    redirect_back fallback_location: schedules_path, notice: notice
   end
 
   def approve_makeup
-    @schedule = Schedule.find(params[:id])
     @schedule.update!(makeup_approved: true)
     redirect_back fallback_location: schedules_path, notice: "보강 승인 완료."
   end
@@ -150,6 +176,25 @@ class SchedulesController < ApplicationController
     redirect_back fallback_location: schedules_path, notice: "보강 완료 처리되었습니다."
   end
 
+  def undo_deduct
+    unless @schedule.status == "deducted"
+      return redirect_back fallback_location: schedules_path, alert: "차감 상태인 수업만 취소 가능합니다."
+    end
+
+    @schedule.update!(status: "absent")
+
+    range = @schedule.makeup_available_range
+    period_expired = range.nil? || range.last < Date.today
+
+    if period_expired
+      redirect_back fallback_location: schedules_path,
+        notice: "차감 취소되었습니다. ⚠️ 보강 가능 기간이 만료되어 보강/패스 전환이 불가합니다."
+    else
+      redirect_back fallback_location: schedules_path,
+        notice: "차감 취소되었습니다. 보강 또는 패스 전환이 가능합니다. (보강 기간: #{range.first} ~ #{range.last})"
+    end
+  end
+
   private
 
   def set_schedule
@@ -158,12 +203,37 @@ class SchedulesController < ApplicationController
 
   def create_attendance_record(schedule)
     schedule.create_attendance!(
-      student:      schedule.student,
-      payment:      schedule.payment,
+      student:       schedule.student,
+      payment:       schedule.payment,
       checked_in_at: Time.current
     )
   rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
     # 이미 출석 기록 존재 — 오류 무시
+  end
+
+  # 패스 사용 시 결제분 마지막 수업 + 7일에 추가 Schedule 생성
+  def create_pass_schedule(schedule)
+    payment = schedule.payment
+    last_s  = payment.schedules.order(lesson_date: :desc).first
+    return unless last_s
+
+    payment.schedules.create!(
+      student:     schedule.student,
+      enrollment:  schedule.enrollment,
+      teacher:     schedule.teacher,
+      lesson_date: last_s.lesson_date + 7.days,
+      lesson_time: schedule.lesson_time,
+      subject:     schedule.subject,
+      status:      "scheduled",
+      sequence:    payment.schedules.maximum(:sequence).to_i + 1,
+      from_pass:   true
+    )
+  end
+
+  # 패스/긴급패스 → 다른 상태 전환 시 from_pass schedule 삭제
+  def remove_pass_schedule_if_needed(schedule)
+    return unless schedule.status.in?(%w[pass emergency_pass])
+    schedule.payment.schedules.where(from_pass: true).order(lesson_date: :desc).first&.destroy
   end
 
   def available_passes(enrollment)
@@ -177,13 +247,12 @@ class SchedulesController < ApplicationController
     count      = enrollment.student.consecutive_weeks_for(enrollment)
     if count >= 12
       enrollment.update!(attendance_event_pending: true)
-      # TODO: 상담원 알림 (ActionCable or Notification model)
     end
   end
 
   def check_gift_voucher(schedule)
-    enrollment   = schedule.enrollment
-    total_weeks  = enrollment.student.total_attended_weeks_for(enrollment)
+    enrollment  = schedule.enrollment
+    total_weeks = enrollment.student.total_attended_weeks_for(enrollment)
     if total_weeks > 0 && (total_weeks % 24).zero?
       GiftVoucher.create!(
         student:    schedule.student,
@@ -192,7 +261,6 @@ class SchedulesController < ApplicationController
         expires_at: Date.today + 6.months
       )
       schedule.student.update!(gift_voucher_issued: true)
-      # TODO: 상담원 알림
     end
   end
 end

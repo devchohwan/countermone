@@ -42,6 +42,7 @@ Rails.application.routes.draw do
       patch :makeup
       patch :approve_makeup
       patch :complete_makeup
+      patch :undo_deduct
     end
   end
 

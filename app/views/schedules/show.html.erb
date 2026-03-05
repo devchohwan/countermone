@@ -15,6 +15,9 @@
       <div class="flex gap-2"><dt class="text-gray-400 w-24">시간</dt><dd><%= @schedule.lesson_time.strftime("%H:%M") %></dd></div>
       <div class="flex gap-2"><dt class="text-gray-400 w-24">선생님</dt><dd><%= @schedule.teacher.name %></dd></div>
       <div class="flex gap-2"><dt class="text-gray-400 w-24">회차</dt><dd><%= @schedule.sequence %>회</dd></div>
+      <% if @schedule.from_pass? %>
+        <div class="flex gap-2"><dt class="text-gray-400 w-24">메모</dt><dd class="text-purple-600 text-xs">패스로 자동 생성된 수업</dd></div>
+      <% end %>
     </dl>
 
     <div class="mt-4 flex flex-wrap gap-2">
@@ -23,16 +26,32 @@
         <%= button_to "결강", absent_schedule_path(@schedule),  method: :patch, class: "text-sm bg-orange-100 text-orange-700 px-3 py-1.5 rounded hover:bg-orange-200" %>
         <%= button_to "결석", deduct_schedule_path(@schedule),  method: :patch, class: "text-sm bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200" %>
       <% end %>
+      <% if @schedule.status == "deducted" %>
+        <div class="w-full">
+          <p class="text-xs text-red-500 mb-2">결석 차감 처리됨</p>
+          <%= button_to "차감 취소", undo_deduct_schedule_path(@schedule), method: :patch,
+                class: "text-sm bg-yellow-100 text-yellow-700 px-3 py-1.5 rounded hover:bg-yellow-200",
+                data: { turbo_confirm: "차감 취소 후 결강 상태로 전환됩니다. 진행하시겠습니까?" } %>
+        </div>
+      <% end %>
+      <% if @schedule.status == "makeup_done" %>
+        <p class="text-xs text-green-600">보강 완료됨. 상태 전환 시 상담원 확인이 필요합니다.</p>
+      <% end %>
     </div>
   </div>
 
   <!-- 보강 등록 -->
-  <% if @schedule.status.in?(%w[absent scheduled]) %>
+  <% if @schedule.status.in?(%w[absent scheduled makeup_scheduled]) %>
     <div class="bg-white rounded-lg border shadow-sm p-4">
       <h3 class="font-semibold text-sm mb-3">보강 등록</h3>
       <% range = @schedule.makeup_available_range %>
       <% if range %>
         <p class="text-xs text-gray-500 mb-3">보강 가능 기간: <%= range.first.strftime("%m/%d") %> ~ <%= range.last.strftime("%m/%d") %></p>
+        <% if @schedule.lesson_date == Date.today %>
+          <div class="bg-yellow-50 border border-yellow-200 rounded p-2 mb-3 text-xs text-yellow-700">
+            ⚠️ 당일 취소 보강입니다. 상담원 확인 후 진행하세요.
+          </div>
+        <% end %>
         <%= form_with url: makeup_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">보강 날짜</label>
@@ -49,6 +68,14 @@
                 { prompt: "선생님 선택" },
                 class: "w-full border rounded px-2 py-1.5 text-sm" %>
           </div>
+          <% if @schedule.subject == "믹싱" && @schedule.enrollment.student.rank == "first" %>
+            <div class="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700">
+              믹싱 1차전직 보강 순서:<br>
+              1️⃣ 같은 주차 미라쿠도 반 슬롯<br>
+              2️⃣ 미라쿠도 빈 시간<br>
+              3️⃣ 오또 빈 시간 (드라이브 기입 필요)
+            </div>
+          <% end %>
           <%= f.submit "보강 등록", class: "w-full bg-indigo-600 text-white py-2 rounded text-sm hover:bg-indigo-700 cursor-pointer" %>
         <% end %>
       <% else %>
@@ -61,20 +88,34 @@
   <% if @schedule.status == "scheduled" %>
     <div class="bg-white rounded-lg border shadow-sm p-4">
       <h3 class="font-semibold text-sm mb-3">패스 처리</h3>
-      <%= form_with url: pass_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
-        <div>
-          <label class="block text-xs font-medium text-gray-700 mb-1">패스 사유</label>
-          <%= f.text_field :pass_reason, class: "w-full border rounded px-2 py-1.5 text-sm" %>
+      <% if @schedule.lesson_date == Date.today %>
+        <div class="bg-orange-50 border border-orange-200 rounded p-3 text-xs text-orange-700">
+          <p class="font-medium mb-1">⚠️ 당일 패스 불가</p>
+          <p>1단계: 보강 등록을 먼저 시도하세요.</p>
+          <p>2단계: 보강도 불가하면 결석 차감으로 처리하세요.</p>
         </div>
-        <p class="text-xs text-orange-600">⚠️ 패스 처리 시 개근 카운트가 리셋됩니다.</p>
-        <%= f.submit "패스 처리", class: "w-full bg-purple-100 text-purple-700 py-2 rounded text-sm hover:bg-purple-200 cursor-pointer" %>
-      <% end %>
-      <div class="mt-3 pt-3 border-t">
-        <%= form_with url: emergency_pass_schedule_path(@schedule), method: :patch, class: "flex gap-2" do |f| %>
-          <%= f.text_field :pass_reason, placeholder: "긴급패스 사유", class: "flex-1 border rounded px-2 py-1.5 text-sm" %>
-          <%= f.submit "긴급패스", class: "bg-pink-100 text-pink-700 px-3 py-1.5 rounded text-sm hover:bg-pink-200 cursor-pointer" %>
+      <% elsif @schedule.subject == "믹싱" %>
+        <div class="bg-orange-50 border border-orange-200 rounded p-3 text-xs text-orange-700">
+          <p class="font-medium mb-1">⚠️ 믹싱 패스 불가</p>
+          <p>1단계: 보강 등록을 시도하세요.</p>
+          <p>2단계: 보강도 불가하면 결석 차감으로 처리하세요.</p>
+        </div>
+      <% else %>
+        <%= form_with url: pass_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">패스 사유</label>
+            <%= f.text_field :pass_reason, class: "w-full border rounded px-2 py-1.5 text-sm" %>
+          </div>
+          <p class="text-xs text-orange-600">⚠️ 패스 처리 시 개근 카운트가 리셋됩니다.</p>
+          <%= f.submit "패스 처리", class: "w-full bg-purple-100 text-purple-700 py-2 rounded text-sm hover:bg-purple-200 cursor-pointer" %>
         <% end %>
-      </div>
+        <div class="mt-3 pt-3 border-t">
+          <%= form_with url: emergency_pass_schedule_path(@schedule), method: :patch, class: "flex gap-2" do |f| %>
+            <%= f.text_field :pass_reason, placeholder: "긴급패스 사유", class: "flex-1 border rounded px-2 py-1.5 text-sm" %>
+            <%= f.submit "긴급패스", class: "bg-pink-100 text-pink-700 px-3 py-1.5 rounded text-sm hover:bg-pink-200 cursor-pointer" %>
+          <% end %>
+        </div>
+      <% end %>
     </div>
   <% end %>
 

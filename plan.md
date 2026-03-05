@@ -8,9 +8,9 @@
 - **프론트엔드**: ERB + Hotwire (Turbo + Stimulus)
 - **DB**: PostgreSQL
 - **인증**: Rails 8 기본 Authentication Generator
-- **CSS**: Tailwind CSS + shadcn/ui
+- **CSS**: Tailwind CSS + DaisyUI v5
 - **백그라운드 잡**: Solid Queue (Rails 8 기본 포함)
-- **다크모드**: shadcn 기본 지원, 사용자 토글 가능 (눈 보호)
+- **다크모드**: DaisyUI Theme Controller로 토글 (눈 보호)
 - **반응형**: 불필요 (데스크탑/태블릿 전용)
 
 ---
@@ -477,6 +477,7 @@ belongs_to :teacher
 
 ---
 
+### schedules
 ```
 id                bigint PK
 student_id        bigint    FK → students.id      NOT NULL
@@ -608,17 +609,15 @@ app/models/
 ### Controllers
 ```
 app/controllers/
-  dashboard_controller.rb       -- 메인 대시보드
-  students_controller.rb        -- 수강생 CRUD
-  enrollments_controller.rb     -- 클래스 등록/수정
-  payments_controller.rb        -- 결제 등록/환불
-  schedules_controller.rb       -- 스케줄 조회/수정
-  attendances_controller.rb     -- 출결 처리
-  makeups_controller.rb         -- 보강 관리
-  passes_controller.rb          -- 패스 관리
+  dashboard_controller.rb       -- 메인 대시보드 (당일 출결/결제/연락 처리 포함)
+  students_controller.rb        -- 수강생 CRUD + 상세 히스토리
+  enrollments_controller.rb     -- 클래스 등록/수정/휴원/복귀/퇴원
+  payments_controller.rb        -- 결제 등록/환불/잔금납부
+  schedules_controller.rb       -- 출결처리/보강/패스 (makeups, passes 통합)
   timetable_controller.rb       -- 선생님별 시간표
   statistics_controller.rb      -- 통계/마감
-  keypad_controller.rb          -- 출석 키패드 (별도 화면)
+  keypad_controller.rb          -- 출석 키패드 (별도 화면, 인증 스킵)
+  price_plans_controller.rb     -- 수업 금액 관리 (관리자용)
 ```
 
 ### Routes
@@ -643,19 +642,20 @@ Rails.application.routes.draw do
 
   resources :payments do
     member do
-      post :refund        # 환불 처리
-      # 환불 시 review_url 미입력 여부 자동 체크
-      # → 후기 할인 적용 결제인데 review_url 없으면 정규수업 금액 기준으로 환불 경고 표시
+      post  :refund        # 환불 처리 (review_url 미입력 시 정규금액 기준 경고)
+      patch :pay_balance   # 잔금 납부 → fully_paid: true
     end
   end
 
   resources :schedules do
     member do
-      patch :attend
-      patch :absent
-      patch :pass
-      patch :emergency_pass
-      patch :makeup
+      patch :attend           # 출석 처리
+      patch :absent           # 결석 처리
+      patch :deduct           # 수동 차감
+      patch :pass             # 패스 처리
+      patch :emergency_pass   # 긴급패스
+      patch :makeup           # 보강 배정
+      patch :complete_makeup  # 보강 완료
     end
   end
 
@@ -666,10 +666,13 @@ Rails.application.routes.draw do
 
   get  'keypad',                to: 'keypad#index'
   post 'keypad/checkin',        to: 'keypad#checkin'
+  post 'keypad/checkout',       to: 'keypad#checkout'
 
   get  'statistics',            to: 'statistics#index'
   get  'statistics/daily',      to: 'statistics#daily'
   get  'statistics/monthly',    to: 'statistics#monthly'
+
+  resources :price_plans       # 수업 금액 CRUD (관리자용)
 end
 ```
 
@@ -679,36 +682,68 @@ end
 
 ---
 
+### 0단계 — 프로젝트 공통 설정
+
+**목표**: 모든 단계에서 공통으로 사용하는 환경 구성. 1단계 전에 반드시 완료.
+
+**작업 목록**
+- [ ] PostgreSQL 연결 및 DB 설정
+- [ ] Rails 8 기본 인증 설정
+- [ ] DaisyUI v5 설치
+  - `npm i -D daisyui@latest`
+  - app.css에 `@import "tailwindcss"; @plugin "daisyui";` 추가
+- [ ] 레이아웃 shell 구성 (application.html.erb)
+  - 상단 Navbar (DaisyUI navbar)
+  - 좌측 사이드바 (DaisyUI drawer)
+  - 메인 콘텐츠 영역
+  - 다크모드 토글 (DaisyUI Theme Controller, data-theme 토글)
+- [ ] Flash 메시지 → DaisyUI Toast 컴포넌트 연결
+- [ ] Turbo Stream 기본 설정
+
+**완료 기준**
+- [ ] 서버 기동 시 레이아웃 shell이 렌더링됨
+- [ ] 다크모드 토글 작동
+- [ ] Flash → Toast 표시됨
+
+---
+
 ### 1단계 — 수강생 + Enrollment + 결제 + 스케줄 자동 생성
 
 **목표**: 핵심 원천 데이터 구축. 이 단계 없이 나머지 불가.
 
 **작업 목록**
-- [x] PostgreSQL 연결 및 DB 설정
-- [x] Rails 8 기본 인증 설정
-- [x] teachers 테이블 + Model + CRUD
-- [x] price_plans 테이블 + Model + 관리자 CRUD
+- [ ] teachers 테이블 + Model + CRUD
+- [ ] price_plans 테이블 + Model + 관리자 CRUD
   - 기본 금액 seed 데이터 입력
   - 결제 등록 화면에서 subject + months 선택 시 amount 자동 조회
-- [x] students 테이블 + Model
+- [ ] students 테이블 + Model
   - attendance_code 생성 로직 (뒷 4자리 → 중복 시 5자리 → 중간자리)
   - attendance_code_unique_among_active validation
   - 휴원자 복귀 시 코드 중복 체크 및 상담원 알림
   - second_transfer_form → rank 자동 변경 before_save callback
   - waiting_expires_at: 신규 등록 시 자동 설정 (등록일 + 14일), 결제 완료 시 nil로 초기화
   - remaining_lessons, consecutive_weeks, total_attended_weeks 계산 메서드
-- [x] students CRUD 화면
-  - 수강생 목록 (상태별 필터)
-  - 수강생 상세 (enrollment 목록 + 수업 날짜 리스트 + 전체 히스토리)
-  - 등록/수정 폼
-  - 휴원/복귀/퇴원 처리 버튼
-- [x] enrollments 테이블 + Model
+- [ ] students CRUD 화면
+  - 수강생 목록: 상태별 필터(재원/휴원/퇴원/대기) + 이름/코드 검색
+  - 수강생 상세 — 히스토리 조회 전용 (당일 처리는 대시보드에서)
+    - 상단: 기본 정보 카드 (이름/연락처/코드/상태/메모) + [수정] [휴원] [퇴원]
+    - 중단: 클래스 탭 (enrollment별, 최대 탭 3개 이상은 드롭다운)
+      - 탭 내 현황: 상태/잔여횟수/패스/개근/총수강
+      - 탭 내 결제 내역: 최근 1건 기본 노출 + [전체보기 ∨] (접기/펼치기)
+        - [+ 결제등록] 버튼 → 모달 (subject 자동 고정, 금액 자동 조회)
+        - 환불은 결제 행 [⋯] 더보기 메뉴 안에
+      - 탭 내 수업 이력: 결제분 단위 청킹 (2025.03 4회 완료 / 2025.04 예정)
+        - 필터: [전체] [예정] [출석] [보강] [패스]
+    - 하단: 기타 정보 [∨] (동의서/전직서/상품권/후기URL/인터뷰/추천관계)
+  - 등록 폼: 수강생 + enrollment + payment 동시 생성 (transaction)
+  - 수정 폼: 기본 정보만
+- [ ] enrollments 테이블 + Model
   - 수강생당 N개 enrollment 가능
   - status별 클래스 상태 관리 (active/leave/dropout)
   - 중복 수강 할인 계산 기준 (active enrollment 수)
   - returnable? 메서드 (완납 여부 체크, 복귀 처리 전 검증)
   - 복귀 결제 화면에서 remaining_on_leave 자동 표시
-- [x] payments 테이블 + Model
+- [ ] payments 테이블 + Model
   - enrollment_id 참조
   - after_create :generate_schedules callback
   - calculate_nth_lesson_date 메서드 (starts_at + lesson_day 기반)
@@ -725,19 +760,19 @@ end
   - ends_at 동적 계산 메서드
   - 잔금 납부 시 fully_paid → true, balance_paid_at 업데이트 (별도 action)
   - 복귀 결제 화면에서 enrollment.remaining_on_leave 자동 표시
-- [x] payments 등록/환불 화면
-- [x] discounts 테이블 + Model
-- [x] schedules 테이블 + Model
+- [ ] payments 등록/환불 화면
+- [ ] discounts 테이블 + Model
+- [ ] schedules 테이블 + Model
   - enrollment_id 참조
   - makeup_available_range 메서드
   - slot_count 메서드
   - 상태값 관리
 
 **완료 기준**
-- 결제 등록 시 해당 enrollment 기준으로 Schedule 자동 생성
-- 수강생 상세에서 클래스별 수업 날짜 리스트 확인 가능
-- 잔여 횟수가 Schedule 집계로 자동 계산
-- 2개 이상 클래스 수강 시 각각 독립적으로 관리됨
+- [ ] 결제 등록 시 해당 enrollment 기준으로 Schedule 자동 생성됨
+- [ ] 수강생 상세에서 클래스별 수업 이력 확인 가능
+- [ ] 잔여 횟수가 Schedule 집계로 자동 계산됨
+- [ ] 2개 이상 클래스 수강 시 각각 독립적으로 관리됨
 
 ---
 
@@ -746,26 +781,31 @@ end
 **목표**: 실제 출석 처리 및 오류 감지
 
 **작업 목록**
-- [x] attendances 테이블 + Model
-- [x] 출석 키패드 화면 (태블릿 전용 레이아웃)
+- [ ] attendances 테이블 + Model
+- [ ] 출석 키패드 화면 (태블릿 전용 레이아웃)
   - 숫자 키패드 UI
   - attendance_code 입력 → 수강생 특정 → 해당 시간대 Schedule 특정 → attended 처리
   - 수강생이 N개 클래스 수강 중이면 어느 클래스인지 선택 화면 표시
   - 출석 완료 시 수강생 이름 + 과목 + 회차 표시
   - 오류 케이스 자동 감지 및 상담원 알림
     - 2회 차감 오류 (같은 Schedule에 checked_in_at 중복)
-  - 등원: checked_in_at 자동 기록
-  - 하원: checkout 액션으로 checked_out_at 기록
-- [x] 출결 관리 화면 (상담원용)
-  - 시간대별 출석 현황 표시
-  - 지각 / 결강 / 결석 처리
-  - 결석 차감 처리
-  - 보강완료 처리
+    - 클래스 미선택 오류
+    - 이전 결제건 노출 오류
+    - 수강 종료일 초과 오류 (payment.ends_at 동적 계산 기반)
+  - 등원: 정각까지 checked_in_at 입력 (키패드 출석 코드 입력 시 자동)
+  - 하원: 55분까지 checked_out_at 입력 (키패드 퇴실 코드 입력 시 자동)
+- [ ] 출결 처리 — 대시보드 ① 섹션에서 직접 처리 (별도 페이지 없음)
+  - 등원/하원 버튼: 대시보드 현재 시간대 수강생 행에서 인라인 처리
+  - 결강 버튼: 해당 행에서 클릭 → 인라인 슬라이드다운으로 보강 날짜 선택
+  - 지각/결석/차감: 행 [⋯] 더보기 메뉴에서 처리
+  - 등원 미체크: 정각 지나면 빨간 Badge 강조 (Turbo Stream 자동 갱신)
+  - 하원 미체크: 55분 지나면 주황 Badge 강조 + 알림
 
 **완료 기준**
-- 키패드 코드 입력 시 Schedule 상태가 attended로 변경됨
-- N개 클래스 수강생은 클래스 선택 화면이 표시됨
-- 오류 발생 시 상담원 화면에 알림 표시
+- [ ] 키패드 코드 입력 시 Schedule.status → attended로 변경됨
+- [ ] N개 클래스 수강생은 클래스 선택 화면이 표시됨
+- [ ] 오류 발생 시 상담원 화면에 Toast 알림 표시
+- [ ] 대시보드에서 등원/하원/결강 처리 가능
 
 ---
 
@@ -774,21 +814,34 @@ end
 **목표**: 스케줄 데이터를 시각적으로 표현
 
 **작업 목록**
-- [x] timetable_controller
-- [x] 주간 시간표 화면
+- [ ] timetable_controller
+- [ ] 주간 시간표 화면
   - 선생님별 탭/필터
   - enrollment.status = 'active'인 Schedule만 렌더링 (휴원 수강생 제외)
   - 보강은 makeup_date 기준으로 별도 쿼리하여 해당 날짜 슬롯에 표시
+  - 요일별 렌더링 시작 시간: 월요일 14:00, 화~일 13:00
   - 브레이크타임(18:00~19:00) 비활성 표시, breaktime_openings 있는 경우 활성화
+  - 시간대별 슬롯 (slot_count 활용)
   - 슬롯당 최대 3명 자동 제한 (정규 + 보강 합산)
   - 3명 풀 슬롯 초록 표시
+  - 브레이크타임 (18:00~19:00) 비활성 슬롯으로 표시 (기본값: 보강 불가)
+  - 상담원이 수동으로 브레이크타임 슬롯 열기 가능 (모네님 확인 후)
   - 시간대별 주차 필요 대수 자동 표시 (has_car 기반)
-  - 차량보유: `홍길동(★)` 표시
+  - 상태값별 표시
+    - 기본: `홍길동`
+    - 첫수업: `홍길동(5.20첫)`
+    - 복귀: `홍길동(5.20복)`
+    - 차량보유: `홍길동(★)`
+    - 보강(담당 선생님): `홍길동(5.20보)`
+    - 보강(타 선생님): `홍길동(5.20보/범)` — 원래 선생님 초성
+    - 패스: `홍길동(5.20패)`
+    - 자리대기(pending): `홍길동(대기)`
+    - 특이사항: `홍길동(5.20첫)>수강동의서받기`
 - [ ] 시간표 메모란 (자리 대기, 일정 변경 대기)
 
 **완료 기준**
-- 선생님별 주간 시간표 렌더링
-- 슬롯 3명 풀이면 초록 표시 및 추가 배치 불가
+- [ ] 선생님별 주간 시간표 렌더링됨
+- [ ] 슬롯 3명 풀이면 초록 표시 및 추가 배치 불가
 
 ---
 
@@ -797,23 +850,29 @@ end
 **목표**: 스케줄 변동 처리
 
 **작업 목록**
-- [x] 보강 처리
+- [ ] 보강 처리
   - makeup_available_range로 가능 기간 자동 계산
-  - slot_count(teacher_id, subject, date)로 3명 초과 시 차단
+  - slot_count(teacher_id, subject, date)로 3명 미만 날짜만 표시 (시간 무관)
   - 보강 가능한 선생님은 teacher_subjects 기준으로 동일 과목 담당 선생님으로만 제한
+  - 담당 선생님 슬롯 우선 표시, 불가 시 같은 과목 타 선생님 슬롯 표시
   - 보강 확정 시 Schedule.makeup_date, makeup_time, makeup_teacher_id, status → makeup_scheduled 업데이트
+  - 믹싱 보강 승인 플로우 (makeup_approved 컬럼, 상담원이 선생님에게 확인 후 대신 처리)
+    - 1차전직: 같은 주차인 다른 반 슬롯 자동 확인
+    - 2차전직: 주차 무관, 상담원이 승인 후 배정
   - 당일 취소 보강 불가 처리
-- [x] 패스 처리
-  - 결제분 기준 잔여 패스 횟수 자동 계산 (months 기준 발생)
+- [ ] 패스 처리
+  - 결제분 기준 잔여 패스 횟수 자동 계산 (months 기준 발생, pass/emergency_pass 상태 집계)
   - 패스 적용 시 Schedule.status → pass
+  - 패스 적용 시 consecutive_weeks 리셋 (schedules에서 재계산)
   - 당일 / 믹싱 패스 불가 처리
+  - 2주 이상 선패스 요청 시 잔여 횟수 체크 및 경고
   - 긴급패스 → Schedule.status → emergency_pass (상담원 수동)
 - [ ] 선생님별 패스 사용 시트 자동 기록
 
 **완료 기준**
-- 보강 시 가능한 슬롯만 자동 표시
-- 패스 사용 시 개근 카운트 리셋
-- 믹싱 보강 승인 플로우 작동
+- [ ] 보강 시 가능한 슬롯만 자동 표시됨
+- [ ] 패스 사용 시 개근 카운트 리셋됨
+- [ ] 믹싱 보강 승인 플로우 작동
 
 ---
 
@@ -822,31 +881,46 @@ end
 **목표**: 파생 데이터 자동화
 
 **작업 목록**
-- [x] 결제자 자동 계산
-  - 대시보드에서 우선순위별 자동 표시 (예약금 첫수업 / 잔금 미납 / 다음결제)
-- [x] 연락할 리스트 자동 계산
-  - contact_due / return_at / waiting_expires_at 기준 자동 집계
-  - 대시보드 연락 탭에 표시
-- [x] 개근 트래킹
-  - 출석 처리 시 consecutive_weeks_for 재계산
-  - 12주 달성 시 attendance_event_pending → true
-  - 다음 결제 시 discount 자동 생성
-- [x] 상품권 트래킹
-  - 24회차 도달 시 GiftVoucher 자동 생성
-  - 1개월 전 GiftVoucherExpiryJob으로 contact_due 자동 등록
-- [x] 마이너스 수업 관리
-  - enrollment.minus_lesson_count로 클래스별 관리
-  - 대시보드 확인 탭에 표시
-- [x] 지인 할인 양측 처리
-  - 피추천인 결제 시 referral_discount_pending → true
-  - 추천인 다음 결제 시 자동 적용
-- [x] 후기 할인 review_due 자동 설정
-  - ReviewDueCheckJob으로 매일 자정 체크
+- [ ] 결제자 자동 계산
+  - 우선순위 순서로 표시 (중복 제거)
+  1. fully_paid: false + 오늘 첫 Schedule 존재 → "예약금 — 오늘 첫수업, 완납 필요"
+  2. fully_paid: false (첫수업 아닌 경우) → "잔금 미납"
+  3. enrollment별 잔여 횟수 1 (fully_paid: true인 경우만) → "다음 결제 예정"
+  - student 단위로 표시하되 클래스(과목) 명시
+    - 예: "홍길동 — 클린 예약금, 오늘 첫수업 완납 필요"
+    - 예: "홍길동 — 기타 잔금 미납"
+    - 예: "홍길동 — 클린 다음 결제 예정 (수업 후)"
+  - 수업 전/후 결제 구분 (before_lesson 기준)
+- [ ] 연락할 리스트 자동 계산
+  - student.contact_due 기준 당일 도래 (결제대기 / 상품권만료 / 후기기한 / 등록대기)
+  - enrollment.return_at 기준 당일 도래 → 휴원 복귀 예정 연락 (enrollment별 체크)
+  - student.waiting_expires_at 기준 당일 도래 → 2주 자리대기 만료 알림 (신규 수강생만)
+  - 유형별 분류 및 클래스 명시 (홍길동 — 기타 복귀 예정)
+  - 연락 완료 처리 → DB 자동 업데이트
+- [ ] 개근 트래킹
+  - 출석 처리 시마다 consecutive_weeks_for(enrollment) 재계산
+  - 12주 달성 시 enrollment.attendance_event_pending → true, 상담원 알림
+  - 다음 결제 시 apply_attendance_event_if_pending callback으로 discount 자동 생성
+- [ ] 상품권 트래킹
+  - enrollment별 total_attended_weeks_for(enrollment) 기준 24회차 도달 시 상담원 알림
+  - 과목별로 각각 체크 (클린 24회, 기타 24회 각각 별도 상품권)
+  - gift_voucher_expires_at 기준 1개월 전 contact_due 자동 등록
+- [ ] 마이너스 수업 관리
+  - 별도 Payment를 생성하지 않음
+  - enrollment.minus_lesson_count에 기록 (클래스별 미결제 선수업 횟수)
+  - 다음 결제 시 상담원이 total_lessons를 차감하여 입력 (예: 1회 마이너스 → 3회 입력)
+  - 결제 완료 시 enrollment.minus_lesson_count 자동 초기화
+- [ ] 지인 할인 양측 처리
+  - 피추천인 결제 완료 시 추천인 student.referral_discount_pending → true
+  - 추천인 다음 결제 시 apply_referral_discount_if_pending callback으로 자동 적용
+- [ ] 후기 할인 review_due 자동 설정
+  - 후기 할인 적용 결제 시 review_due = paid_at + 7일 자동 설정
+  - 매일 review_due 도래 + review_url 미입력 수강생 → 연락할 자동 등록
 
 **완료 기준**
-- 오늘 결제/연락 대상이 자동 리스트업됨
-- 12주 개근 달성 시 상담원 알림
-- 지인 할인이 추천인 다음 결제에 자동 적용됨
+- [ ] 오늘 결제/연락 대상이 자동 리스트업됨
+- [ ] 12주 개근 달성 시 상담원 알림
+- [ ] 지인 할인이 추천인 다음 결제에 자동 적용됨
 
 ---
 
@@ -855,35 +929,56 @@ end
 **목표**: 출근 후 대시보드 하나로 오늘 해야 할 일이 전부 보임
 
 **레이아웃 구조**
-- 상단 헤더 + 좌측 사이드바 + 메인 콘텐츠 (shadcn Card/Badge/Table/Alert)
+- 상단 헤더 + 좌측 사이드바 + 메인 콘텐츠 (DaisyUI Card/Badge/Table/Alert)
 - 데스크탑/태블릿 전용 (반응형 불필요)
-- 다크모드 토글 (shadcn 기본 지원)
+- 다크모드 토글 (DaisyUI Theme Controller)
 
 **사이드바 네비게이션**
 - 대시보드 / 수강생 / 결제 / 시간표 / 보강·패스 / 통계 / 설정
 
 **작업 목록**
-- [x] dashboard_controller#index
-- [x] ① 지금 이 순간 섹션
-  - 현재 시간대 수업 중인 수강생 목록
-  - 등원/하원 미체크 강조
-  - 현재 시간대 주차 필요 대수
+- [ ] dashboard_controller#index
+- [ ] 상단 헤더
+  - 현재 날짜/요일/시각 (실시간)
+  - 현재 진행 중인 시간대 표시
+  - 알림 벨 (개근 달성 / 등원하원 미체크 / 기타 즉각 알림)
+  - 다크모드 토글 버튼
 
-- [x] ② 오늘 해야 할 일 섹션
-  - 결제 예정 (우선순위별)
-  - 연락할 리스트
-  - 마이너스/동의서 확인
+- [ ] ① 지금 이 순간 섹션 (Turbo Stream, 가장 크게)
+  - 현재 시간대 수업 중인 수강생 목록 (선생님별)
+  - 등원 미체크: 빨간 Badge 강조 (정각 지나도 checked_in_at nil)
+  - 하원 미체크: 주황 Badge 강조 (55분 지나도 checked_out_at nil)
+  - 현재 시간대 주차 필요 대수 (has_car 기반 자동 계산)
 
-- [x] ③ 오늘 전체 시간표 섹션
-  - 시간대별 수업 목록 (정규 + 보강)
+- [ ] ② 오늘 해야 할 일 섹션 (탭 구성)
+  - **결제 탭**: 우선순위별 결제 대상
+    - 빨간: "홍길동 — 클린 예약금, 오늘 첫수업 완납 필요"
+    - 주황: "김철수 — 기타 잔금 미납"
+    - 파란: "박영희 — 클린 다음 결제 예정 (수업 후)"
+  - **연락 탭**: 오늘 연락할 대상 (유형별 Badge + 완료 체크 버튼)
+    - 복귀예정 / 후기기한 / 상품권만료 / 등록대기 / 연락두절
+  - **확인 탭**: 동의서·전직서 미수령 / 마이너스 수업 중인 수강생
 
-- [x] ④ 오늘 마감 요약 섹션
-  - 결제 건수/금액, 휴퇴원/복귀 수
+- [ ] ③ 오늘 전체 시간표 섹션
+  - 선생님별 탭 전환
+  - 시간대별 슬롯 테이블 (정규 + 보강 합산)
+  - 슬롯 3명 풀: 초록 배경
+  - 보강 수강생: 별도 색상 + `홍길동(보/무)` 표기
+  - 브레이크타임: 회색 비활성 행
+  - 오늘 첫수업/복귀 수강생 표기
+
+- [ ] ④ 오늘 마감 요약 섹션
+  - 당일 결제 건수 + 합산 금액 (fully_paid: true 실시간 집계)
+  - 당일 휴원 수 (시작전 / 3개월이하 / 3개월초과)
+  - 당일 퇴원 / 복귀 수
+  - 개근 달성자 목록
+  - 마감 톡 생성 버튼 → 자동 완성 텍스트 + 복사 버튼
 
 **완료 기준**
-- 출근 후 대시보드 하나로 오늘 해야 할 일이 전부 보임
-- 출석 처리 시 ① 섹션 실시간 갱신
-- 다크모드 토글 작동
+- [ ] 출근 후 대시보드 하나로 오늘 해야 할 일이 전부 보임
+- [ ] 출석 처리 시 ① 섹션 실시간 갱신 (Turbo Stream)
+- [ ] 다크모드 토글 작동 (DaisyUI Theme Controller)
+- [ ] 대시보드에서 등원/하원/결강/결제/연락완료 처리 가능
 
 ---
 
@@ -892,17 +987,27 @@ end
 **목표**: 마감 업무 자동화
 
 **작업 목록**
-- [x] 일별 자동 집계
-  - 결제/첫결제/추가결제 자동 분류
-  - 휴원/퇴원/복귀/연락완료 수
-  - 오또 재원자 (클린/비클린)
-- [x] 마감 톡 자동 생성
-  - 숫자 자동 채움 + 복사 버튼
-- [x] 월말 결산
-  - 월별 매출 집계
+- [ ] 일별 자동 집계
+  - 클래스별 결제 수
+  - 첫 결제 / 추가 결제 / 결제 개월 수별 분류
+    - 첫 결제 기준: 해당 enrollment의 payments 중 가장 첫 번째 (order by created_at)
+    - 추가 결제: 두 번째 이후 payment
+  - 당일 휴원 수 (시작 전 / 3개월 이하 / 3개월 초과)
+    - 통계 기입 기준: payments.fully_paid = true 또는 refunded = true 완료 시점
+  - 당일 퇴원 / 복귀 / 연락할 완료 수
+  - 오또 선생님 재원자 수 (클린/비클린 구분)
+- [ ] 마감 톡 자동 생성
+  - 숫자 항목 자동 채움
+  - 특이사항 텍스트 입력란
+  - 익일 결제 리스트 자동 포함
+  - 익일 보강 리스트 자동 포함
+  - 복사 버튼 (카카오톡 붙여넣기용)
+- [ ] 월말 결산
+  - 월별 매출 자동 집계 (payments.amount 기준, fully_paid: true)
 
 **완료 기준**
-- 마감 톡 화면에서 숫자 자동 채워지고 특이사항만 입력하면 됨
+- [ ] 마감 톡 화면에서 숫자 자동 채워지고 특이사항만 입력하면 됨
+- [ ] 월별 매출 집계 정확함
 
 ---
 

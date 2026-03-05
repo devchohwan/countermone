@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend deduct pass emergency_pass makeup complete_makeup]
+  before_action :set_schedule, only: %i[show attend absent late deduct pass emergency_pass makeup complete_makeup]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -16,7 +16,15 @@ class SchedulesController < ApplicationController
     create_attendance_record(@schedule)
     check_consecutive_weeks(@schedule)
     check_gift_voucher(@schedule)
-    redirect_back fallback_location: schedules_path, notice: "출석 처리되었습니다."
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "current_schedules",
+          partial: "dashboard/current_schedules"
+        )
+      end
+      format.html { redirect_back fallback_location: schedules_path, notice: "출석 처리되었습니다." }
+    end
   end
 
   def late
@@ -59,25 +67,72 @@ class SchedulesController < ApplicationController
   def makeup
     makeup_date = Date.parse(params[:makeup_date])
     makeup_time = params[:makeup_time]
-    teacher_id  = params[:makeup_teacher_id]
+    teacher_id  = params[:makeup_teacher_id].to_i
+
+    # 당일 취소 보강 불가
+    if @schedule.lesson_date == Date.today
+      return redirect_back fallback_location: schedules_path, alert: "당일 취소 보강은 불가합니다."
+    end
 
     range = @schedule.makeup_available_range
     if range && !range.cover?(makeup_date)
       return redirect_back fallback_location: schedules_path, alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{range.last})"
     end
 
-    slot = Schedule.slot_count(teacher_id.to_i, @schedule.subject, makeup_date)
+    slot = Schedule.slot_count(teacher_id, @schedule.subject, makeup_date)
     if slot >= 3
       return redirect_back fallback_location: schedules_path, alert: "해당 슬롯이 이미 3명입니다."
     end
 
+    # 믹싱 보강 승인 플로우
+    needs_approval = (@schedule.subject == "믹싱")
+    if needs_approval
+      rank = @schedule.enrollment.student.rank
+      if rank == "first"
+        # 1차전직: 같은 주차인 다른 반 슬롯 자동 확인
+        week_start = makeup_date.beginning_of_week(:monday)
+        week_end   = makeup_date.end_of_week(:monday)
+        same_week_slot = Schedule.where(
+          teacher_id: teacher_id,
+          subject:    @schedule.subject,
+          lesson_date: week_start..week_end
+        ).where.not(id: @schedule.id).exists?
+
+        if same_week_slot
+          # 같은 주차 슬롯 있음 → 바로 배정 (승인 불필요)
+          approved = true
+        else
+          # 슬롯 없음 → 승인 대기
+          approved = false
+        end
+      else
+        # 2차전직: 주차 무관, 항상 승인 대기
+        approved = false
+      end
+    else
+      approved = true
+    end
+
     @schedule.update!(
-      status:           "makeup_scheduled",
-      makeup_date:      makeup_date,
-      makeup_time:      makeup_time,
-      makeup_teacher_id: teacher_id
+      status:            approved ? "makeup_scheduled" : "makeup_scheduled",
+      makeup_date:       makeup_date,
+      makeup_time:       makeup_time,
+      makeup_teacher_id: teacher_id,
+      makeup_approved:   approved
     )
-    redirect_back fallback_location: schedules_path, notice: "보강 일정이 등록되었습니다."
+
+    if needs_approval && !approved
+      redirect_back fallback_location: schedules_path,
+        notice: "보강 일정이 등록되었습니다. 믹싱 #{@schedule.enrollment.student.rank == 'second' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."
+    else
+      redirect_back fallback_location: schedules_path, notice: "보강 일정이 등록되었습니다."
+    end
+  end
+
+  def approve_makeup
+    @schedule = Schedule.find(params[:id])
+    @schedule.update!(makeup_approved: true)
+    redirect_back fallback_location: schedules_path, notice: "보강 승인 완료."
   end
 
   def complete_makeup

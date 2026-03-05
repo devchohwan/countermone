@@ -1,4 +1,13 @@
 class DashboardController < ApplicationController
+  def current_schedules
+    @current_schedules = Schedule
+      .includes(:student, :teacher, :enrollment, :attendance)
+      .where(lesson_date: Date.today)
+      .where(status: %w[scheduled attended late makeup_scheduled])
+      .select { |s| s.lesson_time.hour == Time.now.hour }
+    render partial: "dashboard/current_schedules"
+  end
+
   def index
     @today = Date.today
     @current_hour = Time.now.hour

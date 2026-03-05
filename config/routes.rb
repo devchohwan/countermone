@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   root "dashboard#index"
+  get "dashboard/current_schedules", to: "dashboard#current_schedules"
 
   resource  :session
   resources :passwords, param: :token
@@ -37,6 +38,7 @@ Rails.application.routes.draw do
       patch :pass
       patch :emergency_pass
       patch :makeup
+      patch :approve_makeup
       patch :complete_makeup
     end
   end

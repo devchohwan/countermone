@@ -12,6 +12,12 @@ default: &default
         waiting_expiry:
           class: WaitingExpiryJob
           schedule: "0 0 * * *"
+        contact_due:
+          class: ContactDueJob
+          schedule: "0 0 * * *"        # 매일 자정
+        unpaid_leave:
+          class: UnpaidLeaveJob
+          schedule: "0 0 * * *"        # 매일 자정
         attendance_checkin:
           class: AttendanceCheckJob
           args: [{ check_type: "checkin" }]

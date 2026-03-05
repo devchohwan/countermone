@@ -26,38 +26,37 @@ module ApplicationHelper
   }.freeze
 
   def nav_link_class(path)
-    active = request.path == path || request.path.start_with?(path) && path != "/"
-    base   = "block px-3 py-2 rounded text-sm "
-    active ? base + "bg-gray-700 text-white" : base + "text-gray-300 hover:bg-gray-700 hover:text-white"
+    active = request.path == path || (request.path.start_with?(path) && path != "/")
+    active ? "active" : ""
   end
 
   def status_badge(status)
-    colors = {
-      "active"       => "bg-green-100 text-green-800",
-      "leave"        => "bg-yellow-100 text-yellow-800",
-      "dropout"      => "bg-gray-100 text-gray-600",
-      "pending"      => "bg-blue-100 text-blue-800",
-      "unregistered" => "bg-gray-100 text-gray-400"
+    daisy = {
+      "active"       => "badge-success",
+      "leave"        => "badge-warning",
+      "dropout"      => "badge-ghost",
+      "pending"      => "badge-info",
+      "unregistered" => "badge-ghost"
     }
-    color = colors[status] || "bg-gray-100 text-gray-600"
-    content_tag(:span, STATUS_KO[status] || status, class: "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium #{color}")
+    cls = daisy[status] || "badge-ghost"
+    content_tag(:span, STATUS_KO[status] || status, class: "badge badge-sm #{cls}")
   end
 
   def schedule_status_badge(status)
-    colors = {
-      "scheduled"        => "bg-blue-100 text-blue-700",
-      "attended"         => "bg-green-100 text-green-700",
-      "late"             => "bg-yellow-100 text-yellow-700",
-      "absent"           => "bg-orange-100 text-orange-700",
-      "deducted"         => "bg-red-100 text-red-700",
-      "pass"             => "bg-purple-100 text-purple-700",
-      "emergency_pass"   => "bg-pink-100 text-pink-700",
-      "makeup_scheduled" => "bg-indigo-100 text-indigo-700",
-      "makeup_done"      => "bg-teal-100 text-teal-700",
-      "minus_lesson"     => "bg-red-100 text-red-800"
+    daisy = {
+      "scheduled"        => "badge-info",
+      "attended"         => "badge-success",
+      "late"             => "badge-warning",
+      "absent"           => "badge-warning badge-outline",
+      "deducted"         => "badge-error",
+      "pass"             => "badge-secondary",
+      "emergency_pass"   => "badge-secondary badge-outline",
+      "makeup_scheduled" => "badge-primary",
+      "makeup_done"      => "badge-success badge-outline",
+      "minus_lesson"     => "badge-error badge-outline"
     }
-    color = colors[status] || "bg-gray-100 text-gray-600"
-    content_tag(:span, SCHEDULE_STATUS_KO[status] || status, class: "inline-flex items-center px-1.5 py-0.5 rounded text-xs #{color}")
+    cls = daisy[status] || "badge-ghost"
+    content_tag(:span, SCHEDULE_STATUS_KO[status] || status, class: "badge badge-xs #{cls}")
   end
 
   def lesson_day_ko(day)
@@ -68,10 +67,57 @@ module ApplicationHelper
     "#{number_with_delimiter(amount)}원"
   end
 
+  # 시간표 셀 표기 (plan.md 명세)
+  # 기본: 홍길동
+  # 첫수업: 홍길동(5.20첫)
+  # 복귀: 홍길동(5.20복)
+  # 차량: 홍길동(★)
+  # 패스: 홍길동(5.20패)
+  # 자리대기: 홍길동(대기)
+  # 특이사항: 홍길동(5.20첫)>수강동의서받기
   def timetable_label(schedule)
-    s = schedule.student
-    label = s.name
-    label += "(★)" if s.has_car?
+    s    = schedule.student
+    e    = schedule.enrollment
+    date = schedule.lesson_date
+    d    = date.strftime("%-m.%-d")
+    suffix = ""
+
+    if s.status == "pending"
+      suffix = "(대기)"
+    elsif schedule.status.in?(%w[pass emergency_pass])
+      suffix = "(#{d}패)"
+    elsif schedule.sequence == 1
+      is_first_payment = e.payments.order(:created_at).first&.id == schedule.payment_id
+      suffix = is_first_payment ? "(#{d}첫)" : "(#{d}복)"
+    end
+
+    suffix += "(★)" if s.has_car?
+
+    # 특이사항
+    notes = []
+    notes << "수강동의서받기" if !s.consent_form?
+    notes << "2차전직서받기"  if s.rank == "first" && s.second_transfer_form? == false && e.payments.count >= 4
+
+    label = s.name + suffix
+    label += ">#{notes.join('/')}" if notes.any?
     label
+  end
+
+  # 보강 셀 표기: 홍길동(5.20보) or 홍길동(5.20보/범) — 원래 선생님과 다를 때 초성 표시
+  def timetable_makeup_label(schedule, current_teacher)
+    s    = schedule.student
+    date = schedule.makeup_date
+    d    = date.strftime("%-m.%-d")
+
+    if schedule.makeup_teacher_id == schedule.teacher_id
+      "#{s.name}(#{d}보)"
+    else
+      initial = schedule.teacher.name.first
+      "#{s.name}(#{d}보/#{initial})"
+    end
+  end
+
+  def name_initial(name)
+    name.to_s.first || "?"
   end
 end

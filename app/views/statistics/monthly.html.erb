@@ -1,0 +1,48 @@
+<% content_for :title, "월별 매출" %>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-bold">월별 매출</h2>
+  <%= form_with url: statistics_monthly_path, method: :get, class: "flex gap-2" do |f| %>
+    <%= f.month_field :month, value: @month.strftime("%Y-%m"), class: "input input-sm input-bordered" %>
+    <%= f.submit "조회", class: "btn btn-sm btn-neutral" %>
+  <% end %>
+</div>
+
+<div class="card bg-base-100 shadow-sm">
+  <div class="card-body p-4">
+    <h3 class="card-title text-sm"><%= @month.strftime("%Y년 %m월") %> 매출</h3>
+
+    <div class="stats stats-vertical shadow w-full">
+      <div class="stat">
+        <div class="stat-title">총 결제 건수</div>
+        <div class="stat-value text-2xl"><%= @payments_monthly.count %>건</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">합산 매출</div>
+        <div class="stat-value text-2xl text-primary"><%= format_amount(@monthly_revenue) %></div>
+      </div>
+    </div>
+
+    <% if @payments_monthly.any? %>
+      <div class="divider"></div>
+      <table class="table table-sm">
+        <thead>
+          <tr><th>날짜</th><th>수강생</th><th>과목</th><th>개월</th><th>금액</th></tr>
+        </thead>
+        <tbody>
+          <% @payments_monthly.includes(:student, :enrollment).order(:updated_at).each do |p| %>
+            <tr>
+              <td class="text-xs text-base-content/60"><%= p.updated_at.strftime("%m/%d") %></td>
+              <td><%= p.student.name %></td>
+              <td><%= p.subject %></td>
+              <td><%= p.months %>개월</td>
+              <td class="font-medium"><%= format_amount(p.amount) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-base-content/40 text-center py-4">해당 월 결제 없음</p>
+    <% end %>
+  </div>
+</div>

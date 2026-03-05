@@ -1,0 +1,66 @@
+<%= turbo_frame_tag "current_schedules" do %>
+  <div class="card bg-base-100 shadow-sm col-span-2">
+    <div class="card-body p-4">
+      <h3 class="card-title text-sm flex items-center gap-2">
+        <span class="w-2 h-2 bg-success rounded-full animate-pulse inline-block"></span>
+        지금 이 순간
+        <span class="text-xs font-normal text-base-content/40">(<%= Time.now.strftime("%H:%M") %>)</span>
+      </h3>
+
+      <% current_hour = Time.now.hour %>
+      <% current = @current_schedules || Schedule
+            .includes(:student, :teacher, :enrollment, :attendance)
+            .where(lesson_date: Date.today)
+            .where(status: %w[scheduled attended late makeup_scheduled])
+            .select { |s| s.lesson_time.hour == current_hour } %>
+
+      <% if current.empty? %>
+        <p class="text-sm text-base-content/40">현재 진행 중인 수업이 없습니다.</p>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="table table-xs">
+            <thead>
+              <tr><th>수강생</th><th>과목</th><th>선생님</th><th>등원</th><th>하원</th><th>처리</th></tr>
+            </thead>
+            <tbody>
+              <% current.each do |s| %>
+                <tr id="current-row-<%= s.id %>">
+                  <td class="font-medium"><%= s.student.name %></td>
+                  <td><%= s.subject %></td>
+                  <td><%= s.teacher.name %></td>
+                  <td>
+                    <% if s.attendance&.checked_in_at %>
+                      <span class="text-success text-xs">✓ <%= s.attendance.checked_in_at.strftime("%H:%M") %></span>
+                    <% else %>
+                      <span class="badge badge-error badge-sm">미등원</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if s.attendance&.checked_out_at %>
+                      <span class="text-info text-xs">✓ <%= s.attendance.checked_out_at.strftime("%H:%M") %></span>
+                    <% elsif s.attendance&.checked_in_at && Time.now.min >= 55 %>
+                      <span class="badge badge-warning badge-sm">미하원</span>
+                    <% else %>
+                      <span class="text-base-content/30 text-xs">-</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if s.status == "scheduled" %>
+                      <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "btn btn-xs btn-success" %>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <%# 현재 시간대 주차 필요 대수 %>
+        <% car_count = current.count { |s| s.student.has_car? } %>
+        <% if car_count > 0 %>
+          <div class="text-xs text-base-content/40 mt-1">🚗 주차 필요: <%= car_count %>대</div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

@@ -8,7 +8,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h2 class="text-xl font-bold"><%= @today.strftime("%Y년 %m월 %d일 (%A)") %></h2>
-      <p class="text-sm text-base-content/60" id="dashboard-time">현재 시간대: <%= @current_hour %>:00</p>
+      <p class="text-sm text-base-content/60" id="dashboard-time"></p>
     </div>
     <div class="flex gap-2 items-center">
       <% if @attendance_events.any? %>
@@ -164,10 +164,15 @@
 </div>
 
 <script>
+  const DAYS_KO = ['일','월','화','수','목','금','토'];
   function updateTime() {
     const now = new Date();
-    const el = document.getElementById('dashboard-time');
-    if (el) el.textContent = `현재 시간대: ${now.getHours()}:00`;
+    const hh  = String(now.getHours()).padStart(2,'0');
+    const mm  = String(now.getMinutes()).padStart(2,'0');
+    const ss  = String(now.getSeconds()).padStart(2,'0');
+    const el  = document.getElementById('dashboard-time');
+    if (el) el.textContent = `${hh}:${mm}:${ss} (${DAYS_KO[now.getDay()]}요일) · 현재 시간대: ${now.getHours()}:00`;
   }
-  setInterval(updateTime, 30000);
+  updateTime();
+  setInterval(updateTime, 1000);
 </script>

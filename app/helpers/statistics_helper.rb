@@ -11,6 +11,8 @@ module StatisticsHelper
     leaves_before = assigns["daily_leaves_before"] || []
     leaves_short  = assigns["daily_leaves_short"]  || []
     leaves_long   = assigns["daily_leaves_long"]   || []
+    otto_clean    = assigns["otto_students_clean"]
+    otto_nonclean = assigns["otto_students_nonclean"]
 
     # 익일 결제 예정
     tomorrow_payments = payment_due_tomorrow(tomorrow)
@@ -49,6 +51,12 @@ module StatisticsHelper
         teacher_note = s.makeup_teacher ? "(#{s.makeup_teacher.name})" : ""
         lines << "  · #{s.student.name} — #{s.subject} #{teacher_note}"
       end
+      lines << ""
+    end
+
+    if otto_clean || otto_nonclean
+      lines << "👤 오또 재원자"
+      lines << "  클린 #{otto_clean || 0}명 / 비클린 #{otto_nonclean || 0}명"
       lines << ""
     end
 

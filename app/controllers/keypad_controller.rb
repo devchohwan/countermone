@@ -31,6 +31,20 @@ class KeypadController < ApplicationController
     end
 
     schedule = schedules.first
+
+    # 수강 종료일 초과 오류 감지
+    ends = schedule.payment.ends_at
+    if ends && Date.today > ends
+      Attendance.create!(
+        student: student, schedule: schedule, payment: schedule.payment,
+        checked_in_at: now, error_type: "expired_date"
+      ) rescue nil
+      render json: {
+        error: "수강 종료일(#{ends.strftime('%m/%d')})이 지났습니다. 상담원에게 문의하세요.",
+        error_type: "expired_date"
+      } and return
+    end
+
     process_checkin(schedule, now)
   end
 

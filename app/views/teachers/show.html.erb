@@ -1,0 +1,44 @@
+<% content_for :title, "#{@teacher.name} - 선생님 정보" %>
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-bold"><%= @teacher.name %></h2>
+  <div class="flex gap-2">
+    <%= link_to "수정", edit_teacher_path(@teacher), class: "btn btn-sm btn-ghost" %>
+    <%= link_to "목록", teachers_path, class: "btn btn-sm btn-ghost" %>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h3 class="font-semibold mb-3">담당 과목</h3>
+      <div class="flex flex-wrap gap-2">
+        <% if @teacher.teacher_subjects.any? %>
+          <% @teacher.teacher_subjects.each do |ts| %>
+            <span class="badge badge-outline"><%= ts.subject %></span>
+          <% end %>
+        <% else %>
+          <span class="text-sm text-base-content/40">담당 과목 없음</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h3 class="font-semibold mb-3">재원 수강생 (<%= @enrollments.count %>명)</h3>
+      <% if @enrollments.any? %>
+        <ul class="text-sm space-y-1">
+          <% @enrollments.each do |e| %>
+            <li class="flex justify-between">
+              <span><%= e.student.name %></span>
+              <span class="text-base-content/50"><%= e.subject %> / <%= lesson_day_ko(e.lesson_day) %>요일</span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="text-sm text-base-content/40">재원 수강생 없음</p>
+      <% end %>
+    </div>
+  </div>
+</div>

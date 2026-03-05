@@ -39,7 +39,7 @@ module ApplicationHelper
       "unregistered" => "badge-ghost"
     }
     cls = daisy[status] || "badge-ghost"
-    content_tag(:span, STATUS_KO[status] || status, class: "badge badge-sm #{cls}")
+    content_tag(:span, ApplicationHelper::STATUS_KO[status] || status, class: "badge badge-sm #{cls}")
   end
 
   def schedule_status_badge(status)

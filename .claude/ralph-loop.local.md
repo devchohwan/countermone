@@ -1,6 +1,6 @@
 ---
 active: true
-iteration: 4
+iteration: 5
 session_id: 
 max_iterations: 10
 completion_promise: "plan260306.md의 모든 신규 항목이 구현되고 서버가 정상 작동한다"

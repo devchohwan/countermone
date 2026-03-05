@@ -17,6 +17,7 @@ class Payment < ApplicationRecord
   after_create  :generate_schedules
   after_create  :apply_attendance_event_if_pending
   after_create  :apply_referral_discount_if_pending
+  after_create  :notify_referrer_if_applicable
   after_create  :reset_minus_lesson_count
   after_create  :clear_waiting_expires_at
   after_commit  :set_review_due_if_applicable, on: :create
@@ -97,6 +98,15 @@ class Payment < ApplicationRecord
 
   def clear_waiting_expires_at
     student.update_column(:waiting_expires_at, nil) if student.waiting_expires_at.present?
+  end
+
+  # 피추천인의 첫 결제 완납 시 추천인 referral_discount_pending → true
+  def notify_referrer_if_applicable
+    return unless fully_paid?
+    referrer = student.referrer
+    return unless referrer
+    return unless enrollment.payments.where(fully_paid: true).count == 1
+    referrer.update!(referral_discount_pending: true)
   end
 
   def set_review_due_if_applicable

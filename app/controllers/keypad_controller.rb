@@ -11,8 +11,23 @@ class KeypadController < ApplicationController
       render json: { error: "등록되지 않은 코드입니다." }, status: :not_found and return
     end
 
-    now        = Time.current
-    today      = Date.today
+    now   = Time.current
+    today = Date.today
+
+    # 클래스 선택 후 schedule_id가 넘어온 경우
+    if params[:schedule_id].present?
+      schedule = Schedule.find_by(id: params[:schedule_id], student: student,
+                                  lesson_date: today, status: %w[scheduled makeup_scheduled])
+      unless schedule
+        render json: { error: "유효하지 않은 수업입니다." }, status: :not_found and return
+      end
+      ends = schedule.payment.ends_at
+      if ends && Date.today > ends
+        render json: { error: "수강 종료일(#{ends.strftime('%m/%d')})이 지났습니다. 상담원에게 문의하세요.", error_type: "expired_date" } and return
+      end
+      return process_checkin(schedule, now)
+    end
+
     schedules  = Schedule.includes(:enrollment)
                          .where(student: student, lesson_date: today)
                          .where(status: %w[scheduled makeup_scheduled])

@@ -33,7 +33,10 @@
     <%# ④ 오늘 마감 요약 %>
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body p-4">
-        <h3 class="card-title text-sm">오늘 마감</h3>
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="card-title text-sm">오늘 마감</h3>
+          <%= link_to "마감 톡 생성 →", statistics_path(date: @today), class: "btn btn-xs btn-primary" %>
+        </div>
         <table class="table table-xs">
           <tbody>
             <tr><td class="text-base-content/60">결제 건수</td><td class="font-bold"><%= @daily_payments.count %>건</td></tr>
@@ -105,6 +108,9 @@
                   <% if item[:enrollment] %>
                     <span class="text-xs text-base-content/50"><%= item[:enrollment].subject %></span>
                   <% end %>
+                  <%= button_to "완료", complete_contact_student_path(item[:student]),
+                        method: :patch,
+                        class: "btn btn-xs btn-ghost text-success ml-auto" %>
                 </li>
               <% end %>
             </ul>

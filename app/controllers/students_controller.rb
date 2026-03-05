@@ -1,5 +1,5 @@
 class StudentsController < ApplicationController
-  before_action :set_student, only: %i[show edit update destroy leave return dropout]
+  before_action :set_student, only: %i[show edit update destroy leave return dropout complete_contact]
 
   def index
     @students = Student.includes(:enrollments, :teachers)
@@ -95,6 +95,11 @@ class StudentsController < ApplicationController
   def dropout
     @student.enrollments.where(status: %w[active leave]).each(&:dropout!)
     redirect_to @student, notice: "퇴원 처리되었습니다."
+  end
+
+  def complete_contact
+    @student.update!(contact_due: nil)
+    redirect_back fallback_location: root_path, notice: "#{@student.name} 연락 완료 처리되었습니다."
   end
 
   def check_attendance_code

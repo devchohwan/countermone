@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       patch :leave
       patch :return
       patch :dropout
+      patch :complete_contact
     end
     resources :enrollments, shallow: true do
       member do

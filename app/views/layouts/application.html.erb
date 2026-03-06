@@ -7,6 +7,12 @@
     <%= csp_meta_tag %>
     <%= yield :head %>
     <link rel="icon" href="/icon.png" type="image/png">
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
@@ -113,16 +119,14 @@
     <% end %>
 
     <script>
-      // 다크모드: localStorage 유지
       (function() {
         const theme = localStorage.getItem('theme') || 'light';
-        document.getElementById('html-root').setAttribute('data-theme', theme);
         const toggle = document.getElementById('theme-toggle');
         if (toggle) toggle.checked = (theme === 'dark');
       })();
       function toggleTheme(el) {
         const theme = el.checked ? 'dark' : 'light';
-        document.getElementById('html-root').setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
       }
     </script>

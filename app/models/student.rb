@@ -39,6 +39,12 @@ class Student < ApplicationRecord
     enrollment.schedules.where(status: %w[attended makeup_done deducted]).count
   end
 
+  def available_passes_for(enrollment)
+    total_months = enrollment.payments.where(fully_paid: true).sum(:months)
+    used_passes  = enrollment.schedules.where(status: %w[pass emergency_pass]).count
+    total_months - used_passes
+  end
+
   private
 
   def update_rank_from_transfer_form

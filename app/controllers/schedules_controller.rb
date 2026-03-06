@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend late deduct pass emergency_pass makeup approve_makeup complete_makeup undo_deduct]
+  before_action :set_schedule, only: %i[show attend late deduct pass emergency_pass makeup approve_makeup complete_makeup undo_deduct makeup_slots]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -169,6 +169,29 @@ class SchedulesController < ApplicationController
     @schedule.update!(status: "makeup_done")
     create_attendance_record(@schedule)
     redirect_back fallback_location: schedules_path, notice: "보강 완료 처리되었습니다."
+  end
+
+  def makeup_slots
+    range = @schedule.makeup_available_range
+    result = {
+      range_min:   range&.first&.to_s,
+      range_max:   range&.last&.to_s,
+      lesson_time: @schedule.lesson_time.strftime("%H:%M")
+    }
+
+    if params[:date].present?
+      date    = Date.parse(params[:date])
+      subject = @schedule.subject
+      teachers = Teacher.by_position
+                        .joins(:teacher_subjects)
+                        .where(teacher_subjects: { subject: subject })
+      result[:teachers] = teachers.map do |t|
+        slots = Schedule.slot_count(t.id, subject, date)
+        { id: t.id, name: t.name, slots: slots, available: slots < 3 }
+      end
+    end
+
+    render json: result
   end
 
   def undo_deduct

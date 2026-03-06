@@ -38,6 +38,7 @@ Rails.application.routes.draw do
     member do
       patch :attend
       patch :late
+      get   :makeup_slots
       patch :deduct
       patch :pass
       patch :emergency_pass

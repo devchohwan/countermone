@@ -12,27 +12,27 @@
     <div class="grid grid-cols-2 gap-4">
       <div>
         <%= f.label :name, "이름", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.text_field :name, class: "w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" %>
+        <%= f.text_field :name, class: "input input-bordered w-full text-sm" %>
       </div>
       <div>
         <%= f.label :phone, "전화번호", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.text_field :phone, class: "w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" %>
+        <%= f.text_field :phone, class: "input input-bordered w-full text-sm" %>
       </div>
       <div>
         <%= f.label :age, "나이", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.number_field :age, class: "w-full border rounded px-3 py-2 text-sm" %>
+        <%= f.number_field :age, class: "input input-bordered w-full text-sm" %>
       </div>
       <div>
         <%= f.label :attendance_code, "출결코드", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.text_field :attendance_code, class: "w-full border rounded px-3 py-2 text-sm font-mono" %>
+        <%= f.text_field :attendance_code, class: "input input-bordered w-full text-sm font-mono" %>
       </div>
       <div>
         <%= f.label :status, "상태", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.select :status, [["재원","active"],["휴원","leave"],["퇴원","dropout"],["등록대기","pending"],["미등록","unregistered"]], {}, class: "w-full border rounded px-3 py-2 text-sm" %>
+        <%= f.select :status, [["재원","active"],["휴원","leave"],["퇴원","dropout"],["등록대기","pending"],["미등록","unregistered"]], {}, class: "select select-bordered w-full text-sm" %>
       </div>
       <div>
         <%= f.label :first_enrolled_at, "최초 등록일", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.date_field :first_enrolled_at, class: "w-full border rounded px-3 py-2 text-sm" %>
+        <%= f.date_field :first_enrolled_at, class: "input input-bordered w-full text-sm" %>
       </div>
     </div>
 
@@ -57,26 +57,26 @@
     <div class="space-y-3">
       <div>
         <%= f.label :reason_for_joining, "찾아온 이유", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.text_area :reason_for_joining, rows: 2, class: "w-full border rounded px-3 py-2 text-sm" %>
+        <%= f.text_area :reason_for_joining, rows: 2, class: "textarea textarea-bordered w-full text-sm" %>
       </div>
       <div>
         <%= f.label :own_problem, "본인의 문제점", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.text_area :own_problem, rows: 2, class: "w-full border rounded px-3 py-2 text-sm" %>
+        <%= f.text_area :own_problem, rows: 2, class: "textarea textarea-bordered w-full text-sm" %>
       </div>
       <div>
         <%= f.label :desired_goal, "하고 싶은 것", class: "block text-sm font-medium text-base-content mb-1" %>
-        <%= f.text_area :desired_goal, rows: 2, class: "w-full border rounded px-3 py-2 text-sm" %>
+        <%= f.text_area :desired_goal, rows: 2, class: "textarea textarea-bordered w-full text-sm" %>
       </div>
     </div>
   </div>
 
   <div class="bg-base-100 rounded-lg border shadow-sm p-4 space-y-4">
     <h3 class="font-semibold text-sm">메모</h3>
-    <%= f.text_area :memo, rows: 3, class: "w-full border rounded px-3 py-2 text-sm" %>
+    <%= f.text_area :memo, rows: 3, class: "textarea textarea-bordered w-full text-sm" %>
   </div>
 
   <div class="flex gap-3">
-    <%= f.submit student.new_record? ? "등록" : "저장", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
-    <%= link_to "취소", student.new_record? ? students_path : student_path(student), class: "border px-4 py-2 rounded text-sm hover:bg-base-200" %>
+    <%= f.submit student.new_record? ? "등록" : "저장", class: "btn btn-primary btn-sm" %>
+    <%= link_to "취소", student.new_record? ? students_path : student_path(student), class: "btn btn-ghost btn-sm" %>
   </div>
 <% end %>

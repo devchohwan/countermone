@@ -22,19 +22,19 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <%= f.label :subject, "과목", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_subject" %>
+          <%= f.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "select select-bordered w-full text-sm", id: "enrollment_subject" %>
         </div>
         <div>
           <%= f.label :teacher_id, "선생님", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.select :teacher_id, [], { prompt: "선생님 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_teacher" %>
+          <%= f.select :teacher_id, [], { prompt: "선생님 선택" }, class: "select select-bordered w-full text-sm", id: "enrollment_teacher" %>
         </div>
         <div>
           <%= f.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_lesson_day" %>
+          <%= f.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "select select-bordered w-full text-sm", id: "enrollment_lesson_day" %>
         </div>
         <div>
           <%= f.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.select :lesson_time, [], { prompt: "시간 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_lesson_time" %>
+          <%= f.select :lesson_time, [], { prompt: "시간 선택" }, class: "select select-bordered w-full text-sm", id: "enrollment_lesson_time" %>
         </div>
       </div>
     </div>
@@ -44,9 +44,9 @@
     </div>
 
     <div class="flex gap-3">
-      <%= f.submit "등록", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
+      <%= f.submit "등록", class: "btn btn-primary btn-sm" %>
       <% if params[:modal] != '1' %>
-        <%= link_to "취소", student_path(@student), class: "border px-4 py-2 rounded text-sm hover:bg-base-200" %>
+        <%= link_to "취소", student_path(@student), class: "btn btn-ghost btn-sm" %>
       <% end %>
     </div>
   <% end %>

@@ -4,8 +4,8 @@
   <h2 class="text-lg font-bold">출결 관리</h2>
   <div class="flex gap-2 text-sm">
     <%= form_with url: schedules_path, method: :get, class: "flex gap-2" do |f| %>
-      <%= f.date_field :date, value: params[:date] || Date.today, class: "border rounded px-2 py-1 text-sm" %>
-      <%= f.submit "조회", class: "bg-base-200 px-3 py-1 rounded hover:bg-base-300 cursor-pointer" %>
+      <%= f.date_field :date, value: params[:date] || Date.today, class: "input input-bordered input-sm text-sm" %>
+      <%= f.submit "조회", class: "btn btn-sm btn-ghost" %>
     <% end %>
   </div>
 </div>

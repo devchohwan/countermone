@@ -37,8 +37,8 @@
     <% unless @payment.refunded? %>
       <div class="mt-3">
         <%= form_with url: refund_payment_path(@payment), method: :post, class: "flex items-center gap-2" do |f| %>
-          <%= f.number_field :refund_amount, value: @payment.refund_amount_calculated, class: "border rounded px-2 py-1 text-sm w-28" %>
-          <%= f.text_field :refund_reason, placeholder: "환불 사유", class: "border rounded px-2 py-1 text-sm flex-1" %>
+          <%= f.number_field :refund_amount, value: @payment.refund_amount_calculated, class: "input input-bordered input-sm text-sm w-28" %>
+          <%= f.text_field :refund_reason, placeholder: "환불 사유", class: "input input-bordered input-sm text-sm flex-1" %>
           <%= f.submit "환불 처리", class: "text-sm bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 cursor-pointer", data: { turbo_confirm: "환불 처리하시겠습니까?" } %>
         <% end %>
       </div>

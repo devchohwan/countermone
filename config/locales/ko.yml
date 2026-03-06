@@ -10,6 +10,7 @@ ko:
         not_included: "목록에 포함되어 있지 않습니다"
         inclusion: "목록에 없는 값입니다"
         record_invalid: "유효성 검사에 실패했습니다: %{errors}"
+        confirmation: "이 입력값이 일치하지 않습니다"
       models:
         student:
           attributes:
@@ -42,7 +43,13 @@ ko:
       student: "수강생"
       enrollment: "클래스"
       payment: "결제"
+      user: "상담원"
     attributes:
+      user:
+        name: "이름"
+        email_address: "이메일"
+        password: "비밀번호"
+        password_confirmation: "비밀번호 확인"
       student:
         name: "이름"
         phone: "전화번호"

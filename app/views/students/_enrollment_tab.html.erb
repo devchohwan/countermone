@@ -148,7 +148,7 @@
                 <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline cursor-pointer hover:badge-primary"
                      data-filter="<%= filter_key %>"
                      title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %>"
-                     onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>')">
+                     onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>')">
                   <%= s.lesson_date.strftime("%-m/%-d") %>
                   <span class="<%= case s.status
                     when 'attended', 'makeup_done' then 'text-success'
@@ -208,7 +208,7 @@
   };
 
   // 수업 처리 모달
-  window.openScheduleAction = function(scheduleId, dateLabel, status) {
+  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr) {
     const el = document.querySelector(`[onclick*="openScheduleAction('${scheduleId}'"]`);
     if (!el) return;
     const classMatch = el.className.match(/schedule-item-(\d+)/);
@@ -286,12 +286,12 @@
 
           window._mkData = data;
 
-          const rangeMin = parseDate(data.range_min);
-          const rangeMax = parseDate(data.range_max);
-          const today    = new Date(); today.setHours(0, 0, 0, 0);
+          const rangeMin    = parseDate(data.range_min);
+          const rangeMax    = parseDate(data.range_max);
+          const lessonDate  = parseDate(lessonDateStr);
 
-          let initial = today < rangeMin ? rangeMin : (today > rangeMax ? rangeMin : today);
-          window._mkWeekStart = getMonday(initial);
+          // 클릭한 수업 날짜의 주를 기준으로 표시
+          window._mkWeekStart = getMonday(lessonDate);
 
           renderMakeupWeek();
         });
@@ -335,25 +335,23 @@
       const rows = data.teachers.map(t => {
         const tds = days.map(d => {
           const inRange = d >= rangeMin && d <= rangeMax;
-          if (!inRange) return `<td class="text-center opacity-20 text-xs">—</td>`;
+          if (!inRange) return `<td class="text-center opacity-20 text-xs select-none">—</td>`;
 
           const ds    = toDateStr(d);
           const slots = (data.grid[ds] || {})[String(t.id)] ?? 0;
 
           if (slots >= 3) {
-            return `<td class="text-center text-error opacity-40 text-xs" title="마감 (3/3)">✕</td>`;
+            return `<td class="text-center text-error opacity-40 text-xs select-none" title="마감 (3/3)">✕</td>`;
           }
 
-          const filled  = '●'.repeat(slots);
-          const empty   = '○'.repeat(3 - slots);
-          const btnCls  = slots === 0 ? 'btn-success' : 'btn-warning';
+          const filled   = '●'.repeat(slots);
+          const empty    = '○'.repeat(3 - slots);
+          const colorCls = slots === 0 ? 'text-success' : 'text-warning';
 
-          return `<td class="text-center p-0.5">
-            <button onclick="confirmMakeup('${ds}',${t.id},'${lt}','${t.name}')"
-                    class="btn btn-xs ${btnCls} btn-outline w-full px-0.5 font-mono"
-                    title="${slots}/3명">
-              ${filled}<span class="opacity-30">${empty}</span>
-            </button>
+          return `<td class="text-center cursor-pointer hover:bg-base-200 rounded"
+                      onclick="confirmMakeup('${ds}',${t.id},'${lt}','${t.name}')"
+                      title="${t.name} — ${slots}/3명">
+            <span class="font-mono text-xs ${colorCls}">${filled}</span><span class="font-mono text-xs opacity-30">${empty}</span>
           </td>`;
         }).join('');
 

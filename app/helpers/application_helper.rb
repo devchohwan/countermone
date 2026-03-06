@@ -94,7 +94,13 @@ module ApplicationHelper
       tags << "패"
     elsif schedule.sequence == 1
       is_first_payment = e.payments.order(:created_at).first&.id == schedule.payment_id
-      tags << (is_first_payment ? "첫" : "복")
+      if is_first_payment
+        tags << "첫"
+      else
+        # 직전 수업과 2주 초과 공백 = 휴원 후 복귀, 그 외는 단순 연장
+        prev_lesson = e.schedules.where("lesson_date < ?", schedule.lesson_date).order(:lesson_date).last
+        tags << "복" if prev_lesson && (schedule.lesson_date - prev_lesson.lesson_date) > 14
+      end
     end
 
     tags << "★" if s.has_car?

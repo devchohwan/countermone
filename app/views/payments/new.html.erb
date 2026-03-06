@@ -69,12 +69,18 @@
         document.addEventListener("DOMContentLoaded", function() {
           const monthsEl  = document.getElementById("payment_months");
           const amountEl  = document.getElementById("payment_amount");
+          const lessonsEl = document.getElementById("payment_total_lessons");
           const hintEl    = document.getElementById("price-hint");
 
           function lookupPrice() {
             const months  = monthsEl?.value;
             const subject = ENROLLMENT_SUBJECT || "";
             if (!months || !subject) return;
+
+            // 총 수업 횟수 자동 입력 (1개월 = 4회)
+            if (lessonsEl) lessonsEl.value = parseInt(months) * 4;
+
+            // 금액 자동 입력
             const key   = subject + "_" + months;
             const price = PRICE_TABLE[key];
             if (price) {

@@ -79,7 +79,7 @@
 <%# 클래스 탭 — 3개 이하: 탭, 4개 이상: 탭+드롭다운 %>
 <div class="flex items-center justify-between mb-3">
   <h3 class="text-lg font-bold">수강 클래스</h3>
-  <%= link_to "+ 클래스 추가", new_student_enrollment_path(@student), class: "btn btn-sm btn-primary" %>
+  <%= link_to "+ 신규 클래스 추가", new_student_enrollment_path(@student), class: "btn btn-sm btn-primary" %>
 </div>
 
 <% if @enrollments.empty? %>

@@ -96,7 +96,7 @@
             </button>
           <% end %>
           <% if enrollment.status == "active" %>
-            <%= link_to "+ 결제 추가", new_payment_path(enrollment_id: enrollment.id), class: "btn btn-xs btn-outline btn-primary mt-1" %>
+            <%= link_to "+ 연장 결제", new_payment_path(enrollment_id: enrollment.id), class: "btn btn-xs btn-outline btn-primary mt-1" %>
           <% end %>
         <% else %>
           <p class="text-sm text-base-content/40">결제 내역 없음</p>

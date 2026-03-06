@@ -1,159 +1,171 @@
 <% content_for :title, "대시보드 — 모네뮤직" %>
 
-<%= turbo_stream_from "dashboard_current" %>
+<% if @is_today %>
+  <%= turbo_stream_from "dashboard_current" %>
+<% end %>
 
 <div class="space-y-4">
 
-  <%# 헤더 %>
+  <%# 헤더 + 날짜 네비게이션 %>
   <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-xl font-bold"><%= @today.strftime("%Y년 %m월 %d일 (%A)") %></h2>
-      <p class="text-sm text-base-content/60" id="dashboard-time"></p>
+    <div class="flex items-center gap-3">
+      <%# 날짜 이동 %>
+      <div class="join">
+        <%= link_to "←", root_path(date: (@date - 1).to_s), class: "join-item btn btn-sm btn-ghost" %>
+        <span class="join-item btn btn-sm btn-ghost pointer-events-none font-semibold">
+          <%= @date.strftime("%Y.%m.%d (%a)") %>
+        </span>
+        <%= link_to "→", root_path(date: (@date + 1).to_s),
+              class: "join-item btn btn-sm btn-ghost #{@date >= Date.today ? 'btn-disabled opacity-30' : ''}" %>
+      </div>
+      <% unless @is_today %>
+        <%= link_to "오늘", root_path, class: "btn btn-xs btn-primary" %>
+      <% end %>
+      <% if @is_today %>
+        <p class="text-sm text-base-content/60" id="dashboard-time"></p>
+      <% end %>
     </div>
     <div class="flex gap-2 items-center">
-      <% if @attendance_events.any? %>
+      <% if @attendance_events&.any? %>
         <div class="badge badge-accent gap-1">🔥 개근달성 <%= @attendance_events.count %>명</div>
       <% end %>
-      <% if @payment_due_today.count > 0 %>
-        <div class="indicator"><span class="indicator-item badge badge-error badge-xs"><%= @payment_due_today.count %></span><span class="btn btn-ghost btn-sm">💳</span></div>
-      <% end %>
-      <% if @contact_list.count > 0 %>
-        <div class="indicator"><span class="indicator-item badge badge-warning badge-xs"><%= @contact_list.count %></span><span class="btn btn-ghost btn-sm">📞</span></div>
+      <% if @is_today %>
+        <% if @payment_due_today.count > 0 %>
+          <div class="indicator"><span class="indicator-item badge badge-error badge-xs"><%= @payment_due_today.count %></span><span class="btn btn-ghost btn-sm">💳</span></div>
+        <% end %>
+        <% if @contact_list.count > 0 %>
+          <div class="indicator"><span class="indicator-item badge badge-warning badge-xs"><%= @contact_list.count %></span><span class="btn btn-ghost btn-sm">📞</span></div>
+        <% end %>
       <% end %>
     </div>
   </div>
 
-  <div class="grid grid-cols-3 gap-4">
+  <% if @is_today %>
+    <%# 오늘: 3열 — 지금이순간(col-span-2) + 마감요약 %>
+    <div class="grid grid-cols-3 gap-4">
+      <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>
+        <%= render "current_schedules" %>
+      <% end %>
 
-    <%# ① 지금 이 순간 (Turbo Frame) %>
-    <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>
-      <%= render "current_schedules" %>
-    <% end %>
+      <%# 오늘 마감 요약 %>
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-4">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="card-title text-sm">오늘 마감</h3>
+            <%= link_to "마감 톡 생성 →", statistics_path(date: @date), class: "btn btn-xs btn-primary" %>
+          </div>
+          <%= render "daily_summary" %>
+        </div>
+      </div>
+    </div>
 
-    <%# ④ 오늘 마감 요약 %>
+    <%# 오늘 해야 할 일 (탭) %>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-4">
+        <div role="tablist" class="tabs tabs-bordered tabs-sm">
+
+          <input type="radio" name="todo-tabs" role="tab" class="tab"
+                 aria-label="💳 결제 (<%= @payment_due_today.count %>)" checked />
+          <div role="tabpanel" class="tab-content pt-3">
+            <% if @payment_due_today.empty? %>
+              <p class="text-sm text-base-content/40">오늘 결제 예정 없음</p>
+            <% else %>
+              <ul class="space-y-2">
+                <% @payment_due_today.each do |item| %>
+                  <% color = item[:type] == :deposit_first_lesson ? "border-error" : item[:type] == :balance_due ? "border-warning" : "border-info" %>
+                  <li class="flex items-center gap-2 text-sm border-l-2 pl-2 <%= color %>">
+                    <span class="font-medium"><%= item[:student].name %></span>
+                    <span class="text-base-content/50">— <%= item[:enrollment].subject %></span>
+                    <span class="badge badge-xs <%= item[:type] == :deposit_first_lesson ? 'badge-error' : item[:type] == :balance_due ? 'badge-warning' : 'badge-info' %>">
+                      <%= case item[:type]
+                          when :deposit_first_lesson then "오늘 첫수업, 완납필요"
+                          when :balance_due          then "잔금미납"
+                          when :next_payment_due     then "다음결제예정"
+                          end %>
+                    </span>
+                  </li>
+                <% end %>
+              </ul>
+            <% end %>
+          </div>
+
+          <input type="radio" name="todo-tabs" role="tab" class="tab"
+                 aria-label="📞 연락 (<%= @contact_list.count %>)" />
+          <div role="tabpanel" class="tab-content pt-3">
+            <% if @contact_list.empty? %>
+              <p class="text-sm text-base-content/40">오늘 연락할 대상 없음</p>
+            <% else %>
+              <ul class="space-y-2">
+                <% @contact_list.each do |item| %>
+                  <li class="flex items-center gap-2 text-sm">
+                    <span class="font-medium"><%= item[:student].name %></span>
+                    <span class="badge badge-xs badge-outline">
+                      <%= case item[:type]
+                          when :contact_due     then "연락기한"
+                          when :return_due      then "복귀예정"
+                          when :waiting_expired then "자리대기만료"
+                          end %>
+                    </span>
+                    <% if item[:enrollment] %>
+                      <span class="text-xs text-base-content/50"><%= item[:enrollment].subject %></span>
+                    <% end %>
+                    <%= button_to "완료", complete_contact_student_path(item[:student]),
+                          method: :patch,
+                          class: "btn btn-xs btn-ghost text-success ml-auto" %>
+                  </li>
+                <% end %>
+              </ul>
+            <% end %>
+          </div>
+
+          <input type="radio" name="todo-tabs" role="tab" class="tab" aria-label="✅ 확인" />
+          <div role="tabpanel" class="tab-content pt-3">
+            <% if @minus_enrollments.any? %>
+              <p class="text-xs font-bold text-error mb-1">마이너스 수업</p>
+              <% @minus_enrollments.each do |e| %>
+                <p class="text-sm"><%= e.student.name %> — <%= e.subject %> (<%= e.minus_lesson_count %>회)</p>
+              <% end %>
+            <% end %>
+            <% if @pending_consents.any? %>
+              <p class="text-xs font-bold text-warning mt-2 mb-1">동의서 미수령</p>
+              <% @pending_consents.each do |s| %>
+                <p class="text-sm"><%= s.name %></p>
+              <% end %>
+            <% end %>
+            <% if @minus_enrollments.empty? && @pending_consents.empty? %>
+              <p class="text-sm text-base-content/40">없음</p>
+            <% end %>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  <% else %>
+    <%# 과거/미래: 마감 요약만 %>
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body p-4">
         <div class="flex items-center justify-between mb-1">
-          <h3 class="card-title text-sm">오늘 마감</h3>
-          <%= link_to "마감 톡 생성 →", statistics_path(date: @today), class: "btn btn-xs btn-primary" %>
+          <h3 class="card-title text-sm"><%= @date.strftime("%m/%d") %> 마감</h3>
+          <%= link_to "마감 톡 생성 →", statistics_path(date: @date), class: "btn btn-xs btn-primary" %>
         </div>
-        <table class="table table-xs">
-          <tbody>
-            <tr><td class="text-base-content/60">결제 건수</td><td class="font-bold"><%= @daily_payments.count %>건</td></tr>
-            <tr><td class="text-base-content/60">결제 합계</td><td class="font-bold text-primary"><%= format_amount(@daily_payments.sum(&:amount)) %></td></tr>
-            <tr><td class="text-base-content/60">당일 휴원</td><td><%= @daily_leaves.count %>명</td></tr>
-            <tr><td class="text-base-content/60">당일 퇴원</td><td><%= @daily_dropouts.count %>명</td></tr>
-            <tr><td class="text-base-content/60">당일 복귀</td><td><%= @daily_returns.count %>명</td></tr>
-          </tbody>
-        </table>
-        <% if @attendance_events.any? %>
-          <div class="divider my-1"></div>
-          <p class="text-xs font-bold text-accent mb-1">🔥 개근 달성자</p>
-          <% @attendance_events.each do |e| %>
-            <p class="text-sm"><%= e.student.name %> — <%= e.subject %></p>
-          <% end %>
-        <% end %>
+        <%= render "daily_summary" %>
       </div>
     </div>
+  <% end %>
 
-  </div>
-
-  <%# ② 오늘 해야 할 일 (탭) %>
+  <%# 시간표 (날짜 무관 공통) %>
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body p-4">
-      <div role="tablist" class="tabs tabs-bordered tabs-sm">
-
-        <input type="radio" name="todo-tabs" role="tab" class="tab"
-               aria-label="💳 결제 (<%= @payment_due_today.count %>)" checked />
-        <div role="tabpanel" class="tab-content pt-3">
-          <% if @payment_due_today.empty? %>
-            <p class="text-sm text-base-content/40">오늘 결제 예정 없음</p>
-          <% else %>
-            <ul class="space-y-2">
-              <% @payment_due_today.each do |item| %>
-                <% color = item[:type] == :deposit_first_lesson ? "border-error" : item[:type] == :balance_due ? "border-warning" : "border-info" %>
-                <li class="flex items-center gap-2 text-sm border-l-2 pl-2 <%= color %>">
-                  <span class="font-medium"><%= item[:student].name %></span>
-                  <span class="text-base-content/50">— <%= item[:enrollment].subject %></span>
-                  <span class="badge badge-xs <%= item[:type] == :deposit_first_lesson ? 'badge-error' : item[:type] == :balance_due ? 'badge-warning' : 'badge-info' %>">
-                    <%= case item[:type]
-                        when :deposit_first_lesson then "오늘 첫수업, 완납필요"
-                        when :balance_due          then "잔금미납"
-                        when :next_payment_due     then "다음결제예정"
-                        end %>
-                  </span>
-                </li>
-              <% end %>
-            </ul>
-          <% end %>
-        </div>
-
-        <input type="radio" name="todo-tabs" role="tab" class="tab"
-               aria-label="📞 연락 (<%= @contact_list.count %>)" />
-        <div role="tabpanel" class="tab-content pt-3">
-          <% if @contact_list.empty? %>
-            <p class="text-sm text-base-content/40">오늘 연락할 대상 없음</p>
-          <% else %>
-            <ul class="space-y-2">
-              <% @contact_list.each do |item| %>
-                <li class="flex items-center gap-2 text-sm">
-                  <span class="font-medium"><%= item[:student].name %></span>
-                  <span class="badge badge-xs badge-outline">
-                    <%= case item[:type]
-                        when :contact_due     then "연락기한"
-                        when :return_due      then "복귀예정"
-                        when :waiting_expired then "자리대기만료"
-                        end %>
-                  </span>
-                  <% if item[:enrollment] %>
-                    <span class="text-xs text-base-content/50"><%= item[:enrollment].subject %></span>
-                  <% end %>
-                  <%= button_to "완료", complete_contact_student_path(item[:student]),
-                        method: :patch,
-                        class: "btn btn-xs btn-ghost text-success ml-auto" %>
-                </li>
-              <% end %>
-            </ul>
-          <% end %>
-        </div>
-
-        <input type="radio" name="todo-tabs" role="tab" class="tab" aria-label="✅ 확인" />
-        <div role="tabpanel" class="tab-content pt-3">
-          <% if @minus_enrollments.any? %>
-            <p class="text-xs font-bold text-error mb-1">마이너스 수업</p>
-            <% @minus_enrollments.each do |e| %>
-              <p class="text-sm"><%= e.student.name %> — <%= e.subject %> (<%= e.minus_lesson_count %>회)</p>
-            <% end %>
-          <% end %>
-          <% if @pending_consents.any? %>
-            <p class="text-xs font-bold text-warning mt-2 mb-1">동의서 미수령</p>
-            <% @pending_consents.each do |s| %>
-              <p class="text-sm"><%= s.name %></p>
-            <% end %>
-          <% end %>
-          <% if @minus_enrollments.empty? && @pending_consents.empty? %>
-            <p class="text-sm text-base-content/40">없음</p>
-          <% end %>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <%# ③ 오늘 전체 시간표 (선생님별 탭) %>
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body p-4">
-      <h3 class="card-title text-sm mb-2">📅 오늘 시간표</h3>
+      <h3 class="card-title text-sm mb-2">📅 <%= @is_today ? "오늘" : @date.strftime("%m/%d") %> 시간표</h3>
       <% if @today_schedules.empty? && @today_makeups.empty? %>
-        <p class="text-sm text-base-content/40">오늘 수업이 없습니다.</p>
+        <p class="text-sm text-base-content/40">수업이 없습니다.</p>
       <% else %>
         <div role="tablist" class="tabs tabs-bordered tabs-sm mb-3">
-          <%# 전체 탭 %>
           <input type="radio" name="timetable-tabs" role="tab" class="tab" aria-label="전체" checked />
           <div role="tabpanel" class="tab-content pt-2">
             <%= render "today_schedule_table", schedules: @today_schedules, makeups: @today_makeups, current_hour: @current_hour %>
           </div>
-          <%# 선생님별 탭 %>
           <% @teachers_today.each do |teacher| %>
             <input type="radio" name="timetable-tabs" role="tab" class="tab" aria-label="<%= teacher.name %>" />
             <div role="tabpanel" class="tab-content pt-2">
@@ -169,6 +181,7 @@
 
 </div>
 
+<% if @is_today %>
 <script>
   const DAYS_KO = ['일','월','화','수','목','금','토'];
   function updateTime() {
@@ -182,3 +195,4 @@
   updateTime();
   setInterval(updateTime, 1000);
 </script>
+<% end %>

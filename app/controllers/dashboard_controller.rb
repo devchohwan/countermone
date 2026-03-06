@@ -9,57 +9,47 @@ class DashboardController < ApplicationController
   end
 
   def index
-    @today = Date.today
-    @current_hour = Time.now.hour
+    @date     = params[:date].present? ? Date.parse(params[:date]) : Date.today
+    @is_today = @date == Date.today
+    @current_hour = @is_today ? Time.now.hour : nil
 
-    # 오늘 시간표
+    # 시간표
     @today_schedules = Schedule
       .includes(:student, :teacher, :enrollment)
-      .where(lesson_date: @today)
+      .where(lesson_date: @date)
       .where(status: %w[scheduled attended late makeup_scheduled])
       .order(:lesson_time)
 
-    # 오늘 보강 일정
+    # 보강 일정
     @today_makeups = Schedule
       .includes(:student, :makeup_teacher, :enrollment)
-      .where(makeup_date: @today)
+      .where(makeup_date: @date)
       .where(status: %w[makeup_scheduled makeup_done])
 
-    # 현재 시간대 수업 중인 수강생
-    @current_schedules = @today_schedules.select do |s|
-      s.lesson_time.hour == @current_hour
-    end
+    # 현재 시간대 수업 중 (오늘만)
+    @current_schedules = @is_today ? @today_schedules.select { |s| s.lesson_time.hour == @current_hour } : []
 
-    # 오늘 결제 예정자
-    @payment_due_today = payment_due_list
+    # 해당일 마감 집계
+    @daily_payments = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @date)
+    @daily_leaves   = Enrollment.where(leave_at: @date)
+    @daily_returns  = Enrollment.where(return_at: @date).where(status: "active")
+    @daily_dropouts = Enrollment.where(status: "dropout").where("DATE(updated_at) = ?", @date)
 
-    # 연락할 리스트
-    @contact_list = contact_due_list
-
-    # 마이너스 수업 수강생
-    @minus_enrollments = Enrollment
-      .includes(:student)
-      .where("minus_lesson_count > 0")
-
-    # 동의서/전직서 미수령
-    @pending_consents = Student
-      .where(status: "active")
-      .where(consent_form: false)
-      .or(Student.where(status: "active", second_transfer_form: false, rank: "second"))
-
-    # 오늘 마감 집계
-    @daily_payments  = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @today)
-    @daily_leaves    = Enrollment.where(leave_at: @today)
-    @daily_returns   = Enrollment.where(return_at: @today).where(status: "active")
-    @daily_dropouts  = Enrollment.where(status: "dropout").where("DATE(updated_at) = ?", @today)
-
-    # 개근 달성자 (attendance_event_pending = true)
+    # 개근 달성자
     @attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
 
-    # 오늘 시간표 선생님별 그룹
-    teacher_ids = Schedule.where(lesson_date: @today).distinct.pluck(:teacher_id)
+    # 오늘만: 할 일 목록
+    if @is_today
+      @payment_due_today = payment_due_list
+      @contact_list      = contact_due_list
+      @minus_enrollments = Enrollment.includes(:student).where("minus_lesson_count > 0")
+      @pending_consents  = Student.where(status: "active").where(consent_form: false)
+                                  .or(Student.where(status: "active", second_transfer_form: false, rank: "second"))
+    end
+
+    # 선생님별 그룹
+    teacher_ids = Schedule.where(lesson_date: @date).distinct.pluck(:teacher_id)
     @teachers_today = Teacher.by_position.where(id: teacher_ids)
-    @today_schedules_by_teacher = @today_schedules.group_by(&:teacher_id)
   end
 
   private

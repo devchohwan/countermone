@@ -179,15 +179,35 @@ class SchedulesController < ApplicationController
       lesson_time: @schedule.lesson_time.strftime("%H:%M")
     }
 
-    if params[:date].present?
-      date    = Date.parse(params[:date])
-      subject = @schedule.subject
-      teachers = Teacher.by_position
-                        .joins(:teacher_subjects)
-                        .where(teacher_subjects: { subject: subject })
-      result[:teachers] = teachers.map do |t|
-        slots = Schedule.slot_count(t.id, subject, date)
-        { id: t.id, name: t.name, slots: slots, available: slots < 3 }
+    if range
+      subject     = @schedule.subject
+      range_dates = range.to_a
+      teachers    = Teacher.by_position.joins(:teacher_subjects)
+                           .where(teacher_subjects: { subject: subject })
+      teacher_ids = teachers.map(&:id)
+
+      # 배치 쿼리: 정규 수업 슬롯
+      regular_counts = Schedule.where(
+        teacher_id: teacher_ids, subject: subject, lesson_date: range_dates
+      ).where(status: %w[scheduled attended]).group(:teacher_id, :lesson_date).count
+
+      # 배치 쿼리: 보강 슬롯
+      makeup_counts = Schedule.where(
+        makeup_teacher_id: teacher_ids, subject: subject, makeup_date: range_dates
+      ).where(status: %w[makeup_scheduled makeup_done]).group(:makeup_teacher_id, :makeup_date).count
+
+      slot_counts = Hash.new(0)
+      regular_counts.each { |(tid, date), cnt| slot_counts[[tid, date]] += cnt }
+      makeup_counts.each  { |(tid, date), cnt| slot_counts[[tid, date]] += cnt }
+
+      result[:teachers] = teachers.map { |t| { id: t.id, name: t.name } }
+      result[:dates]    = range_dates.map(&:to_s)
+      result[:grid]     = {}
+      range_dates.each do |date|
+        result[:grid][date.to_s] = {}
+        teacher_ids.each do |tid|
+          result[:grid][date.to_s][tid.to_s] = slot_counts[[tid, date]]
+        end
       end
     end
 

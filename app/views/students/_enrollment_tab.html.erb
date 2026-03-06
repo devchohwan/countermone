@@ -168,9 +168,9 @@
   </div>
 </div>
 
-<%# 수업 처리 모달 (DaisyUI modal) %>
+<%# 수업 처리 모달 (DaisyUI modal) — 보강 시 시간표 표시를 위해 max-w-2xl %>
 <dialog id="schedule-modal-<%= enrollment.id %>" class="modal">
-  <div class="modal-box">
+  <div class="modal-box max-w-2xl w-full">
     <h3 class="font-bold text-lg" id="modal-title-<%= enrollment.id %>">출결 처리</h3>
     <p class="text-sm text-base-content/60 mb-4" id="modal-date-<%= enrollment.id %>"></p>
     <div id="modal-actions-<%= enrollment.id %>" class="space-y-2">
@@ -214,15 +214,16 @@
     const classMatch = el.className.match(/schedule-item-(\d+)/);
     if (!classMatch) return;
     const enrollmentId = classMatch[1];
-    const modal      = document.getElementById('schedule-modal-' + enrollmentId);
+    const modal     = document.getElementById('schedule-modal-' + enrollmentId);
     if (!modal) return;
-    const titleEl    = document.getElementById('modal-title-'   + enrollmentId);
-    const dateEl     = document.getElementById('modal-date-'    + enrollmentId);
-    const actionsEl  = document.getElementById('modal-actions-' + enrollmentId);
-    const csrf       = document.querySelector('meta[name="csrf-token"]').content;
+    const titleEl   = document.getElementById('modal-title-'   + enrollmentId);
+    const dateEl    = document.getElementById('modal-date-'    + enrollmentId);
+    const actionsEl = document.getElementById('modal-actions-' + enrollmentId);
+    const csrf      = document.querySelector('meta[name="csrf-token"]').content;
 
     dateEl.textContent = dateLabel;
 
+    // 공통 form submit 헬퍼
     function patchForm(url, extra) {
       const f = document.createElement('form');
       f.method = 'POST'; f.action = url;
@@ -232,13 +233,22 @@
       f.submit();
     }
 
-    window.showMain    = showMain;
-    window.showMakeup  = showMakeup;
-    window.showPass    = showPass;
-    window.loadTeachers   = loadTeachers;
-    window.submitMakeup   = submitMakeup;
-    window.submitPass     = submitPass;
+    // ── 날짜 유틸 ──────────────────────────────────────────
+    function parseDate(str) {
+      const [y, m, d] = str.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    function toDateStr(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function getMonday(date) {
+      const d   = new Date(date);
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
+    }
 
+    // ── 메인 화면 ──────────────────────────────────────────
     function showMain() {
       titleEl.textContent = '출결 처리';
       let html = '';
@@ -259,9 +269,10 @@
       actionsEl.innerHTML = html;
     }
 
+    // ── 보강: 시간표 그리드 ────────────────────────────────
     function showMakeup() {
       titleEl.textContent = '보강 등록';
-      actionsEl.innerHTML = `<p class="text-xs text-base-content/50 py-2">불러오는 중…</p>`;
+      actionsEl.innerHTML = '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
 
       fetch(`/schedules/${scheduleId}/makeup_slots`)
         .then(r => r.json())
@@ -272,51 +283,120 @@
               <button onclick="showMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>`;
             return;
           }
-          actionsEl.innerHTML = `
-            <div class="space-y-3">
-              <div>
-                <label class="text-xs text-base-content/60">보강 날짜
-                  <span class="ml-1">(${data.range_min} ~ ${data.range_max})</span>
-                </label>
-                <input type="date" id="mkdate-${scheduleId}"
-                       min="${data.range_min}" max="${data.range_max}"
-                       class="input input-bordered input-sm w-full mt-1"
-                       onchange="loadTeachers(this.value, '${data.lesson_time}')">
-              </div>
-              <div id="mkteacher-${scheduleId}" class="hidden space-y-2">
-                <label class="text-xs text-base-content/60">선생님</label>
-                <select id="mksel-${scheduleId}" class="select select-bordered select-sm w-full"></select>
-                <button onclick="submitMakeup('${data.lesson_time}')"
-                        class="btn btn-sm btn-primary w-full">보강 등록</button>
-              </div>
-              <button onclick="showMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>
-            </div>`;
+
+          window._mkData = data;
+
+          const rangeMin = parseDate(data.range_min);
+          const rangeMax = parseDate(data.range_max);
+          const today    = new Date(); today.setHours(0, 0, 0, 0);
+
+          let initial = today < rangeMin ? rangeMin : (today > rangeMax ? rangeMin : today);
+          window._mkWeekStart = getMonday(initial);
+
+          renderMakeupWeek();
         });
     }
 
-    function loadTeachers(date, defaultTime) {
-      fetch(`/schedules/${scheduleId}/makeup_slots?date=${date}`)
-        .then(r => r.json())
-        .then(data => {
-          const sel = document.getElementById(`mksel-${scheduleId}`);
-          sel.innerHTML = data.teachers.map(t => {
-            const label = t.available ? `${t.name}  (${t.slots}/3)` : `${t.name} — 마감`;
-            return `<option value="${t.id}" ${!t.available ? 'disabled' : ''}>${label}</option>`;
-          }).join('');
-          document.getElementById(`mkteacher-${scheduleId}`).classList.remove('hidden');
-        });
+    // ── 주간 시간표 렌더 ────────────────────────────────────
+    function renderMakeupWeek() {
+      const data     = window._mkData;
+      const ws       = window._mkWeekStart;
+      const rangeMin = parseDate(data.range_min);
+      const rangeMax = parseDate(data.range_max);
+      const lt       = data.lesson_time;
+      const DAY_KO   = ['일','월','화','수','목','금','토'];
+
+      // 월~토 6일
+      const days = Array.from({length: 6}, (_, i) =>
+        new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i));
+
+      // 이전/다음 주 이동 가능 여부
+      const prevWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() - 7);
+      const nextWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7);
+      const prevDays = Array.from({length:6}, (_,i) => new Date(prevWs.getFullYear(), prevWs.getMonth(), prevWs.getDate()+i));
+      const nextDays = Array.from({length:6}, (_,i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate()+i));
+
+      const prevOk = prevDays.some(d => d >= rangeMin && d <= rangeMax);
+      const nextOk = nextDays.some(d => d >= rangeMin && d <= rangeMax);
+
+      const weekEnd  = days[5];
+      const weekLabel = `${ws.getMonth()+1}/${ws.getDate()} ~ ${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
+
+      // 테이블 헤더
+      const thCells = days.map(d => {
+        const inRange = d >= rangeMin && d <= rangeMax;
+        return `<th class="text-xs font-normal text-center px-1 ${inRange ? '' : 'opacity-25'}">
+          ${d.getMonth()+1}/${d.getDate()}<br>
+          <span class="text-base-content/60">${DAY_KO[d.getDay()]}</span>
+        </th>`;
+      }).join('');
+
+      // 선생님 행
+      const rows = data.teachers.map(t => {
+        const tds = days.map(d => {
+          const inRange = d >= rangeMin && d <= rangeMax;
+          if (!inRange) return `<td class="text-center opacity-20 text-xs">—</td>`;
+
+          const ds    = toDateStr(d);
+          const slots = (data.grid[ds] || {})[String(t.id)] ?? 0;
+
+          if (slots >= 3) {
+            return `<td class="text-center text-error opacity-40 text-xs" title="마감 (3/3)">✕</td>`;
+          }
+
+          const filled  = '●'.repeat(slots);
+          const empty   = '○'.repeat(3 - slots);
+          const btnCls  = slots === 0 ? 'btn-success' : 'btn-warning';
+
+          return `<td class="text-center p-0.5">
+            <button onclick="confirmMakeup('${ds}',${t.id},'${lt}','${t.name}')"
+                    class="btn btn-xs ${btnCls} btn-outline w-full px-0.5 font-mono"
+                    title="${slots}/3명">
+              ${filled}<span class="opacity-30">${empty}</span>
+            </button>
+          </td>`;
+        }).join('');
+
+        return `<tr>
+          <td class="text-xs font-medium pr-2 whitespace-nowrap">${t.name}</td>
+          ${tds}
+        </tr>`;
+      }).join('');
+
+      actionsEl.innerHTML = `
+        <div class="text-xs text-base-content/50 mb-1">
+          보강 가능: ${data.range_min} ~ ${data.range_max} &nbsp;/&nbsp; ${lt}
+        </div>
+        <div class="flex items-center justify-between mb-2">
+          <button onclick="navigateMakeupWeek(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>
+          <span class="text-sm font-medium">${weekLabel}</span>
+          <button onclick="navigateMakeupWeek(1)"  class="btn btn-xs btn-ghost" ${!nextOk  ? 'disabled' : ''}>→</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-xs w-full">
+            <thead><tr><th></th>${thCells}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <button onclick="showMain()" class="btn btn-sm btn-ghost w-full mt-3">← 돌아가기</button>`;
     }
 
-    function submitMakeup(defaultTime) {
-      const date     = document.getElementById(`mkdate-${scheduleId}`)?.value;
-      const teacherId = document.getElementById(`mksel-${scheduleId}`)?.value;
-      if (!date || !teacherId) return;
-      patchForm(`/schedules/${scheduleId}/makeup`,
-        `<input type="hidden" name="makeup_date" value="${date}">
-         <input type="hidden" name="makeup_time" value="${defaultTime}">
-         <input type="hidden" name="makeup_teacher_id" value="${teacherId}">`);
+    function navigateMakeupWeek(dir) {
+      const ws = window._mkWeekStart;
+      window._mkWeekStart = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + dir * 7);
+      renderMakeupWeek();
     }
 
+    function confirmMakeup(date, teacherId, time, teacherName) {
+      if (confirm(`${date} ${time}\n${teacherName} 선생님으로 보강 등록하시겠습니까?`)) {
+        patchForm(`/schedules/${scheduleId}/makeup`,
+          `<input type="hidden" name="makeup_date" value="${date}">
+           <input type="hidden" name="makeup_time" value="${time}">
+           <input type="hidden" name="makeup_teacher_id" value="${teacherId}">`);
+      }
+    }
+
+    // ── 패스 처리 ───────────────────────────────────────────
     function showPass() {
       titleEl.textContent = '패스 처리';
       actionsEl.innerHTML = `
@@ -339,6 +419,14 @@
       patchForm(`/schedules/${scheduleId}/pass`,
         `<input type="hidden" name="pass_reason" value="${reason}">`);
     }
+
+    // window에 노출 (동적 HTML onclick에서 접근 가능하도록)
+    window.showMain           = showMain;
+    window.showMakeup         = showMakeup;
+    window.showPass           = showPass;
+    window.submitPass         = submitPass;
+    window.navigateMakeupWeek = navigateMakeupWeek;
+    window.confirmMakeup      = confirmMakeup;
 
     showMain();
     modal.showModal();

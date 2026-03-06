@@ -127,38 +127,53 @@
           </div>
         </div>
 
-        <%# 결제분 단위 청킹 %>
-        <% enrollment.payments.order(:starts_at).each do |payment| %>
-          <% schedules = payment.schedules.order(:lesson_date) %>
-          <% next if schedules.empty? %>
-          <div class="payment-chunk-<%= enrollment.id %> mb-3">
-            <p class="text-xs text-base-content/40 mb-1">
-              <%= payment.starts_at&.strftime("%Y.%m") %> — <%= payment.months %>개월 (<%= schedules.count %>회)
-            </p>
-            <div class="flex flex-wrap gap-1">
-              <% schedules.each do |s| %>
-                <%# 필터용 data 속성 %>
-                <% filter_key = case s.status
-                   when "attended", "late" then "attended"
-                   when "makeup_scheduled", "makeup_done" then "makeup"
-                   when "pass", "emergency_pass" then "pass"
-                   when "scheduled" then "scheduled"
-                   else "other"
-                   end %>
-                <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline cursor-pointer hover:badge-primary"
-                     data-filter="<%= filter_key %>"
-                     title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %>"
-                     onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>')">
-                  <%= s.lesson_date.strftime("%-m/%-d") %>
-                  <span class="<%= case s.status
-                    when 'attended', 'makeup_done' then 'text-success'
-                    when 'scheduled' then 'text-info'
-                    when 'deducted' then 'text-error'
-                    when 'pass', 'emergency_pass' then 'text-secondary'
-                    else 'text-base-content/40'
-                    end %>">●</span>
-                </div>
-              <% end %>
+        <%# 결제분 단위 아코디언 %>
+        <% payments_ordered = enrollment.payments.order(:starts_at).map { |p| [p, p.schedules.order(:lesson_date).to_a] }.reject { |_, s| s.empty? } %>
+        <% payments_ordered.each_with_index do |(payment, schedules), idx| %>
+          <% is_last = idx == payments_ordered.size - 1 %>
+          <% cnt_attended  = schedules.count { |s| s.status.in?(%w[attended late makeup_done]) } %>
+          <% cnt_pass      = schedules.count { |s| s.status.in?(%w[pass emergency_pass]) } %>
+          <% cnt_deducted  = schedules.count { |s| s.status == "deducted" } %>
+          <% cnt_remaining = schedules.count { |s| s.status.in?(%w[scheduled makeup_scheduled]) } %>
+          <div class="mb-1 border border-base-200 rounded-lg overflow-hidden">
+            <button onclick="toggleChunk('<%= payment.id %>')"
+                    class="w-full flex items-center justify-between px-3 py-2 hover:bg-base-200 text-left">
+              <span class="text-xs font-medium text-base-content/70">
+                <%= payment.starts_at&.strftime("%Y.%m") %> — <%= payment.months %>개월 (<%= schedules.size %>회)
+              </span>
+              <span class="flex items-center gap-2 text-xs text-base-content/50">
+                <% if cnt_attended > 0 %><span class="text-success">출석 <%= cnt_attended %></span><% end %>
+                <% if cnt_pass     > 0 %><span class="text-secondary">패스 <%= cnt_pass %></span><% end %>
+                <% if cnt_deducted > 0 %><span class="text-error">차감 <%= cnt_deducted %></span><% end %>
+                <% if cnt_remaining> 0 %><span class="text-info">예정 <%= cnt_remaining %></span><% end %>
+                <span id="chunk-arrow-<%= payment.id %>"><%= is_last ? '∧' : '∨' %></span>
+              </span>
+            </button>
+            <div id="chunk-body-<%= payment.id %>" class="<%= is_last ? '' : 'hidden' %> px-3 pb-2">
+              <div class="flex flex-wrap gap-1 pt-1">
+                <% schedules.each do |s| %>
+                  <% filter_key = case s.status
+                     when "attended", "late" then "attended"
+                     when "makeup_scheduled", "makeup_done" then "makeup"
+                     when "pass", "emergency_pass" then "pass"
+                     when "scheduled" then "scheduled"
+                     else "other"
+                     end %>
+                  <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline cursor-pointer hover:badge-primary"
+                       data-filter="<%= filter_key %>"
+                       title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %>"
+                       onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>')">
+                    <%= s.lesson_date.strftime("%-m/%-d") %>
+                    <span class="<%= case s.status
+                      when 'attended', 'makeup_done' then 'text-success'
+                      when 'scheduled' then 'text-info'
+                      when 'deducted' then 'text-error'
+                      when 'pass', 'emergency_pass' then 'text-secondary'
+                      else 'text-base-content/40'
+                      end %>">●</span>
+                  </div>
+                <% end %>
+              </div>
             </div>
           </div>
         <% end %>
@@ -192,6 +207,14 @@
     const hidden = extras[0]?.classList.contains('hidden');
     extras.forEach(el => el.classList.toggle('hidden', !hidden));
     if (btn) btn.textContent = hidden ? '접기 ∧' : `전체보기 (${extras.length + 1}건) ∨`;
+  };
+
+  // 결제분 아코디언 토글
+  window.toggleChunk = window.toggleChunk || function(paymentId) {
+    const body  = document.getElementById('chunk-body-'  + paymentId);
+    const arrow = document.getElementById('chunk-arrow-' + paymentId);
+    const hidden = body.classList.toggle('hidden');
+    if (arrow) arrow.textContent = hidden ? '∨' : '∧';
   };
 
   // 수업이력 필터

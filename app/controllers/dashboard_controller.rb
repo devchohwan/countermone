@@ -22,22 +22,33 @@ class DashboardController < ApplicationController
 
     # 보강 일정
     @today_makeups = Schedule
-      .includes(:student, :teacher, :makeup_teacher, :enrollment)
+      .includes(:student, :makeup_teacher, :enrollment)
       .where(makeup_date: @date)
       .where(status: %w[makeup_scheduled makeup_done])
-      .order(:makeup_time)
 
-    # 잔여 횟수 배치 조회 (N+1 방지)
-    enrollment_ids = (@today_schedules.map(&:enrollment_id) + @today_makeups.map(&:enrollment_id)).uniq
-    @remaining_by_enrollment = Schedule
-      .where(enrollment_id: enrollment_ids, status: "scheduled")
-      .group(:enrollment_id).count
+    # 현재 시간대 수업 중 (오늘만)
+    @current_schedules = @is_today ? @today_schedules.select { |s| s.lesson_time.hour == @current_hour } : []
 
-    # 오늘만: 결제 예정
-    @payment_due_today = @is_today ? payment_due_list : []
+    # 해당일 마감 집계
+    @daily_payments = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @date)
+    @daily_leaves   = Enrollment.where(leave_at: @date)
+    @daily_returns  = Enrollment.where(return_at: @date).where(status: "active")
+    @daily_dropouts = Enrollment.where(status: "dropout").where("DATE(updated_at) = ?", @date)
 
-    # 선생님 정렬 (regular + makeup 포함)
-    teacher_ids = (@today_schedules.map(&:teacher_id) + @today_makeups.map(&:makeup_teacher_id)).uniq
+    # 개근 달성자
+    @attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
+
+    # 오늘만: 할 일 목록
+    if @is_today
+      @payment_due_today = payment_due_list
+      @contact_list      = contact_due_list
+      @minus_enrollments = Enrollment.includes(:student).where("minus_lesson_count > 0")
+      @pending_consents  = Student.where(status: "active").where(consent_form: false)
+                                  .or(Student.where(status: "active", second_transfer_form: false, rank: "second"))
+    end
+
+    # 선생님별 그룹
+    teacher_ids = Schedule.where(lesson_date: @date).distinct.pluck(:teacher_id)
     @teachers_today = Teacher.by_position.where(id: teacher_ids)
   end
 
@@ -74,6 +85,27 @@ class DashboardController < ApplicationController
       if remaining == 1
         results << { student: e.student, enrollment: e, type: :next_payment_due, payment: last_payment }
       end
+    end
+
+    results
+  end
+
+  def contact_due_list
+    results = []
+
+    # contact_due 도래
+    Student.where(contact_due: ..Date.today).where.not(contact_due: nil).each do |s|
+      results << { student: s, type: :contact_due }
+    end
+
+    # 휴원 복귀 예정일
+    Enrollment.where(return_at: ..Date.today).where(status: "leave").includes(:student).each do |e|
+      results << { student: e.student, enrollment: e, type: :return_due }
+    end
+
+    # 2주 자리대기 만료
+    Student.where(status: "pending").where(waiting_expires_at: ..Date.today).each do |s|
+      results << { student: s, type: :waiting_expired }
     end
 
     results

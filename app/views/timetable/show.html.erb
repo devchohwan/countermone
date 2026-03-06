@@ -35,10 +35,20 @@
       <% start_hour = @week_days.include?(Date.today) && Date.today.monday? ? 14 : 13 %>
       <% (start_hour..21).each do |hour| %>
         <% is_break = (hour == 18) %>
+        <%# 해당 시간대 전체 주간 차량 총합 %>
+        <% weekly_car_total = @week_days.sum do |wd|
+             r = @schedule_data[:regular].select { |s| s.lesson_date == wd && s.lesson_time.hour == hour }
+             m = @schedule_data[:makeups].select  { |s| s.makeup_date == wd && s.makeup_time&.hour == hour }
+             (r + m).count { |s| s.student.has_car? }
+           end %>
         <tr class="<%= is_break ? 'opacity-40' : 'hover' %>">
-          <td class="font-mono text-xs text-base-content/50">
+          <td class="font-mono text-xs text-base-content/50 text-center">
             <%= sprintf("%02d:00", hour) %>
-            <% if is_break %><div class="text-xs">브레이크</div><% end %>
+            <% if is_break %>
+              <div class="text-xs">브레이크</div>
+            <% elsif weekly_car_total > 0 %>
+              <div class="mt-0.5">🚗 <%= weekly_car_total %>대</div>
+            <% end %>
           </td>
           <% @week_days.each do |d| %>
             <% is_breaktime_open = @breaktime_openings.include?(d) %>
@@ -58,17 +68,10 @@
                     <%= timetable_label(s) %>
                   </div>
                 <% end %>
-
                 <% makeups.each do |s| %>
                   <div class="badge badge-sm badge-secondary badge-outline mb-0.5 max-w-full h-auto py-0.5 whitespace-normal justify-center">
                     <%= timetable_makeup_label(s, @teacher) %>
                   </div>
-                <% end %>
-
-                <%# 주차 대수 %>
-                <% car_count = (regular + makeups).count { |s| s.student.has_car? } %>
-                <% if car_count > 0 %>
-                  <div class="text-xs text-base-content/40 mt-0.5">🚗 <%= car_count %>대</div>
                 <% end %>
               <% end %>
             </td>

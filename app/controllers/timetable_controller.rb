@@ -1,11 +1,11 @@
 class TimetableController < ApplicationController
   def index
-    first_teacher = Teacher.order(:name).first
+    first_teacher = Teacher.first
     redirect_to teacher_timetable_path(first_teacher.id, date: params[:date])
   end
 
   def show
-    @teachers   = Teacher.all.order(:name)
+    @teachers   = Teacher.all
     @teacher    = Teacher.find(params[:teacher_id])
     @date       = params[:date] ? Date.parse(params[:date]) : Date.today
     @week_start = @date.beginning_of_week(:monday)
@@ -15,7 +15,7 @@ class TimetableController < ApplicationController
   end
 
   def pass_sheet
-    @teachers = Teacher.all.order(:name)
+    @teachers = Teacher.all
     @month    = params[:month] ? Date.parse("#{params[:month]}-01") : Date.today.beginning_of_month
     range     = @month.beginning_of_month..@month.end_of_month
 

@@ -1,16 +1,25 @@
 <% content_for :title, "선생님 관리" %>
+<% content_for :head do %>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+<% end %>
 
 <div class="flex items-center justify-between mb-4">
-  <h2 class="text-lg font-bold">선생님 관리</h2>
+  <div class="flex items-center gap-2">
+    <h2 class="text-lg font-bold">선생님 관리</h2>
+    <span class="text-xs text-base-content/50">순서를 드래그해서 변경할 수 있습니다</span>
+  </div>
   <%= link_to "+ 선생님 등록", new_teacher_path, class: "btn btn-sm btn-primary" %>
 </div>
 
-<div class="grid grid-cols-3 gap-4">
+<div id="teachers-list" class="grid grid-cols-3 gap-4">
   <% @teachers.each do |teacher| %>
-    <div class="card bg-base-100 shadow-sm">
+    <div class="card bg-base-100 shadow-sm cursor-grab active:cursor-grabbing" data-id="<%= teacher.id %>">
       <div class="card-body p-4">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold"><%= teacher.name %></h3>
+          <div class="flex items-center gap-2">
+            <span class="text-base-content/30 select-none">⠿</span>
+            <h3 class="font-semibold"><%= teacher.name %></h3>
+          </div>
           <div class="flex gap-1">
             <%= link_to "수정", edit_teacher_path(teacher), class: "btn btn-xs btn-ghost" %>
             <%= button_to "삭제", teacher_path(teacher), method: :delete,
@@ -34,3 +43,22 @@
     </div>
   <% end %>
 </div>
+
+<script>
+  const list = document.getElementById('teachers-list');
+  Sortable.create(list, {
+    animation: 150,
+    ghostClass: 'opacity-40',
+    onEnd: function() {
+      const ids = [...list.querySelectorAll('[data-id]')].map(el => el.dataset.id);
+      fetch('<%= reorder_teachers_path %>', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ ids: ids })
+      });
+    }
+  });
+</script>

@@ -67,6 +67,9 @@ Rails.application.routes.draw do
 
   resources :teachers do
     resources :teacher_subjects, only: %i[create destroy], shallow: true
+    collection do
+      patch :reorder
+    end
   end
 
   get "up" => "rails/health#show", as: :rails_health_check

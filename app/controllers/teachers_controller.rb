@@ -2,7 +2,7 @@ class TeachersController < ApplicationController
   before_action :set_teacher, only: %i[show edit update destroy]
 
   def index
-    @teachers = Teacher.includes(:teacher_subjects, :enrollments).order(:name)
+    @teachers = Teacher.includes(:teacher_subjects, :enrollments)
   end
 
   def show
@@ -32,6 +32,14 @@ class TeachersController < ApplicationController
     else
       render :edit, status: :unprocessable_entity
     end
+  end
+
+  def reorder
+    ids = params[:ids]
+    ids.each_with_index do |id, index|
+      Teacher.where(id: id).update_all(position: index + 1)
+    end
+    head :ok
   end
 
   def destroy

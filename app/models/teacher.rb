@@ -9,6 +9,8 @@ class Teacher < ApplicationRecord
 
   validates :name, presence: true
 
+  default_scope { order(Arel.sql("COALESCE(position, 9999), name")) }
+
   def teaches?(subject)
     teacher_subjects.exists?(subject: subject)
   end

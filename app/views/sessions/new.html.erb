@@ -7,7 +7,7 @@
     <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-lg inline-block" id="notice"><%= notice %></p>
   <% end %>
 
-  <h1 class="font-bold text-4xl">로그인</h1>
+  <h1 class="font-bold text-4xl">모네뮤직 카운터시스템</h1>
 
   <%= form_with url: session_url, class: "contents" do |form| %>
     <div class="my-5">
@@ -21,6 +21,9 @@
     <div class="col-span-6 sm:flex sm:items-center sm:gap-4">
       <div class="inline">
         <%= form.submit "로그인", class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white inline-block font-medium cursor-pointer" %>
+      </div>
+      <div class="inline">
+        <%= link_to "회원가입", signup_path, class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 border border-blue-600 text-blue-600 hover:bg-blue-50 inline-block font-medium" %>
       </div>
 
       <div class="mt-4 text-sm text-base-content/70 sm:mt-0">

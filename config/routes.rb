@@ -5,6 +5,9 @@ Rails.application.routes.draw do
   resource  :session
   resources :passwords, param: :token
 
+  get  "signup", to: "users#new",    as: :signup
+  post "signup", to: "users#create"
+
   resources :students do
     collection do
       get :check_attendance_code

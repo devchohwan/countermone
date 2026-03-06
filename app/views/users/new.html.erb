@@ -1,0 +1,46 @@
+<div class="mx-auto md:w-2/3 w-full">
+  <% if @user.errors.any? %>
+    <div class="py-2 px-3 bg-red-50 mb-5 text-red-500 font-medium rounded-lg" id="alert">
+      <% @user.errors.full_messages.each do |msg| %>
+        <p><%= msg %></p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <h1 class="font-bold text-4xl">상담원 회원가입</h1>
+
+  <%= form_with model: @user, url: signup_path, class: "contents" do |form| %>
+    <div class="my-5">
+      <%= form.label :name, "이름", class: "block text-sm font-medium text-base-content mb-1" %>
+      <%= form.text_field :name, required: true, autofocus: true, placeholder: "이름을 입력하세요",
+            class: "block shadow-sm rounded-md border border-gray-400 focus:outline-blue-600 px-3 py-2 mt-1 w-full" %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :email_address, "이메일", class: "block text-sm font-medium text-base-content mb-1" %>
+      <%= form.email_field :email_address, required: true, autocomplete: "username", placeholder: "이메일 주소를 입력하세요",
+            class: "block shadow-sm rounded-md border border-gray-400 focus:outline-blue-600 px-3 py-2 mt-1 w-full" %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :password, "비밀번호", class: "block text-sm font-medium text-base-content mb-1" %>
+      <%= form.password_field :password, required: true, autocomplete: "new-password", placeholder: "비밀번호를 입력하세요", maxlength: 72,
+            class: "block shadow-sm rounded-md border border-gray-400 focus:outline-blue-600 px-3 py-2 mt-1 w-full" %>
+    </div>
+
+    <div class="my-5">
+      <%= form.label :password_confirmation, "비밀번호 확인", class: "block text-sm font-medium text-base-content mb-1" %>
+      <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", placeholder: "비밀번호를 다시 입력하세요", maxlength: 72,
+            class: "block shadow-sm rounded-md border border-gray-400 focus:outline-blue-600 px-3 py-2 mt-1 w-full" %>
+    </div>
+
+    <div class="col-span-6 sm:flex sm:items-center sm:gap-4">
+      <div class="inline">
+        <%= form.submit "가입하기", class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white inline-block font-medium cursor-pointer" %>
+      </div>
+      <div class="mt-4 text-sm text-base-content/70 sm:mt-0">
+        <%= link_to "← 로그인으로 돌아가기", new_session_path, class: "text-base-content underline hover:no-underline" %>
+      </div>
+    </div>
+  <% end %>
+</div>

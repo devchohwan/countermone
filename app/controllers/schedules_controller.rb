@@ -12,6 +12,7 @@ class SchedulesController < ApplicationController
   def show; end
 
   def attend
+    remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "attended")
     create_attendance_record(@schedule)
     check_consecutive_weeks(@schedule)
@@ -28,6 +29,7 @@ class SchedulesController < ApplicationController
   end
 
   def late
+    remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "late")
     create_attendance_record(@schedule)
     redirect_back fallback_location: schedules_path, notice: "지각 처리되었습니다."

@@ -275,18 +275,24 @@
     function showMain() {
       titleEl.textContent = '출결 처리';
       let html = '';
-      if (status === 'scheduled') {
+      if (['scheduled', 'pass', 'emergency_pass'].includes(status)) {
+        if (status !== 'scheduled') {
+          const label = status === 'emergency_pass' ? '긴급패스' : '패스';
+          html += `<p class="text-xs text-secondary mb-2">${label} 처리됨 — 변경 가능</p>`;
+        }
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/attend','${csrf}')" class="btn btn-sm btn-success w-full">출석</button>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/late','${csrf}')"   class="btn btn-sm btn-warning w-full">지각</button>`;
         html += `<button onclick="showMakeup()" class="btn btn-sm btn-info btn-outline w-full">보강</button>`;
-        html += `<button onclick="showPass()"   class="btn btn-sm btn-secondary btn-outline w-full">패스</button>`;
+        if (status === 'scheduled') {
+          html += `<button onclick="showPass()" class="btn btn-sm btn-secondary btn-outline w-full">패스</button>`;
+        }
         html += `<button onclick="if(confirm('결석 차감 처리하시겠습니까?')) submitPatch('/schedules/${scheduleId}/deduct','${csrf}')"
                          class="btn btn-sm btn-error btn-outline w-full">결석 차감</button>`;
       } else if (status === 'deducted') {
         html += `<p class="text-xs text-error mb-1">결석 차감 처리됨</p>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/undo_deduct','${csrf}')" class="btn btn-sm btn-warning btn-outline w-full">차감 취소</button>`;
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-ghost w-full mt-1">수업 상세 보기</a>`;
-      } else if (['makeup_scheduled','pass','emergency_pass'].includes(status)) {
+      } else if (status === 'makeup_scheduled') {
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">수업 상세 / 전환</a>`;
       }
       actionsEl.innerHTML = html;

@@ -1,30 +1,35 @@
 <% content_for :title, "출석 키패드" %>
 
-<div class="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-  <div class="bg-gray-800 rounded-2xl p-8 w-full max-w-sm text-center" id="keypad-container">
-    <h1 class="text-white text-lg font-bold mb-2">모네뮤직</h1>
-    <p class="text-gray-400 text-sm mb-6">출결 코드를 입력하세요</p>
+<div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
+  <div class="card bg-base-100 shadow-2xl w-full max-w-sm" id="keypad-container">
+    <div class="card-body items-center text-center gap-4 p-8">
 
-    <!-- 입력 표시 -->
-    <div class="bg-gray-700 rounded-lg px-4 py-3 mb-6 text-white text-2xl font-mono tracking-widest min-h-12 flex items-center justify-center" id="keypad-display">
-      <span id="code-display">_</span>
-    </div>
+      <div>
+        <h1 class="card-title text-xl justify-center">모네뮤직</h1>
+        <p class="text-base-content/50 text-sm">출결 코드를 입력하세요</p>
+      </div>
 
-    <!-- 결과 메시지 -->
-    <div id="result-message" class="hidden mb-4 rounded-lg px-4 py-3 text-sm font-medium"></div>
+      <%# 입력 표시 %>
+      <div class="bg-base-200 rounded-xl px-4 py-3 w-full text-2xl font-mono tracking-widest min-h-12 flex items-center justify-center" id="keypad-display">
+        <span id="code-display">_</span>
+      </div>
 
-    <!-- 클래스 선택 (N개 클래스 수강 시) -->
-    <div id="class-select" class="hidden mb-4 space-y-2"></div>
+      <%# 결과 메시지 %>
+      <div id="result-message" class="hidden w-full"></div>
 
-    <!-- 키패드 -->
-    <div class="grid grid-cols-3 gap-3 mb-4">
-      <% [1,2,3,4,5,6,7,8,9].each do |n| %>
-        <button class="keypad-btn bg-gray-600 hover:bg-gray-500 text-white text-xl font-semibold rounded-xl py-4 transition"
-                data-value="<%= n %>"><%= n %></button>
-      <% end %>
-      <button class="keypad-btn bg-red-700 hover:bg-red-600 text-white text-sm font-semibold rounded-xl py-4 transition col-span-1" id="clear-btn">C</button>
-      <button class="keypad-btn bg-gray-600 hover:bg-gray-500 text-white text-xl font-semibold rounded-xl py-4 transition" data-value="0">0</button>
-      <button class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-xl py-4 transition" id="submit-btn">확인</button>
+      <%# 클래스 선택 (N개 클래스 수강 시) %>
+      <div id="class-select" class="hidden w-full space-y-2"></div>
+
+      <%# 키패드 %>
+      <div class="grid grid-cols-3 gap-2 w-full">
+        <% [1,2,3,4,5,6,7,8,9].each do |n| %>
+          <button class="keypad-btn btn btn-neutral text-xl" data-value="<%= n %>"><%= n %></button>
+        <% end %>
+        <button class="btn btn-error" id="clear-btn">C</button>
+        <button class="keypad-btn btn btn-neutral text-xl" data-value="0">0</button>
+        <button class="btn btn-success" id="submit-btn">확인</button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -46,7 +51,7 @@
   document.getElementById("clear-btn").addEventListener("click", () => {
     code = "";
     display.textContent = "_";
-    resultDiv.className = "hidden mb-4 rounded-lg px-4 py-3 text-sm font-medium";
+    resultDiv.className = "hidden w-full";
     classDiv.innerHTML = "";
     classDiv.classList.add("hidden");
   });
@@ -62,9 +67,9 @@
     .then(data => {
       if (data.action === "select_class") {
         classDiv.classList.remove("hidden");
-        classDiv.innerHTML = "<p class='text-white text-sm mb-2'>수업 클래스를 선택하세요</p>" +
+        classDiv.innerHTML = "<p class='text-sm text-base-content/60 mb-1'>수업 클래스를 선택하세요</p>" +
           data.schedules.map(s =>
-            `<button class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-lg py-2 text-sm class-select-btn" data-id="${s.id}">${s.subject} / ${s.teacher}</button>`
+            `<button class="btn btn-primary btn-block class-select-btn" data-id="${s.id}">${s.subject} / ${s.teacher}</button>`
           ).join("");
         classDiv.querySelectorAll(".class-select-btn").forEach(btn => {
           btn.addEventListener("click", () => submitCheckin(code, btn.dataset.id));
@@ -96,8 +101,8 @@
   }
 
   function showResult(msg, success) {
+    resultDiv.className = `w-full alert ${success ? "alert-success" : "alert-error"}`;
     resultDiv.textContent = msg;
-    resultDiv.className = `mb-4 rounded-lg px-4 py-3 text-sm font-medium ${success ? "bg-green-700 text-white" : "bg-red-700 text-white"}`;
-    setTimeout(() => resultDiv.className = "hidden mb-4 rounded-lg px-4 py-3 text-sm font-medium", 3000);
+    setTimeout(() => resultDiv.className = "hidden w-full", 3000);
   }
 </script>

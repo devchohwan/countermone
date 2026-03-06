@@ -6,6 +6,12 @@ class StudentsController < ApplicationController
     @students = @students.where(status: params[:status]) if params[:status].present?
     @students = @students.where("name LIKE ? OR attendance_code LIKE ?", "%#{params[:q]}%", "%#{params[:q]}%") if params[:q].present?
     @students = @students.order(:name)
+
+    @total_count  = @students.count
+    @page         = [params[:page].to_i, 1].max
+    @total_pages  = [(@total_count / 50.0).ceil, 1].max
+    @page         = [@page, @total_pages].min
+    @students     = @students.offset((@page - 1) * 50).limit(50)
   end
 
   def show

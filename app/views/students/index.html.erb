@@ -8,11 +8,11 @@
 <%# 필터 + 검색 %>
 <div class="flex flex-wrap gap-2 mb-4">
   <div class="join">
-    <%= link_to "전체", students_path,                     class: "join-item btn btn-sm #{params[:status].blank? ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "재원", students_path(status: "active"),   class: "join-item btn btn-sm #{params[:status] == 'active'  ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "휴원", students_path(status: "leave"),    class: "join-item btn btn-sm #{params[:status] == 'leave'   ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "퇴원", students_path(status: "dropout"),  class: "join-item btn btn-sm #{params[:status] == 'dropout' ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "대기", students_path(status: "pending"),  class: "join-item btn btn-sm #{params[:status] == 'pending' ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "전체", students_path(q: params[:q]),                              class: "join-item btn btn-sm #{params[:status].blank? ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "재원", students_path(status: "active",  q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'active'  ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "휴원", students_path(status: "leave",   q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'leave'   ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "퇴원", students_path(status: "dropout", q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'dropout' ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "대기", students_path(status: "pending", q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'pending' ? 'btn-neutral' : 'btn-ghost'}" %>
   </div>
 
   <%= form_with url: students_path, method: :get, class: "ml-auto flex gap-2" do |f| %>
@@ -59,4 +59,27 @@
       <p class="text-center text-base-content/40 py-8 text-sm">수강생이 없습니다.</p>
     <% end %>
   </div>
+</div>
+
+<%# 페이지네이션 %>
+<div class="flex items-center justify-between mt-4">
+  <p class="text-xs text-base-content/50">
+    전체 <%= @total_count %>명 중 <%= [(@page - 1) * 50 + 1, @total_count].min %>–<%= [@page * 50, @total_count].min %>명
+  </p>
+  <% if @total_pages > 1 %>
+    <div class="join">
+      <% if @page > 1 %>
+        <%= link_to "«", students_path(page: 1,         status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
+        <%= link_to "‹", students_path(page: @page - 1, status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
+      <% end %>
+      <% ([@page - 2, 1].max..[@page + 2, @total_pages].min).each do |p| %>
+        <%= link_to p, students_path(page: p, status: params[:status], q: params[:q]),
+              class: "join-item btn btn-sm #{p == @page ? 'btn-neutral' : 'btn-ghost'}" %>
+      <% end %>
+      <% if @page < @total_pages %>
+        <%= link_to "›", students_path(page: @page + 1, status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
+        <%= link_to "»", students_path(page: @total_pages, status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
+      <% end %>
+    </div>
+  <% end %>
 </div>

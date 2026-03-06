@@ -57,9 +57,8 @@ class DashboardController < ApplicationController
     @attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
 
     # 오늘 시간표 선생님별 그룹
-    @teachers_today = Teacher.joins(:schedules)
-                             .where(schedules: { lesson_date: @today })
-                             .distinct.order(:name)
+    teacher_ids = Schedule.where(lesson_date: @today).distinct.pluck(:teacher_id)
+    @teachers_today = Teacher.by_position.where(id: teacher_ids)
     @today_schedules_by_teacher = @today_schedules.group_by(&:teacher_id)
   end
 

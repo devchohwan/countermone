@@ -2,7 +2,7 @@ class TeachersController < ApplicationController
   before_action :set_teacher, only: %i[show edit update destroy]
 
   def index
-    @teachers = Teacher.includes(:teacher_subjects, :enrollments)
+    @teachers = Teacher.by_position.includes(:teacher_subjects, :enrollments)
   end
 
   def show

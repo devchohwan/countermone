@@ -14,8 +14,20 @@
       <%= button_to "복귀", return_student_path(@student), method: :patch, class: "btn btn-sm btn-success",
             id: "return-btn", form: { onsubmit: "return handleReturn(event, #{@student.id}, '#{@student.attendance_code}')" } %>
     <% end %>
-    <%= button_to "삭제", student_path(@student), method: :delete, class: "btn btn-sm btn-ghost text-error",
-          data: { turbo_confirm: "정말 삭제하시겠습니까? 모든 데이터가 함께 삭제됩니다." } %>
+    <button onclick="document.getElementById('delete-confirm-modal').showModal()" class="btn btn-sm btn-ghost text-error">삭제</button>
+
+    <dialog id="delete-confirm-modal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg text-error">수강생 삭제</h3>
+        <p class="py-3 text-sm"><span class="font-semibold"><%= @student.name %></span> 수강생을 삭제합니다.</p>
+        <p class="text-sm text-base-content/60">결제 내역, 수업 이력 등 모든 데이터가 함께 삭제되며 복구할 수 없습니다.</p>
+        <div class="modal-action">
+          <form method="dialog"><button class="btn btn-sm btn-ghost">취소</button></form>
+          <%= button_to "삭제 확인", student_path(@student), method: :delete, class: "btn btn-sm btn-error" %>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
   </div>
 </div>
 

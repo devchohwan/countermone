@@ -227,8 +227,8 @@
     if (status === 'scheduled') {
       html += patchBtn('출석', `/schedules/${scheduleId}/attend`,         'btn-success');
       html += patchBtn('지각', `/schedules/${scheduleId}/late`,           'btn-warning');
+      html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-info btn-outline w-full">보강 / 패스 등록</a>`;
       html += patchBtn('결석 차감', `/schedules/${scheduleId}/deduct`,    'btn-error btn-outline');
-      html += patchBtn('패스', `/schedules/${scheduleId}/pass`,           'btn-secondary btn-outline');
     } else if (status === 'deducted') {
       html += `<p class="text-xs text-error mb-2">결석 차감 처리됨</p>`;
       html += patchBtn('차감 취소', `/schedules/${scheduleId}/undo_deduct`, 'btn-warning btn-outline');

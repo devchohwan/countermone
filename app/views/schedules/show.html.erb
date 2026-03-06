@@ -1,7 +1,7 @@
 <% content_for :title, "수업 상세" %>
 
 <div class="flex items-center gap-3 mb-6">
-  <%= link_to "← 출결 관리", schedules_path, class: "text-sm text-gray-500 hover:underline" %>
+  <%= link_to "← 출결 관리", schedules_path, class: "text-sm text-base-content/70 hover:underline" %>
   <h2 class="text-lg font-bold"><%= @schedule.student.name %> — <%= @schedule.subject %></h2>
   <%= schedule_status_badge(@schedule.status) %>
 </div>
@@ -9,22 +9,22 @@
 <div class="grid grid-cols-2 gap-6">
 
   <%# ── 수업 정보 + 상태별 1차 액션 ── %>
-  <div class="bg-white rounded-lg border shadow-sm p-4">
+  <div class="bg-base-100 rounded-lg border shadow-sm p-4">
     <h3 class="font-semibold text-sm mb-3">수업 정보</h3>
     <dl class="space-y-2 text-sm">
-      <div class="flex gap-2"><dt class="text-gray-400 w-24">날짜</dt><dd><%= @schedule.lesson_date.strftime("%Y.%m.%d (%a)") %></dd></div>
-      <div class="flex gap-2"><dt class="text-gray-400 w-24">시간</dt><dd><%= @schedule.lesson_time.strftime("%H:%M") %></dd></div>
-      <div class="flex gap-2"><dt class="text-gray-400 w-24">선생님</dt><dd><%= @schedule.teacher.name %></dd></div>
-      <div class="flex gap-2"><dt class="text-gray-400 w-24">회차</dt><dd><%= @schedule.sequence %>회</dd></div>
+      <div class="flex gap-2"><dt class="text-base-content/60 w-24">날짜</dt><dd><%= @schedule.lesson_date.strftime("%Y.%m.%d (%a)") %></dd></div>
+      <div class="flex gap-2"><dt class="text-base-content/60 w-24">시간</dt><dd><%= @schedule.lesson_time.strftime("%H:%M") %></dd></div>
+      <div class="flex gap-2"><dt class="text-base-content/60 w-24">선생님</dt><dd><%= @schedule.teacher.name %></dd></div>
+      <div class="flex gap-2"><dt class="text-base-content/60 w-24">회차</dt><dd><%= @schedule.sequence %>회</dd></div>
       <% if @schedule.from_pass? %>
-        <div class="flex gap-2"><dt class="text-gray-400 w-24">메모</dt><dd class="text-purple-600 text-xs">패스로 자동 생성된 수업</dd></div>
+        <div class="flex gap-2"><dt class="text-base-content/60 w-24">메모</dt><dd class="text-purple-600 text-xs">패스로 자동 생성된 수업</dd></div>
       <% end %>
       <% if @schedule.status.in?(%w[makeup_scheduled makeup_done]) && @schedule.makeup_date %>
-        <div class="flex gap-2"><dt class="text-gray-400 w-24">보강일</dt><dd><%= @schedule.makeup_date.strftime("%Y.%m.%d") %></dd></div>
-        <div class="flex gap-2"><dt class="text-gray-400 w-24">보강시간</dt><dd><%= @schedule.makeup_time&.strftime("%H:%M") %></dd></div>
+        <div class="flex gap-2"><dt class="text-base-content/60 w-24">보강일</dt><dd><%= @schedule.makeup_date.strftime("%Y.%m.%d") %></dd></div>
+        <div class="flex gap-2"><dt class="text-base-content/60 w-24">보강시간</dt><dd><%= @schedule.makeup_time&.strftime("%H:%M") %></dd></div>
       <% end %>
       <% if @schedule.status.in?(%w[pass emergency_pass]) && @schedule.pass_reason.present? %>
-        <div class="flex gap-2"><dt class="text-gray-400 w-24">패스사유</dt><dd><%= @schedule.pass_reason %></dd></div>
+        <div class="flex gap-2"><dt class="text-base-content/60 w-24">패스사유</dt><dd><%= @schedule.pass_reason %></dd></div>
       <% end %>
     </dl>
 
@@ -96,11 +96,11 @@
   <%# ── 보강 등록 (absent / scheduled / makeup_scheduled / pass / emergency_pass) ── %>
   <% show_makeup = @schedule.status.in?(%w[absent scheduled makeup_scheduled pass emergency_pass]) %>
   <% if show_makeup %>
-    <div class="bg-white rounded-lg border shadow-sm p-4">
+    <div class="bg-base-100 rounded-lg border shadow-sm p-4">
       <h3 class="font-semibold text-sm mb-3">보강 등록</h3>
       <% range = @schedule.makeup_available_range %>
       <% if range %>
-        <p class="text-xs text-gray-500 mb-3">보강 가능 기간: <%= range.first.strftime("%m/%d") %> ~ <%= range.last.strftime("%m/%d") %></p>
+        <p class="text-xs text-base-content/70 mb-3">보강 가능 기간: <%= range.first.strftime("%m/%d") %> ~ <%= range.last.strftime("%m/%d") %></p>
         <% if @schedule.lesson_date == Date.today %>
           <div class="bg-yellow-50 border border-yellow-200 rounded p-2 mb-3 text-xs text-yellow-700">
             ⚠️ 당일 취소 보강입니다. 상담원 확인 후 진행하세요.
@@ -113,15 +113,15 @@
         <% end %>
         <%= form_with url: makeup_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
           <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">보강 날짜</label>
+            <label class="block text-xs font-medium text-base-content mb-1">보강 날짜</label>
             <%= f.date_field :makeup_date, min: range.first, max: range.last, class: "w-full border rounded px-2 py-1.5 text-sm" %>
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">보강 시간</label>
+            <label class="block text-xs font-medium text-base-content mb-1">보강 시간</label>
             <%= f.time_field :makeup_time, class: "w-full border rounded px-2 py-1.5 text-sm" %>
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">선생님</label>
+            <label class="block text-xs font-medium text-base-content mb-1">선생님</label>
             <%= f.select :makeup_teacher_id,
                 Teacher.joins(:teacher_subjects).where(teacher_subjects: { subject: @schedule.subject }).map { |t| [t.name, t.id] },
                 { prompt: "선생님 선택" },
@@ -138,7 +138,7 @@
           <%= f.submit "보강 등록", class: "w-full bg-indigo-600 text-white py-2 rounded text-sm hover:bg-indigo-700 cursor-pointer" %>
         <% end %>
       <% else %>
-        <p class="text-sm text-gray-400">보강 가능 기간이 없습니다.</p>
+        <p class="text-sm text-base-content/60">보강 가능 기간이 없습니다.</p>
       <% end %>
     </div>
   <% end %>
@@ -146,7 +146,7 @@
   <%# ── 패스 처리 (scheduled / absent / makeup_scheduled) ── %>
   <% show_pass = @schedule.status.in?(%w[scheduled absent makeup_scheduled]) %>
   <% if show_pass %>
-    <div class="bg-white rounded-lg border shadow-sm p-4">
+    <div class="bg-base-100 rounded-lg border shadow-sm p-4">
       <h3 class="font-semibold text-sm mb-3">패스 처리</h3>
       <% if @schedule.lesson_date == Date.today %>
         <div class="bg-orange-50 border border-orange-200 rounded p-3 text-xs text-orange-700">
@@ -173,7 +173,7 @@
         <% end %>
         <%= form_with url: pass_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
           <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">패스 사유</label>
+            <label class="block text-xs font-medium text-base-content mb-1">패스 사유</label>
             <%= f.text_field :pass_reason, class: "w-full border rounded px-2 py-1.5 text-sm" %>
           </div>
           <p class="text-xs text-orange-600">⚠️ 패스 처리 시 개근 카운트가 리셋됩니다.</p>

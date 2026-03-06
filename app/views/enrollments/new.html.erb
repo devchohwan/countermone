@@ -3,7 +3,7 @@
 <% unless params[:modal] == '1' %>
 <div class="max-w-4xl">
   <div class="flex items-center gap-3 mb-6">
-    <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-gray-500 hover:underline" %>
+    <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-base-content/70 hover:underline" %>
     <h2 class="text-lg font-bold">클래스 및 결제 등록</h2>
   </div>
 <% end %>
@@ -17,23 +17,23 @@
 
     <%= hidden_field_tag :modal, params[:modal] %>
 
-    <div class="bg-white rounded-lg border shadow-sm p-4 space-y-4">
+    <div class="bg-base-100 rounded-lg border shadow-sm p-4 space-y-4">
       <h3 class="font-semibold text-sm">클래스 정보</h3>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <%= f.label :subject, "과목", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.label :subject, "과목", class: "block text-sm font-medium text-base-content mb-1" %>
           <%= f.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_subject" %>
         </div>
         <div>
-          <%= f.label :teacher_id, "선생님", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.label :teacher_id, "선생님", class: "block text-sm font-medium text-base-content mb-1" %>
           <%= f.select :teacher_id, [], { prompt: "선생님 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_teacher" %>
         </div>
         <div>
-          <%= f.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-base-content mb-1" %>
           <%= f.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_lesson_day" %>
         </div>
         <div>
-          <%= f.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-base-content mb-1" %>
           <%= f.select :lesson_time, [], { prompt: "시간 선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "enrollment_lesson_time" %>
         </div>
       </div>
@@ -46,7 +46,7 @@
     <div class="flex gap-3">
       <%= f.submit "등록", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
       <% if params[:modal] != '1' %>
-        <%= link_to "취소", student_path(@student), class: "border px-4 py-2 rounded text-sm hover:bg-gray-100" %>
+        <%= link_to "취소", student_path(@student), class: "border px-4 py-2 rounded text-sm hover:bg-base-200" %>
       <% end %>
     </div>
   <% end %>

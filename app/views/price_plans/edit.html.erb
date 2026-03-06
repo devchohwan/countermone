@@ -1,7 +1,7 @@
 <% content_for :title, "가격 수정" %>
 <div class="max-w-sm">
   <div class="flex items-center gap-3 mb-6">
-    <%= link_to "← 가격표", price_plans_path, class: "text-sm text-gray-500 hover:underline" %>
+    <%= link_to "← 가격표", price_plans_path, class: "text-sm text-base-content/70 hover:underline" %>
     <h2 class="text-lg font-bold">가격 수정</h2>
   </div>
   <%= render "form", price_plan: @price_plan %>

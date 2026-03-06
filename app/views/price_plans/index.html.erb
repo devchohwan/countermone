@@ -5,9 +5,9 @@
   <%= link_to "+ 추가", new_price_plan_path, class: "bg-blue-600 text-white text-sm px-3 py-1.5 rounded hover:bg-blue-700" %>
 </div>
 
-<div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+<div class="bg-base-100 rounded-lg border shadow-sm overflow-hidden">
   <table class="w-full text-sm">
-    <thead class="bg-gray-50 border-b text-xs text-gray-500">
+    <thead class="bg-base-200 border-b text-xs text-base-content/70">
       <tr>
         <th class="px-4 py-2 text-left">과목</th>
         <th class="px-4 py-2 text-left">개월</th>
@@ -22,7 +22,7 @@
           <td class="px-4 py-2.5"><%= pp.subject %></td>
           <td class="px-4 py-2.5"><%= pp.months %>개월</td>
           <td class="px-4 py-2.5 font-medium"><%= format_amount(pp.amount) %></td>
-          <td class="px-4 py-2.5"><span class="text-xs <%= pp.active? ? 'text-green-600' : 'text-gray-400' %>"><%= pp.active? ? "활성" : "비활성" %></span></td>
+          <td class="px-4 py-2.5"><span class="text-xs <%= pp.active? ? 'text-green-600' : 'text-base-content/50' %>"><%= pp.active? ? "활성" : "비활성" %></span></td>
           <td class="px-4 py-2.5">
             <%= link_to "수정", edit_price_plan_path(pp), class: "text-xs text-blue-600 hover:underline mr-2" %>
           </td>

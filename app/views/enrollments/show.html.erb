@@ -1,9 +1,9 @@
 <% content_for :title, "#{@enrollment.subject} — #{@enrollment.student.name}" %>
 
 <div class="flex items-center gap-3 mb-6">
-  <%= link_to "← #{@enrollment.student.name}", student_path(@enrollment.student), class: "text-sm text-gray-500 hover:underline" %>
+  <%= link_to "← #{@enrollment.student.name}", student_path(@enrollment.student), class: "text-sm text-base-content/70 hover:underline" %>
   <h2 class="text-lg font-bold"><%= @enrollment.subject %></h2>
-  <span class="text-gray-400">/ <%= @enrollment.teacher.name %></span>
+  <span class="text-base-content/60">/ <%= @enrollment.teacher.name %></span>
   <%= status_badge(@enrollment.status) %>
   <div class="ml-auto flex gap-2">
     <% if @enrollment.status == "active" %>
@@ -18,19 +18,19 @@
 <div class="grid grid-cols-2 gap-6">
 
   <!-- 결제 이력 -->
-  <div class="bg-white rounded-lg border shadow-sm p-4">
+  <div class="bg-base-100 rounded-lg border shadow-sm p-4">
     <h3 class="font-semibold text-sm mb-3">결제 이력</h3>
     <% if @payments.empty? %>
-      <p class="text-sm text-gray-400">결제 이력이 없습니다.</p>
+      <p class="text-sm text-base-content/60">결제 이력이 없습니다.</p>
     <% else %>
       <div class="space-y-3">
         <% @payments.each do |p| %>
           <div class="border rounded p-3 text-sm">
             <div class="flex items-center justify-between">
               <span class="font-medium"><%= p.starts_at.strftime("%Y.%m.%d") %> ~</span>
-              <span class="text-gray-500"><%= format_amount(p.amount) %></span>
+              <span class="text-base-content/70"><%= format_amount(p.amount) %></span>
             </div>
-            <div class="text-xs text-gray-400 mt-1">
+            <div class="text-xs text-base-content/60 mt-1">
               <%= p.months %>개월 / <%= p.total_lessons %>회 /
               <%= p.payment_method == "card" ? "카드" : p.payment_method == "transfer" ? "이체" : "현금" %>
               <% unless p.fully_paid? %>
@@ -52,14 +52,14 @@
   </div>
 
   <!-- 수업 날짜 전체 -->
-  <div class="bg-white rounded-lg border shadow-sm p-4">
+  <div class="bg-base-100 rounded-lg border shadow-sm p-4">
     <h3 class="font-semibold text-sm mb-3">
       수업 날짜 리스트
-      <span class="text-gray-400 font-normal ml-2">잔여 <%= @enrollment.student.remaining_lessons_for(@enrollment) %>회</span>
+      <span class="text-base-content/60 font-normal ml-2">잔여 <%= @enrollment.student.remaining_lessons_for(@enrollment) %>회</span>
     </h3>
     <div class="overflow-y-auto max-h-96">
       <table class="w-full text-xs">
-        <thead class="text-gray-400 border-b">
+        <thead class="text-base-content/60 border-b">
           <tr>
             <th class="pb-1 text-left">회차</th>
             <th class="pb-1 text-left">날짜</th>
@@ -69,7 +69,7 @@
         <tbody class="divide-y">
           <% @schedules.each do |s| %>
             <tr class="py-1">
-              <td class="py-1 text-gray-400"><%= s.sequence %>회</td>
+              <td class="py-1 text-base-content/60"><%= s.sequence %>회</td>
               <td class="py-1">
                 <%= s.lesson_date.strftime("%m/%d (%a)") %>
                 <% if s.makeup_date %>

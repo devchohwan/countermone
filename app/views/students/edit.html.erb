@@ -2,7 +2,7 @@
 
 <div class="max-w-4xl">
   <div class="flex items-center gap-3 mb-6">
-    <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-gray-500 hover:underline" %>
+    <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-base-content/70 hover:underline" %>
     <h2 class="text-lg font-bold">수강생 수정</h2>
   </div>
   <%= render "integrated_form", student: @student, teachers: @teachers || [] %>

@@ -5,9 +5,9 @@
   <%= link_to "+ 결제 등록", new_payment_path, class: "bg-blue-600 text-white text-sm px-3 py-1.5 rounded hover:bg-blue-700" %>
 </div>
 
-<div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+<div class="bg-base-100 rounded-lg border shadow-sm overflow-hidden">
   <table class="w-full text-sm">
-    <thead class="bg-gray-50 border-b text-xs text-gray-500">
+    <thead class="bg-base-200 border-b text-xs text-base-content/70">
       <tr>
         <th class="px-4 py-2 text-left">수강생</th>
         <th class="px-4 py-2 text-left">과목</th>
@@ -19,11 +19,11 @@
     </thead>
     <tbody class="divide-y">
       <% @payments.each do |p| %>
-        <tr class="hover:bg-gray-50">
+        <tr class="hover:bg-base-200">
           <td class="px-4 py-2.5"><%= link_to p.student.name, student_path(p.student), class: "hover:underline font-medium" %></td>
           <td class="px-4 py-2.5"><%= p.subject %></td>
           <td class="px-4 py-2.5"><%= format_amount(p.amount) %></td>
-          <td class="px-4 py-2.5 text-gray-500 text-xs"><%= p.starts_at.strftime("%Y.%m.%d") %> ~ <%= p.ends_at&.strftime("%m.%d") || "?" %></td>
+          <td class="px-4 py-2.5 text-base-content/70 text-xs"><%= p.starts_at.strftime("%Y.%m.%d") %> ~ <%= p.ends_at&.strftime("%m.%d") || "?" %></td>
           <td class="px-4 py-2.5">
             <% if p.fully_paid? %>
               <span class="text-green-600 text-xs">✓ 완납</span>
@@ -31,12 +31,12 @@
               <span class="text-red-500 text-xs">미납</span>
             <% end %>
           </td>
-          <td class="px-4 py-2.5 text-gray-400 text-xs"><%= p.created_at.strftime("%m.%d") %></td>
+          <td class="px-4 py-2.5 text-base-content/60 text-xs"><%= p.created_at.strftime("%m.%d") %></td>
         </tr>
       <% end %>
     </tbody>
   </table>
   <% if @payments.empty? %>
-    <p class="text-center text-gray-400 py-8 text-sm">결제 내역이 없습니다.</p>
+    <p class="text-center text-base-content/60 py-8 text-sm">결제 내역이 없습니다.</p>
   <% end %>
 </div>

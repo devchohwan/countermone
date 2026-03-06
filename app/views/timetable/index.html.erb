@@ -3,16 +3,16 @@
 <div class="flex items-center justify-between mb-4">
   <h2 class="text-lg font-bold">시간표</h2>
   <div class="flex items-center gap-2 text-sm">
-    <%= link_to "← 이전주", timetable_path(date: (@week_start - 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
+    <%= link_to "← 이전주", timetable_path(date: (@week_start - 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-base-200" %>
     <span class="font-medium"><%= @week_start.strftime("%Y.%m.%d") %> ~ <%= (@week_start + 6.days).strftime("%m.%d") %></span>
-    <%= link_to "다음주 →", timetable_path(date: (@week_start + 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-gray-100" %>
+    <%= link_to "다음주 →", timetable_path(date: (@week_start + 7.days).to_s), class: "border px-2 py-1 rounded hover:bg-base-200" %>
   </div>
 </div>
 
 <!-- 선생님별 탭 -->
 <div class="flex gap-2 mb-4 overflow-x-auto">
   <% @teachers.each do |t| %>
-    <%= link_to t.name, teacher_timetable_path(t.id, date: @date.to_s), class: "shrink-0 px-3 py-1 border rounded text-sm hover:bg-gray-100" %>
+    <%= link_to t.name, teacher_timetable_path(t.id, date: @date.to_s), class: "shrink-0 px-3 py-1 border rounded text-sm hover:bg-base-200" %>
   <% end %>
 </div>
 
@@ -20,10 +20,10 @@
 <div class="overflow-x-auto">
   <table class="w-full text-xs border-collapse">
     <thead>
-      <tr class="bg-gray-50">
+      <tr class="bg-base-200">
         <th class="border px-2 py-2 text-left w-16">시간</th>
         <% @week_days.each do |d| %>
-          <th class="border px-2 py-2 text-center <%= d == Date.today ? 'bg-blue-50' : '' %>">
+          <th class="border px-2 py-2 text-center <%= d == Date.today ? 'bg-blue-100/40' : '' %>">
             <%= d.strftime("%m/%d") %> (<%= %w[월 화 수 목 금 토 일][(d.wday + 6) % 7] %>)
           </th>
         <% end %>
@@ -32,8 +32,8 @@
     <tbody>
       <% (13..21).each do |hour| %>
         <% next if hour == 18 %>
-        <tr class="<%= hour == 18 ? 'bg-gray-100' : '' %>">
-          <td class="border px-2 py-2 text-gray-400 font-mono"><%= sprintf("%02d:00", hour) %></td>
+        <tr class="<%= hour == 18 ? 'bg-base-200' : '' %>">
+          <td class="border px-2 py-2 text-base-content/60 font-mono"><%= sprintf("%02d:00", hour) %></td>
           <% @week_days.each do |d| %>
             <td class="border px-2 py-1 align-top min-w-[120px]">
               <% @schedules_by_teacher.each do |teacher_id, data| %>

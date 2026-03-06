@@ -1,30 +1,30 @@
 <%= form_with model: student, class: "space-y-6" do |f| %>
-  <div class="bg-white rounded-lg <%= 'border-2 border-red-300' if student.errors[:name].any? || student.errors[:phone].any? || student.errors[:age].any? || student.errors[:attendance_code].any? %> shadow-sm p-4 space-y-4">
+  <div class="bg-base-100 rounded-lg <%= 'border-2 border-red-300' if student.errors[:name].any? || student.errors[:phone].any? || student.errors[:age].any? || student.errors[:attendance_code].any? %> shadow-sm p-4 space-y-4">
     <h3 class="font-semibold text-sm">기본 정보</h3>
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <%= f.label :name, "이름", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.label :name, "이름", class: "block text-sm font-medium text-base-content mb-1" %>
         <%= f.text_field :name, class: "w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 #{'border-red-500' if student.errors[:name].any?}" %>
         <% if student.errors[:name].any? %>
           <p class="text-xs text-red-600 mt-1">이름을 입력해주세요</p>
         <% end %>
       </div>
       <div>
-        <%= f.label :phone, "전화번호", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.label :phone, "전화번호", class: "block text-sm font-medium text-base-content mb-1" %>
         <%= f.text_field :phone, class: "w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 #{'border-red-500' if student.errors[:phone].any?}" %>
         <% if student.errors[:phone].any? %>
           <p class="text-xs text-red-600 mt-1">전화번호를 입력해주세요</p>
         <% end %>
       </div>
       <div>
-        <%= f.label :age, "나이", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.label :age, "나이", class: "block text-sm font-medium text-base-content mb-1" %>
         <%= f.number_field :age, class: "w-full border rounded px-3 py-2 text-sm #{'border-red-500' if student.errors[:age].any?}" %>
         <% if student.errors[:age].any? %>
           <p class="text-xs text-red-600 mt-1">나이를 입력해주세요</p>
         <% end %>
       </div>
       <div>
-        <%= f.label :attendance_code, "출결코드", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.label :attendance_code, "출결코드", class: "block text-sm font-medium text-base-content mb-1" %>
         <%= f.text_field :attendance_code, class: "w-full border rounded px-3 py-2 text-sm font-mono #{'border-red-500' if student.errors[:attendance_code].any?}", id: "student_attendance_code" %>
         <% if student.errors[:attendance_code].any? %>
           <p class="text-xs text-red-600 mt-1">출결코드를 입력해주세요</p>
@@ -33,11 +33,11 @@
       </div>
       <% unless student.new_record? %>
         <div>
-          <%= f.label :status, "상태", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.label :status, "상태", class: "block text-sm font-medium text-base-content mb-1" %>
           <%= f.select :status, [["재원","active"],["휴원","leave"],["퇴원","dropout"],["등록대기","pending"],["미등록","unregistered"]], {}, class: "w-full border rounded px-3 py-2 text-sm" %>
         </div>
         <div>
-          <%= f.label :first_enrolled_at, "최초 등록일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= f.label :first_enrolled_at, "최초 등록일", class: "block text-sm font-medium text-base-content mb-1" %>
           <%= f.date_field :first_enrolled_at, class: "w-full border rounded px-3 py-2 text-sm" %>
         </div>
       <% end %>
@@ -64,32 +64,32 @@
   <% if student.new_record? %>
     <%= f.fields_for :enrollments, student.enrollments.any? ? student.enrollments : [student.enrollments.build] do |enrollment_fields| %>
       <% enrollment_errors = student.errors.messages.keys.any? { |k| k.to_s.start_with?('enrollments') } %>
-      <div class="bg-white rounded-lg <%= 'border-2 border-red-300' if enrollment_errors %> shadow-sm p-4 space-y-4">
+      <div class="bg-base-100 rounded-lg <%= 'border-2 border-red-300' if enrollment_errors %> shadow-sm p-4 space-y-4">
         <h3 class="font-semibold text-sm">클래스 정보</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <%= enrollment_fields.label :subject, "과목", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= enrollment_fields.label :subject, "과목", class: "block text-sm font-medium text-base-content mb-1" %>
             <%= enrollment_fields.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "w-full border rounded px-3 py-2 text-sm #{'border-red-500' if enrollment_fields.object.errors[:subject].any?}", id: "enrollment_subject" %>
             <% if enrollment_fields.object.errors[:subject].any? %>
               <p class="text-xs text-red-600 mt-1">과목을 선택해주세요</p>
             <% end %>
           </div>
           <div>
-            <%= enrollment_fields.label :teacher_id, "선생님", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= enrollment_fields.label :teacher_id, "선생님", class: "block text-sm font-medium text-base-content mb-1" %>
             <%= enrollment_fields.select :teacher_id, teachers.map { |t| [t.name, t.id] }, { prompt: "선생님 선택" }, class: "w-full border rounded px-3 py-2 text-sm #{'border-red-500' if enrollment_fields.object.errors[:teacher_id].any? || enrollment_fields.object.errors[:teacher].any?}", id: "enrollment_teacher" %>
             <% if enrollment_fields.object.errors[:teacher_id].any? || enrollment_fields.object.errors[:teacher].any? %>
               <p class="text-xs text-red-600 mt-1">선생님을 선택해주세요</p>
             <% end %>
           </div>
           <div>
-            <%= enrollment_fields.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= enrollment_fields.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-base-content mb-1" %>
             <%= enrollment_fields.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "w-full border rounded px-3 py-2 text-sm #{'border-red-500' if enrollment_fields.object.errors[:lesson_day].any?}", id: "enrollment_lesson_day" %>
             <% if enrollment_fields.object.errors[:lesson_day].any? %>
               <p class="text-xs text-red-600 mt-1">수업 요일을 선택해주세요</p>
             <% end %>
           </div>
           <div>
-            <%= enrollment_fields.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-gray-700 mb-1" %>
+            <%= enrollment_fields.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-base-content mb-1" %>
             <%= enrollment_fields.select :lesson_time, [], { prompt: "시간 선택" }, class: "w-full border rounded px-3 py-2 text-sm #{'border-red-500' if enrollment_fields.object.errors[:lesson_time].any?}", id: "enrollment_lesson_time" %>
             <% if enrollment_fields.object.errors[:lesson_time].any? %>
               <p class="text-xs text-red-600 mt-1">수업 시간을 선택해주세요</p>
@@ -100,42 +100,42 @@
 
       <%= enrollment_fields.fields_for :payments, enrollment_fields.object.payments.any? ? enrollment_fields.object.payments : [enrollment_fields.object.payments.build] do |payment_fields| %>
         <% payment_errors = student.errors.messages.keys.any? { |k| k.to_s.include?('payments') } %>
-        <div class="bg-white rounded-lg <%= 'border-2 border-red-300' if payment_errors %> shadow-sm p-4 space-y-4">
+        <div class="bg-base-100 rounded-lg <%= 'border-2 border-red-300' if payment_errors %> shadow-sm p-4 space-y-4">
           <h3 class="font-semibold text-sm">결제 정보</h3>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <%= payment_fields.label :payment_type, "결제 유형", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :payment_type, "결제 유형", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.select :payment_type, [["일시불", "new"], ["예약금", "deposit"]], {}, class: "w-full border rounded px-3 py-2 text-sm", id: "payment_type" %>
             </div>
             <div>
-              <%= payment_fields.label :months, "개월", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :months, "개월", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.number_field :months, value: 1, min: 1, class: "w-full border rounded px-3 py-2 text-sm", id: "payment_months" %>
             </div>
             <div>
-              <%= payment_fields.label :total_lessons, "총 수업 횟수", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :total_lessons, "총 수업 횟수", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.number_field :total_lessons, value: 4, min: 1, class: "w-full border rounded px-3 py-2 text-sm", id: "payment_total_lessons" %>
             </div>
             <div>
-              <%= payment_fields.label :amount, "금액", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :amount, "금액", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.number_field :amount, step: 1000, class: "w-full border rounded px-3 py-2 text-sm" %>
             </div>
             <div>
-              <%= payment_fields.label :payment_method, "결제 수단", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :payment_method, "결제 수단", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.select :payment_method, [["카드", "card"], ["계좌이체", "transfer"], ["현금", "cash"]], {}, class: "w-full border rounded px-3 py-2 text-sm" %>
             </div>
             <div>
-              <%= payment_fields.label :starts_at, "수업 시작일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :starts_at, "수업 시작일", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.date_field :starts_at, value: Date.today, class: "w-full border rounded px-3 py-2 text-sm" %>
             </div>
           </div>
 
           <div id="deposit-fields" class="grid grid-cols-2 gap-4" style="display: none;">
             <div>
-              <%= payment_fields.label :deposit_amount, "예약금액", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :deposit_amount, "예약금액", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.number_field :deposit_amount, step: 1000, class: "w-full border rounded px-3 py-2 text-sm" %>
             </div>
             <div>
-              <%= payment_fields.label :deposit_paid_at, "예약금 납부일", class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= payment_fields.label :deposit_paid_at, "예약금 납부일", class: "block text-sm font-medium text-base-content mb-1" %>
               <%= payment_fields.datetime_field :deposit_paid_at, value: Time.current, class: "w-full border rounded px-3 py-2 text-sm" %>
             </div>
           </div>
@@ -144,26 +144,26 @@
     <% end %>
   <% end %>
 
-  <div class="bg-white rounded-lg shadow-sm p-4 space-y-4">
+  <div class="bg-base-100 rounded-lg shadow-sm p-4 space-y-4">
     <h3 class="font-semibold text-sm">상담 정보</h3>
     <div class="space-y-3">
       <div>
-        <%= f.label :reason_for_joining, "찾아온 이유", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.label :reason_for_joining, "찾아온 이유", class: "block text-sm font-medium text-base-content mb-1" %>
         <%= f.text_area :reason_for_joining, rows: 2, class: "w-full border rounded px-3 py-2 text-sm" %>
       </div>
       <div>
-        <%= f.label :own_problem, "본인의 문제점", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.label :own_problem, "본인의 문제점", class: "block text-sm font-medium text-base-content mb-1" %>
         <%= f.text_area :own_problem, rows: 2, class: "w-full border rounded px-3 py-2 text-sm" %>
       </div>
       <div>
-        <%= f.label :desired_goal, "하고 싶은 것", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.label :desired_goal, "하고 싶은 것", class: "block text-sm font-medium text-base-content mb-1" %>
         <%= f.text_area :desired_goal, rows: 2, class: "w-full border rounded px-3 py-2 text-sm" %>
       </div>
     </div>
   </div>
 
   <% unless student.new_record? %>
-    <div class="bg-white rounded-lg shadow-sm p-4 space-y-4">
+    <div class="bg-base-100 rounded-lg shadow-sm p-4 space-y-4">
       <h3 class="font-semibold text-sm">메모</h3>
       <%= f.text_area :memo, rows: 3, class: "w-full border rounded px-3 py-2 text-sm" %>
     </div>
@@ -171,7 +171,7 @@
 
   <div class="flex gap-3">
     <%= f.submit student.new_record? ? "등록" : "저장", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
-    <%= link_to "취소", student.new_record? ? students_path : student_path(student), class: "border px-4 py-2 rounded text-sm hover:bg-gray-100" %>
+    <%= link_to "취소", student.new_record? ? students_path : student_path(student), class: "border px-4 py-2 rounded text-sm hover:bg-base-200" %>
   </div>
 <% end %>
 

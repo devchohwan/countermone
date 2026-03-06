@@ -5,17 +5,17 @@
     </div>
   <% end %>
 
-  <div class="bg-white rounded-lg border shadow-sm p-4 space-y-4">
+  <div class="bg-base-100 rounded-lg border shadow-sm p-4 space-y-4">
     <div>
-      <%= f.label :subject, "과목", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.label :subject, "과목", class: "block text-sm font-medium text-base-content mb-1" %>
       <%= f.select :subject, PricePlan::SUBJECTS, {}, class: "w-full border rounded px-3 py-2 text-sm" %>
     </div>
     <div>
-      <%= f.label :months, "개월", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.label :months, "개월", class: "block text-sm font-medium text-base-content mb-1" %>
       <%= f.number_field :months, class: "w-full border rounded px-3 py-2 text-sm" %>
     </div>
     <div>
-      <%= f.label :amount, "금액 (원)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.label :amount, "금액 (원)", class: "block text-sm font-medium text-base-content mb-1" %>
       <%= f.number_field :amount, class: "w-full border rounded px-3 py-2 text-sm" %>
     </div>
     <label class="flex items-center gap-2 text-sm">
@@ -25,6 +25,6 @@
 
   <div class="flex gap-3">
     <%= f.submit "저장", class: "bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 cursor-pointer" %>
-    <%= link_to "취소", price_plans_path, class: "border px-4 py-2 rounded text-sm hover:bg-gray-100" %>
+    <%= link_to "취소", price_plans_path, class: "border px-4 py-2 rounded text-sm hover:bg-base-200" %>
   </div>
 <% end %>

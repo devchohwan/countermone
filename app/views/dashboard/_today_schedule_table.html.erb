@@ -53,18 +53,13 @@
                             class: "text-warning text-left w-full px-3 py-1.5 hover:bg-base-200" %>
                     </li>
                     <li>
-                      <button onclick="showAbsentInline(<%= s.id %>)" class="text-left w-full px-3 py-1.5 hover:bg-base-200">
-                        결강 (보강예정)
-                      </button>
-                    </li>
-                    <li>
                       <%= button_to "결석 차감", deduct_schedule_path(s), method: :patch,
                             class: "text-error text-left w-full px-3 py-1.5 hover:bg-base-200",
                             data: { turbo_confirm: "결석 차감 처리하시겠습니까?" } %>
                     </li>
                     <li>
                       <a href="<%= schedule_path(s) %>" class="text-left w-full px-3 py-1.5 hover:bg-base-200">
-                        패스/보강 상세
+                        보강 · 패스 · 차감
                       </a>
                     </li>
                   </ul>
@@ -75,21 +70,7 @@
             </td>
           </tr>
 
-          <%# 결강 인라인 슬라이드다운 (결강 버튼 클릭 시 표시) %>
-          <% if s.status == "scheduled" %>
-            <tr id="absent-inline-<%= s.id %>" class="hidden bg-warning/10">
-              <td colspan="6" class="py-2 px-4">
-                <div class="flex items-center gap-3 text-sm">
-                  <span class="font-medium text-warning">결강 처리</span>
-                  <span class="text-base-content/60">보강 일정을 바로 등록하거나 결강만 처리:</span>
-                  <%= button_to "결강만 처리", absent_schedule_path(s), method: :patch,
-                        class: "btn btn-xs btn-warning" %>
-                  <%= link_to "보강 날짜 선택 →", schedule_path(s), class: "btn btn-xs btn-outline btn-warning" %>
-                  <button onclick="hideAbsentInline(<%= s.id %>)" class="btn btn-xs btn-ghost">취소</button>
-                </div>
-              </td>
-            </tr>
-          <% end %>
+
         <% end %>
 
         <%# 보강 수업 %>
@@ -112,11 +93,3 @@
   </div>
 <% end %>
 
-<script>
-  function showAbsentInline(id) {
-    document.getElementById('absent-inline-' + id)?.classList.remove('hidden');
-  }
-  function hideAbsentInline(id) {
-    document.getElementById('absent-inline-' + id)?.classList.add('hidden');
-  }
-</script>

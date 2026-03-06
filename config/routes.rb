@@ -37,7 +37,6 @@ Rails.application.routes.draw do
   resources :schedules do
     member do
       patch :attend
-      patch :absent
       patch :late
       patch :deduct
       patch :pass

@@ -29,21 +29,12 @@
     </dl>
 
     <div class="mt-4 flex flex-wrap gap-2">
-      <%# scheduled: 출석/결강/결석 %>
+      <%# scheduled: 출석/결석 %>
       <% if @schedule.status == "scheduled" %>
         <%= button_to "출석", attend_schedule_path(@schedule), method: :patch,
               class: "text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded hover:bg-green-200" %>
-        <%= button_to "결강", absent_schedule_path(@schedule), method: :patch,
-              class: "text-sm bg-orange-100 text-orange-700 px-3 py-1.5 rounded hover:bg-orange-200" %>
         <%= button_to "결석 차감", deduct_schedule_path(@schedule), method: :patch,
               class: "text-sm bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200" %>
-      <% end %>
-
-      <%# absent: 차감 처리 (보강/패스는 아래 섹션에서) %>
-      <% if @schedule.status == "absent" %>
-        <%= button_to "결석 차감", deduct_schedule_path(@schedule), method: :patch,
-              class: "text-sm bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200",
-              data: { turbo_confirm: "결강을 결석 차감으로 처리합니다. 진행하시겠습니까?" } %>
       <% end %>
 
       <%# deducted: 차감 취소 %>
@@ -52,7 +43,7 @@
           <p class="text-xs text-red-500 mb-2">결석 차감 처리됨</p>
           <%= button_to "차감 취소", undo_deduct_schedule_path(@schedule), method: :patch,
                 class: "text-sm bg-yellow-100 text-yellow-700 px-3 py-1.5 rounded hover:bg-yellow-200",
-                data: { turbo_confirm: "차감 취소 후 결강 상태로 전환됩니다. 진행하시겠습니까?" } %>
+                data: { turbo_confirm: "차감 취소 후 예정 상태로 전환됩니다. 진행하시겠습니까?" } %>
         </div>
       <% end %>
 
@@ -93,8 +84,8 @@
     </div>
   </div>
 
-  <%# ── 보강 등록 (absent / scheduled / makeup_scheduled / pass / emergency_pass) ── %>
-  <% show_makeup = @schedule.status.in?(%w[absent scheduled makeup_scheduled pass emergency_pass]) %>
+  <%# ── 보강 등록 (scheduled / makeup_scheduled / pass / emergency_pass) ── %>
+  <% show_makeup = @schedule.status.in?(%w[scheduled makeup_scheduled pass emergency_pass]) %>
   <% if show_makeup %>
     <div class="bg-base-100 rounded-lg border shadow-sm p-4">
       <h3 class="font-semibold text-sm mb-3">보강 등록</h3>
@@ -143,8 +134,8 @@
     </div>
   <% end %>
 
-  <%# ── 패스 처리 (scheduled / absent / makeup_scheduled) ── %>
-  <% show_pass = @schedule.status.in?(%w[scheduled absent makeup_scheduled]) %>
+  <%# ── 패스 처리 (scheduled / makeup_scheduled) ── %>
+  <% show_pass = @schedule.status.in?(%w[scheduled makeup_scheduled]) %>
   <% if show_pass %>
     <div class="bg-base-100 rounded-lg border shadow-sm p-4">
       <h3 class="font-semibold text-sm mb-3">패스 처리</h3>
@@ -164,11 +155,6 @@
         <% if @schedule.status == "makeup_scheduled" %>
           <div class="bg-blue-50 border border-blue-200 rounded p-2 mb-3 text-xs text-blue-700">
             보강 → 패스 전환: 보강 예약이 취소되고 패스로 처리됩니다.
-          </div>
-        <% end %>
-        <% if @schedule.status == "absent" %>
-          <div class="bg-blue-50 border border-blue-200 rounded p-2 mb-3 text-xs text-blue-700">
-            차감 취소 후 → 패스 전환: 결강 상태를 패스로 처리합니다.
           </div>
         <% end %>
         <%= form_with url: pass_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>

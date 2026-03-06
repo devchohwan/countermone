@@ -147,7 +147,6 @@
                   <span class="<%= case s.status
                     when 'attended', 'makeup_done' then 'text-success'
                     when 'scheduled' then 'text-info'
-                    when 'absent' then 'text-warning'
                     when 'deducted' then 'text-error'
                     when 'pass', 'emergency_pass' then 'text-secondary'
                     else 'text-base-content/40'
@@ -228,11 +227,8 @@
     if (status === 'scheduled') {
       html += patchBtn('출석', `/schedules/${scheduleId}/attend`,         'btn-success');
       html += patchBtn('지각', `/schedules/${scheduleId}/late`,           'btn-warning');
-      html += patchBtn('결강 (보강 예정)', `/schedules/${scheduleId}/absent`, 'btn-warning btn-outline');
       html += patchBtn('결석 차감', `/schedules/${scheduleId}/deduct`,    'btn-error btn-outline');
       html += patchBtn('패스', `/schedules/${scheduleId}/pass`,           'btn-secondary btn-outline');
-    } else if (status === 'absent') {
-      html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">보강 등록하기</a>`;
     } else if (status === 'deducted') {
       html += `<p class="text-xs text-error mb-2">결석 차감 처리됨</p>`;
       html += patchBtn('차감 취소', `/schedules/${scheduleId}/undo_deduct`, 'btn-warning btn-outline');

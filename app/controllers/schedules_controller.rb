@@ -1,11 +1,11 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend absent late deduct pass emergency_pass makeup approve_makeup complete_makeup undo_deduct]
+  before_action :set_schedule, only: %i[show attend late deduct pass emergency_pass makeup approve_makeup complete_makeup undo_deduct]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
     @schedules = Schedule.includes(:student, :teacher, :enrollment, :attendance)
                          .where(lesson_date: date)
-                         .where(status: %w[scheduled attended late absent makeup_scheduled makeup_done deducted])
+                         .where(status: %w[scheduled attended late makeup_scheduled makeup_done deducted])
                          .order(:lesson_time)
   end
 
@@ -31,11 +31,6 @@ class SchedulesController < ApplicationController
     @schedule.update!(status: "late")
     create_attendance_record(@schedule)
     redirect_back fallback_location: schedules_path, notice: "지각 처리되었습니다."
-  end
-
-  def absent
-    @schedule.update!(status: "absent")
-    redirect_back fallback_location: schedules_path, notice: "결강 처리되었습니다."
   end
 
   def deduct
@@ -181,7 +176,7 @@ class SchedulesController < ApplicationController
       return redirect_back fallback_location: schedules_path, alert: "차감 상태인 수업만 취소 가능합니다."
     end
 
-    @schedule.update!(status: "absent")
+    @schedule.update!(status: "scheduled")
 
     range = @schedule.makeup_available_range
     period_expired = range.nil? || range.last < Date.today

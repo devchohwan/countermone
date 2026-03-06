@@ -84,44 +84,41 @@ module ApplicationHelper
   # 자리대기: 홍길동(대기)
   # 특이사항: 홍길동(5.20첫)>수강동의서받기
   def timetable_label(schedule)
-    s    = schedule.student
-    e    = schedule.enrollment
-    date = schedule.lesson_date
-    d    = date.strftime("%-m.%-d")
-    suffix = ""
+    s = schedule.student
+    e = schedule.enrollment
+    tags = []
 
     if s.status == "pending"
-      suffix = "(대기)"
+      tags << "대기"
+    elsif s.status == "leave"
+      tags << "휴"
     elsif schedule.status.in?(%w[pass emergency_pass])
-      suffix = "(#{d}패)"
+      tags << "패"
     elsif schedule.sequence == 1
       is_first_payment = e.payments.order(:created_at).first&.id == schedule.payment_id
-      suffix = is_first_payment ? "(#{d}첫)" : "(#{d}복)"
+      tags << (is_first_payment ? "첫" : "복")
     end
 
-    suffix += "(★)" if s.has_car?
+    tags << "★" if s.has_car?
 
-    # 특이사항
     notes = []
-    notes << "수강동의서받기" if !s.consent_form?
-    notes << "2차전직서받기"  if s.rank == "first" && s.second_transfer_form? == false && e.payments.count >= 4
+    notes << "동의서" if !s.consent_form?
+    notes << "2차전직서" if s.rank == "first" && s.second_transfer_form? == false && e.payments.count >= 4
 
-    label = s.name + suffix
+    label = s.name
+    label += "(#{tags.join('/')})" if tags.any?
     label += ">#{notes.join('/')}" if notes.any?
     label
   end
 
   # 보강 셀 표기: 홍길동(5.20보) or 홍길동(5.20보/범) — 원래 선생님과 다를 때 초성 표시
   def timetable_makeup_label(schedule, current_teacher)
-    s    = schedule.student
-    date = schedule.makeup_date
-    d    = date&.strftime("%-m.%-d") || "?"
-
+    s = schedule.student
     if schedule.makeup_teacher_id == schedule.teacher_id
-      "#{s.name}(#{d}보)"
+      "#{s.name}(보)"
     else
       initial = schedule.teacher&.name&.first || "?"
-      "#{s.name}(#{d}보/#{initial})"
+      "#{s.name}(보/#{initial})"
     end
   end
 

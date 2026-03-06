@@ -42,28 +42,27 @@
           </td>
           <% @week_days.each do |d| %>
             <% is_breaktime_open = @breaktime_openings.include?(d) %>
-            <td class="align-top p-1 <%= d == Date.today ? 'bg-primary/5' : '' %> <%= is_break && !is_breaktime_open ? 'bg-base-200' : '' %>">
+            <% regular = @schedule_data[:regular].select { |s| s.lesson_date == d && s.lesson_time.hour == hour } %>
+            <% makeups = @schedule_data[:makeups].select { |s| s.makeup_date == d && s.makeup_time&.hour == hour } %>
+            <% slot_total = regular.count + makeups.count %>
+            <% is_full = slot_total >= 3 %>
+            <td class="align-top p-1 text-center
+              <%= d == Date.today ? 'bg-primary/5' : '' %>
+              <%= is_break && !is_breaktime_open ? 'bg-base-200' : '' %>
+              <%= is_full && !(is_break && !is_breaktime_open) ? 'bg-success/15' : '' %>">
               <% if is_break && !is_breaktime_open %>
                 <span class="text-xs text-base-content/30">-</span>
               <% else %>
-                <% regular = @schedule_data[:regular].select { |s| s.lesson_date == d && s.lesson_time.hour == hour } %>
-                <% makeups = @schedule_data[:makeups].select { |s| s.makeup_date == d && s.makeup_time&.hour == hour } %>
-                <% slot_total = regular.count + makeups.count %>
-
                 <% regular.each do |s| %>
-                  <div class="badge badge-sm <%= slot_total >= 3 ? 'badge-success' : 'badge-info' %> badge-outline mb-0.5 max-w-full text-left h-auto py-0.5 whitespace-normal">
+                  <div class="badge badge-sm badge-info badge-outline mb-0.5 max-w-full h-auto py-0.5 whitespace-normal justify-center">
                     <%= timetable_label(s) %>
                   </div>
                 <% end %>
 
                 <% makeups.each do |s| %>
-                  <div class="badge badge-sm badge-secondary badge-outline mb-0.5 max-w-full text-left h-auto py-0.5 whitespace-normal">
+                  <div class="badge badge-sm badge-secondary badge-outline mb-0.5 max-w-full h-auto py-0.5 whitespace-normal justify-center">
                     <%= timetable_makeup_label(s, @teacher) %>
                   </div>
-                <% end %>
-
-                <% if slot_total >= 3 %>
-                  <div class="text-xs text-success font-bold mt-0.5">FULL</div>
                 <% end %>
 
                 <%# 주차 대수 %>
@@ -98,7 +97,8 @@
   <span class="badge badge-sm badge-info badge-outline">정규</span>
   <span class="badge badge-sm badge-success badge-outline">FULL(3명)</span>
   <span class="badge badge-sm badge-secondary badge-outline">보강</span>
-  <span>★ 차량보유 | (5.20첫) 첫수업 | (5.20복) 복귀 | (5.20패) 패스 | (대기) 등록대기</span>
+  <span class="badge badge-sm badge-success/20 border border-success/30">■ 3명 만석</span>
+  <span>★ 차량 | (첫) 첫수업 | (복) 복귀 | (패) 패스 | (휴) 휴원 | (보) 보강 | (대기) 등록대기</span>
 </div>
 
 <script>

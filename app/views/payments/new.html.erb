@@ -30,30 +30,30 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <%= f.label :payment_type, "결제 유형", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.select :payment_type, [["일반결제","new"],["예약금","deposit"]], {}, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <%= f.select :payment_type, [["일반결제","new"],["예약금","deposit"]], {}, class: "select select-bordered w-full text-sm" %>
         </div>
         <div>
           <%= f.label :payment_method, "결제 수단", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.select :payment_method, [["카드","card"],["이체","transfer"],["현금","cash"]], {}, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <%= f.select :payment_method, [["카드","card"],["이체","transfer"],["현금","cash"]], {}, class: "select select-bordered w-full text-sm" %>
         </div>
         <div>
           <%= f.label :months, "개월 수", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.select :months, [["1개월",1],["3개월",3],["4개월",4]], { prompt: "선택" }, class: "w-full border rounded px-3 py-2 text-sm", id: "payment_months" %>
+          <%= f.select :months, [["1개월",1],["3개월",3],["4개월",4]], { prompt: "선택" }, class: "select select-bordered w-full text-sm", id: "payment_months" %>
         </div>
         <div>
           <%= f.label :total_lessons, "총 수업 횟수", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.number_field :total_lessons, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <%= f.number_field :total_lessons, class: "input input-bordered w-full text-sm" %>
         </div>
         <div>
           <%= f.label :amount, "결제 금액", class: "block text-sm font-medium text-base-content mb-1" %>
           <div class="relative">
-            <%= f.number_field :amount, class: "w-full border rounded px-3 py-2 text-sm", id: "payment_amount" %>
+            <%= f.number_field :amount, class: "input input-bordered w-full text-sm", id: "payment_amount" %>
             <span id="price-hint" class="absolute right-2 top-2 text-xs text-blue-500 hidden"></span>
           </div>
         </div>
         <div>
           <%= f.label :starts_at, "수강 시작일", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.date_field :starts_at, value: Date.today, class: "w-full border rounded px-3 py-2 text-sm" %>
+          <%= f.date_field :starts_at, value: Date.today, class: "input input-bordered w-full text-sm" %>
         </div>
       </div>
 
@@ -94,11 +94,11 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <%= f.label :deposit_amount, "예약금", class: "block text-sm font-medium text-base-content mb-1" %>
-            <%= f.number_field :deposit_amount, class: "w-full border rounded px-3 py-2 text-sm" %>
+            <%= f.number_field :deposit_amount, class: "input input-bordered w-full text-sm" %>
           </div>
           <div>
             <%= f.label :balance_amount, "잔금", class: "block text-sm font-medium text-base-content mb-1" %>
-            <%= f.number_field :balance_amount, class: "w-full border rounded px-3 py-2 text-sm" %>
+            <%= f.number_field :balance_amount, class: "input input-bordered w-full text-sm" %>
           </div>
         </div>
         <label class="flex items-center gap-2 text-sm">

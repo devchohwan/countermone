@@ -41,14 +41,14 @@
   </div>
 
   <% if @is_today %>
-    <%# 오늘: 4열 — 시간대별수업(1) + 지금이순간(2) + 마감요약(1) %>
-    <div class="grid grid-cols-4 gap-4">
+    <%# 오늘: 3열 등폭 — 시간대별수업 + 지금이순간 + 마감요약 %>
+    <div class="grid grid-cols-3 gap-4">
       <%# 시간대별 수업 텍스트 요약 %>
       <%= render "hourly_schedule_text",
             schedules: @today_schedules,
             enrollment_remaining: @enrollment_remaining %>
 
-      <div class="col-span-2">
+      <div>
         <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>
           <%= render "current_schedules" %>
         <% end %>
@@ -161,30 +161,10 @@
     </div>
   <% end %>
 
-  <%# 시간표 (날짜 무관 공통) %>
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body p-4">
-      <h3 class="card-title text-sm mb-2">📅 <%= @is_today ? "오늘" : @date.strftime("%m/%d") %> 시간표</h3>
-      <% if @today_schedules.empty? && @today_makeups.empty? %>
-        <p class="text-sm text-base-content/40">수업이 없습니다.</p>
-      <% else %>
-        <div role="tablist" class="tabs tabs-bordered tabs-sm mb-3">
-          <input type="radio" name="timetable-tabs" role="tab" class="tab" aria-label="전체" checked />
-          <div role="tabpanel" class="tab-content pt-2">
-            <%= render "today_schedule_table", schedules: @today_schedules, makeups: @today_makeups, current_hour: @current_hour %>
-          </div>
-          <% @teachers_today.each do |teacher| %>
-            <input type="radio" name="timetable-tabs" role="tab" class="tab" aria-label="<%= teacher.name %>" />
-            <div role="tabpanel" class="tab-content pt-2">
-              <% teacher_schedules = @today_schedules.select { |s| s.teacher_id == teacher.id } %>
-              <% teacher_makeups   = @today_makeups.select   { |s| s.makeup_teacher_id == teacher.id } %>
-              <%= render "today_schedule_table", schedules: teacher_schedules, makeups: teacher_makeups, current_hour: @current_hour %>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-  </div>
+  <%# 시간표 — /timetable/4 그대로 임베드 %>
+  <%= turbo_frame_tag "timetable_embed", src: teacher_timetable_path(4, date: @date.to_s), loading: :lazy do %>
+    <div class="card bg-base-100 shadow-sm p-4 text-sm text-base-content/40">시간표 로딩 중...</div>
+  <% end %>
 
 </div>
 

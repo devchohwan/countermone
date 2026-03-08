@@ -1,5 +1,6 @@
 <% content_for :title, "#{@teacher.name} 시간표" %>
 
+<%= turbo_frame_tag "timetable_embed" do %>
 <div class="flex items-center justify-between mb-3">
   <h2 class="text-lg font-bold"><%= @teacher.name %> 시간표</h2>
   <div class="flex items-center gap-2 text-sm">
@@ -115,3 +116,4 @@
     localStorage.setItem('timetable-memo-' + teacherId, val);
   }
 </script>
+<% end %>

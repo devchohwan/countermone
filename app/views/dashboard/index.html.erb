@@ -57,6 +57,11 @@
           <%= render "daily_summary" %>
         </div>
       </div>
+
+      <%# 시간대별 수업 텍스트 요약 %>
+      <%= render "hourly_schedule_text",
+            schedules: @today_schedules,
+            enrollment_remaining: @enrollment_remaining %>
     </div>
 
     <%# 오늘 해야 할 일 (탭) %>

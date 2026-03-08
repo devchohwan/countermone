@@ -15,10 +15,11 @@ class DashboardController < ApplicationController
 
     # 시간표
     @today_schedules = Schedule
-      .includes(:student, :teacher, :enrollment)
+      .includes(:student, :teacher, :enrollment, :attendance)
       .where(lesson_date: @date)
       .where(status: %w[scheduled attended late makeup_scheduled])
       .order(:lesson_time)
+
 
     # 보강 일정
     @today_makeups = Schedule
@@ -28,6 +29,11 @@ class DashboardController < ApplicationController
 
     # 현재 시간대 수업 중 (오늘만)
     @current_schedules = @is_today ? @today_schedules.select { |s| s.lesson_time.hour == @current_hour } : []
+
+    # 시간대별 수업 텍스트용: 수강권별 잔여 scheduled 횟수 (N+1 방지)
+    enrollment_ids = @today_schedules.map(&:enrollment_id).uniq
+    @enrollment_remaining = Schedule.where(enrollment_id: enrollment_ids, status: "scheduled")
+                                    .group(:enrollment_id).count
 
     # 해당일 마감 집계
     @daily_payments = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @date)

@@ -1,0 +1,52 @@
+<div class="card bg-base-100 shadow-sm col-span-3">
+  <div class="card-body p-4">
+    <h3 class="card-title text-sm mb-2">시간대별 수업</h3>
+
+    <% hourly_groups = schedules.group_by { |s| s.lesson_time.hour }.sort %>
+
+    <% if hourly_groups.empty? %>
+      <p class="text-sm text-base-content/40">수업이 없습니다.</p>
+    <% else %>
+      <div class="flex flex-wrap gap-x-8 gap-y-3 font-mono text-sm leading-snug">
+        <% hourly_groups.each do |hour, hour_schedules| %>
+          <div>
+            <p class="text-xs font-bold text-base-content/50 mb-1"><%= hour %>시</p>
+            <%
+              by_teacher = hour_schedules.group_by(&:teacher_id)
+              first_teacher = true
+            %>
+            <% by_teacher.each_value do |ts| %>
+              <% unless first_teacher %>
+                <div class="h-2"></div>
+              <% end %>
+              <% first_teacher = false %>
+
+              <p class="text-xs text-base-content/40">[<%= ts.first.teacher.name %>]</p>
+
+              <% ts.each do |s| %>
+                <%
+                  attended = s.status.in?(%w[attended late])
+                  remaining_scheduled = enrollment_remaining[s.enrollment_id] || 0
+                  if attended
+                    before_count = remaining_scheduled + 1
+                    after_count  = remaining_scheduled
+                  else
+                    before_count = remaining_scheduled
+                  end
+                %>
+                <p>
+                  <%= s.student.name %>
+                  <% if attended %>
+                    <span class="text-base-content/40"><%= before_count %>-<%= after_count %></span>
+                  <% else %>
+                    <span class="text-base-content/40"><%= before_count %></span>
+                  <% end %>
+                </p>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

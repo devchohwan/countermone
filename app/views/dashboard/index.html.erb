@@ -41,8 +41,13 @@
   </div>
 
   <% if @is_today %>
-    <%# 오늘: 3열 — 지금이순간(col-span-2) + 마감요약 %>
-    <div class="grid grid-cols-3 gap-4">
+    <%# 오늘: 4열 — 시간대별수업(1) + 지금이순간(2) + 마감요약(1) %>
+    <div class="grid grid-cols-4 gap-4">
+      <%# 시간대별 수업 텍스트 요약 %>
+      <%= render "hourly_schedule_text",
+            schedules: @today_schedules,
+            enrollment_remaining: @enrollment_remaining %>
+
       <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>
         <%= render "current_schedules" %>
       <% end %>
@@ -57,11 +62,6 @@
           <%= render "daily_summary" %>
         </div>
       </div>
-
-      <%# 시간대별 수업 텍스트 요약 %>
-      <%= render "hourly_schedule_text",
-            schedules: @today_schedules,
-            enrollment_remaining: @enrollment_remaining %>
     </div>
 
     <%# 오늘 해야 할 일 (탭) %>

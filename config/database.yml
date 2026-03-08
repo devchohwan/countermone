@@ -1,21 +1,29 @@
 default: &default
-  adapter: postgresql
-  encoding: unicode
+  adapter: sqlite3
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: /var/run/postgresql
-  username: cho
-  password:
+  timeout: 5000
 
 development:
   <<: *default
-  database: counter_development
+  database: db/development.sqlite3
 
 test:
   <<: *default
-  database: counter_test
+  database: db/test.sqlite3
 
 production:
-  <<: *default
-  database: counter_production
-  username: <%= ENV["COUNTER_DATABASE_USERNAME"] %>
-  password: <%= ENV["COUNTER_DATABASE_PASSWORD"] %>
+  primary:
+    <<: *default
+    database: storage/production.sqlite3
+  cache:
+    <<: *default
+    database: storage/production_cache.sqlite3
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *default
+    database: storage/production_queue.sqlite3
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: storage/production_cable.sqlite3
+    migrations_paths: db/cable_migrate

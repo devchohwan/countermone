@@ -1,0 +1,34 @@
+service: counter
+image: amuguona/counter
+
+servers:
+  - 115.68.195.125
+
+proxy:
+  ssl: true
+  host: counter.monemusic.com
+
+registry:
+  username: amuguona
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+env:
+  secret:
+    - RAILS_MASTER_KEY
+  clear:
+    SOLID_QUEUE_IN_PUMA: "true"
+    RAILS_SERVE_STATIC_FILES: "true"
+
+ssh:
+  user: root
+  keys:
+    - ~/monemusic
+
+volumes:
+  - "counter_storage:/rails/storage"
+
+asset_path: /rails/public/assets
+
+builder:
+  arch: amd64

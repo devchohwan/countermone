@@ -11,9 +11,6 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.0].define(version: 2026_03_06_105032) do
-  # These are extensions that must be enabled in order to support this database
-  enable_extension "pg_catalog.plpgsql"
-
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false

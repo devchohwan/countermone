@@ -2,6 +2,7 @@
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
+/.kamal/secrets
 
 # Rails standard ignores
 /log/*

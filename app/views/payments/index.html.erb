@@ -5,6 +5,22 @@
   <%= link_to "+ 결제 등록", new_payment_path, class: "bg-blue-600 text-white text-sm px-3 py-1.5 rounded hover:bg-blue-700" %>
 </div>
 
+<%# 검색 / 날짜 필터 %>
+<%= form_with url: payments_path, method: :get, local: true, class: "flex flex-wrap gap-2 mb-4" do |f| %>
+  <div class="flex-1 min-w-[160px]">
+    <%= f.text_field :q, value: params[:q], placeholder: "수강생 이름 검색",
+        class: "input input-bordered input-sm w-full" %>
+  </div>
+  <div>
+    <%= f.date_field :date, value: params[:date],
+        class: "input input-bordered input-sm" %>
+  </div>
+  <%= f.submit "검색", class: "btn btn-sm btn-primary" %>
+  <% if params[:q].present? || params[:date].present? %>
+    <%= link_to "초기화", payments_path, class: "btn btn-sm btn-ghost" %>
+  <% end %>
+<% end %>
+
 <div class="bg-base-100 rounded-lg border shadow-sm overflow-hidden">
   <table class="w-full text-sm">
     <thead class="bg-base-200 border-b text-xs text-base-content/70">
@@ -40,3 +56,28 @@
     <p class="text-center text-base-content/60 py-8 text-sm">결제 내역이 없습니다.</p>
   <% end %>
 </div>
+
+<%# 페이지네이션 %>
+<% if @pagy.pages > 1 %>
+  <div class="flex justify-center mt-4 gap-1 text-sm">
+    <% if @pagy.prev %>
+      <%= link_to "이전", payments_path(q: params[:q], date: params[:date], page: @pagy.prev),
+          class: "px-3 py-1 rounded border hover:bg-base-200" %>
+    <% end %>
+    <% @pagy.series.each do |item| %>
+      <% if item == :gap %>
+        <span class="px-3 py-1 text-base-content/40">…</span>
+      <% elsif item == @pagy.page %>
+        <span class="px-3 py-1 rounded bg-blue-600 text-white font-medium"><%= item %></span>
+      <% else %>
+        <%= link_to item, payments_path(q: params[:q], date: params[:date], page: item),
+            class: "px-3 py-1 rounded border hover:bg-base-200" %>
+      <% end %>
+    <% end %>
+    <% if @pagy.next %>
+      <%= link_to "다음", payments_path(q: params[:q], date: params[:date], page: @pagy.next),
+          class: "px-3 py-1 rounded border hover:bg-base-200" %>
+    <% end %>
+  </div>
+  <p class="text-center text-xs text-base-content/50 mt-2"><%= @pagy.count %>건 중 <%= @pagy.from %>–<%= @pagy.to %></p>
+<% end %>

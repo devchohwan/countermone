@@ -2,9 +2,19 @@ class PaymentsController < ApplicationController
   before_action :set_payment, only: %i[show refund pay_balance]
 
   def index
-    @payments = Payment.includes(:student, :enrollment, :discounts)
-                       .order(created_at: :desc)
-                       .limit(50)
+    scope = Payment.includes(:student, :enrollment, :discounts)
+                   .order(created_at: :desc)
+
+    if params[:q].present?
+      scope = scope.joins(:student).where("students.name LIKE ?", "%#{params[:q]}%")
+    end
+
+    if params[:date].present?
+      date = Date.parse(params[:date]) rescue nil
+      scope = scope.where(created_at: date.beginning_of_day..date.end_of_day) if date
+    end
+
+    @pagy, @payments = pagy(scope, limit: 50)
   end
 
   def show

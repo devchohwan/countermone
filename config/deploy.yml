@@ -19,6 +19,7 @@ env:
   clear:
     SOLID_QUEUE_IN_PUMA: "true"
     RAILS_SERVE_STATIC_FILES: "true"
+    TZ: "Asia/Seoul"
 
 ssh:
   user: root

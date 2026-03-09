@@ -65,7 +65,41 @@
                           },
                           class: "text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded hover:bg-indigo-200" %>
                       <%= button_to "결석", deduct_schedule_path(s), method: :patch, class: "text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200" %>
-                      <%= link_to "패스", "#",                       class: "text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded" %>
+                      <div class="dropdown dropdown-end">
+                        <label tabindex="0" class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded hover:bg-purple-200 cursor-pointer">패스 ▾</label>
+                        <div tabindex="0" class="dropdown-content z-20 bg-base-100 shadow-lg border rounded-lg w-60 p-3 space-y-3 mt-1">
+                          <div>
+                            <div class="flex items-center gap-2 mb-1.5">
+                              <span class="text-xs font-semibold text-purple-700">일반 패스</span>
+                              <span class="badge badge-xs badge-warning">횟수 1회 소진</span>
+                            </div>
+                            <%= form_with url: pass_schedule_path(s), method: :patch, class: "flex gap-1" do |f| %>
+                              <%= f.text_field :pass_reason, placeholder: "사유 (선택)", class: "input input-bordered input-xs flex-1 text-xs" %>
+                              <%= f.submit "패스", class: "btn btn-xs bg-purple-100 text-purple-700 hover:bg-purple-200 border-0" %>
+                            <% end %>
+                          </div>
+                          <div class="border-t pt-2">
+                            <div class="flex items-center gap-2 mb-1.5">
+                              <span class="text-xs font-semibold text-pink-700">긴급 패스</span>
+                              <span class="badge badge-xs badge-ghost">횟수 소진 없음</span>
+                            </div>
+                            <%= form_with url: emergency_pass_schedule_path(s), method: :patch, class: "flex gap-1" do |f| %>
+                              <%= f.text_field :pass_reason, placeholder: "사유 (선택)", class: "input input-bordered input-xs flex-1 text-xs" %>
+                              <%= f.submit "긴급패스", class: "btn btn-xs bg-pink-100 text-pink-700 hover:bg-pink-200 border-0" %>
+                            <% end %>
+                          </div>
+                          <div class="border-t pt-2">
+                            <div class="flex items-center gap-2 mb-1.5">
+                              <span class="text-xs font-semibold text-green-700">공휴일 패스</span>
+                              <span class="badge badge-xs badge-ghost">횟수 소진 없음</span>
+                            </div>
+                            <%= form_with url: holiday_schedule_path(s), method: :patch, class: "flex gap-1" do |f| %>
+                              <%= f.text_field :pass_reason, placeholder: "공휴일명 (예: 삼일절)", class: "input input-bordered input-xs flex-1 text-xs" %>
+                              <%= f.submit "공휴일", class: "btn btn-xs bg-green-100 text-green-700 hover:bg-green-200 border-0" %>
+                            <% end %>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   <% elsif s.status == "makeup_scheduled" %>
                     <%= button_to "보강완료", complete_makeup_schedule_path(s), method: :patch, class: "text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded" %>

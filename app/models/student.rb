@@ -41,7 +41,7 @@ class Student < ApplicationRecord
 
   def available_passes_for(enrollment)
     total_months = enrollment.payments.where(fully_paid: true).sum(:months)
-    used_passes  = enrollment.schedules.where(status: %w[pass emergency_pass]).count
+    used_passes  = enrollment.schedules.where(status: "pass").count
     total_months - used_passes
   end
 

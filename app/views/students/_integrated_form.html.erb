@@ -1,4 +1,17 @@
 <%= form_with model: student, class: "space-y-6" do |f| %>
+  <% all_errors = student.errors.full_messages +
+       student.enrollments.flat_map { |e|
+         e.errors.full_messages + e.payments.flat_map { |p| p.errors.full_messages }
+       } %>
+  <% if all_errors.any? %>
+    <div class="alert alert-error text-sm">
+      <ul class="list-disc list-inside space-y-0.5">
+        <% all_errors.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
   <div class="bg-base-100 rounded-lg <%= 'border-2 border-red-300' if student.errors[:name].any? || student.errors[:phone].any? || student.errors[:age].any? || student.errors[:attendance_code].any? %> shadow-sm p-4 space-y-4">
     <h3 class="font-semibold text-sm">기본 정보</h3>
     <div class="grid grid-cols-2 gap-4">
@@ -131,8 +144,10 @@
                 </div>
                 <div>
                   <%= pf_fields.label :amount, "금액", class: "block text-sm font-medium text-base-content mb-1" %>
-                  <%= pf_fields.number_field :amount, step: 1000,
-                        class: "input input-bordered w-full text-sm", data: { role: "amount" } %>
+                  <%= pf_fields.number_field :amount, step: 1000, min: 0, required: true,
+                        placeholder: "금액 직접 입력",
+                        class: "input input-bordered w-full text-sm #{'input-error' if pf_fields.object.errors[:amount].any?}",
+                        data: { role: "amount" } %>
                 </div>
                 <div>
                   <%= pf_fields.label :payment_method, "결제 수단", class: "block text-sm font-medium text-base-content mb-1" %>
@@ -222,7 +237,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-base-content mb-1">금액</label>
-              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][amount]" data-role="amount" step="1000" class="input input-bordered w-full text-sm">
+              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][amount]" data-role="amount" step="1000" min="0" required placeholder="금액 직접 입력" class="input input-bordered w-full text-sm">
             </div>
             <div>
               <label class="block text-sm font-medium text-base-content mb-1">결제 수단</label>

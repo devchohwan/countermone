@@ -27,6 +27,8 @@ Rails.application.routes.draw do
         patch :leave
         patch :return
         patch :dropout
+        get   :reschedule_form
+        patch :reschedule
       end
     end
   end

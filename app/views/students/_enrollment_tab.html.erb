@@ -14,6 +14,7 @@
       <div class="ml-auto flex gap-2">
         <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
         <% if enrollment.status == "active" %>
+          <%= link_to "수업 변경", reschedule_form_enrollment_path(enrollment), class: "btn btn-xs btn-outline" %>
           <%= button_to "휴원", leave_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-warning btn-outline" %>
         <% elsif enrollment.status == "leave" %>
           <%= button_to "복귀", return_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-success btn-outline" %>

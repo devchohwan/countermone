@@ -1,0 +1,87 @@
+<% content_for :title, "수업 일정 변경" %>
+
+<div class="flex items-center gap-3 mb-4">
+  <%= link_to "← 돌아가기", student_path(@enrollment.student, tab: @enrollment.id), class: "btn btn-ghost btn-sm" %>
+  <h2 class="text-xl font-bold">수업 일정 변경</h2>
+</div>
+
+<div class="card bg-base-100 shadow-sm max-w-lg">
+  <div class="card-body">
+    <div class="mb-4 p-3 bg-base-200 rounded-lg text-sm">
+      <span class="font-semibold"><%= @enrollment.student.name %></span> —
+      <%= @enrollment.subject %> (<%= @enrollment.teacher.name %>)
+      <span class="text-base-content/50 ml-2"><%= lesson_day_ko(@enrollment.lesson_day) %>요일 <%= @enrollment.lesson_time.strftime("%H:%M") %></span>
+    </div>
+
+    <%= form_with url: reschedule_enrollment_path(@enrollment), method: :patch do |f| %>
+      <div class="form-control mb-4">
+        <label class="label"><span class="label-text font-medium">변경 기준 날짜</span></label>
+        <input type="date" name="change_date" value="<%= Date.today %>"
+               required class="input input-bordered input-sm">
+        <p class="text-xs text-base-content/50 mt-1">이 날짜 이후의 예정된 수업(<code>scheduled</code>)만 변경됩니다. 보강 예정 수업은 유지됩니다.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="form-control">
+          <label class="label"><span class="label-text font-medium">새 요일</span></label>
+          <select name="lesson_day" id="lesson_day_select" class="select select-bordered select-sm" onchange="updateTimes()">
+            <% Enrollment::LESSON_DAYS.each do |day| %>
+              <option value="<%= day %>" <%= 'selected' if day == @enrollment.lesson_day %>><%= lesson_day_ko(day) %>요일</option>
+            <% end %>
+          </select>
+        </div>
+
+        <div class="form-control">
+          <label class="label"><span class="label-text font-medium">새 시간</span></label>
+          <select name="lesson_time" id="lesson_time_select" class="select select-bordered select-sm">
+            <%# JS로 채워짐 %>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-control mb-6">
+        <label class="label"><span class="label-text font-medium">선생님</span></label>
+        <select name="teacher_id" class="select select-bordered select-sm">
+          <% @teachers.each do |teacher| %>
+            <option value="<%= teacher.id %>" <%= 'selected' if teacher.id == @enrollment.teacher_id %>>
+              <%= teacher.name %>
+            </option>
+          <% end %>
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <%= link_to "취소", student_path(@enrollment.student, tab: @enrollment.id), class: "btn btn-ghost btn-sm" %>
+        <%= f.submit "변경 적용", class: "btn btn-primary btn-sm",
+              data: { turbo_confirm: "변경 기준 날짜 이후의 예정 수업 일정이 모두 변경됩니다. 계속하시겠습니까?" } %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+const currentTime = '<%= @enrollment.lesson_time.strftime("%H:%M") %>';
+
+function getTimeOptions(day) {
+  let start = 13 * 60, end = 21 * 60;
+  if (day === 'monday') { start = 14 * 60; end = 17 * 60; }
+  const opts = [];
+  for (let m = start; m <= end; m += 30) {
+    const h   = String(Math.floor(m / 60)).padStart(2, '0');
+    const min = String(m % 60).padStart(2, '0');
+    opts.push(`${h}:${min}`);
+  }
+  return opts;
+}
+
+function updateTimes() {
+  const day  = document.getElementById('lesson_day_select').value;
+  const sel  = document.getElementById('lesson_time_select');
+  const times = getTimeOptions(day);
+  sel.innerHTML = times.map(t =>
+    `<option value="${t}" ${t === currentTime ? 'selected' : ''}>${t}</option>`
+  ).join('');
+}
+
+updateTimes();
+</script>

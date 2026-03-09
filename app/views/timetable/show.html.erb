@@ -64,16 +64,18 @@
               <% if is_break && !is_breaktime_open %>
                 <span class="text-xs text-base-content/30">-</span>
               <% else %>
-                <% regular.each do |s| %>
-                  <div class="badge badge-sm badge-info badge-outline mb-0.5 max-w-full h-auto py-0.5 whitespace-normal justify-center">
-                    <%= timetable_label(s) %>
-                  </div>
-                <% end %>
-                <% makeups.each do |s| %>
-                  <div class="badge badge-sm badge-secondary badge-outline mb-0.5 max-w-full h-auto py-0.5 whitespace-normal justify-center">
-                    <%= timetable_makeup_label(s, @teacher) %>
-                  </div>
-                <% end %>
+                <div class="flex flex-col items-center gap-0.5">
+                  <% regular.each do |s| %>
+                    <div class="badge badge-sm badge-info badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">
+                      <%= timetable_label(s) %>
+                    </div>
+                  <% end %>
+                  <% makeups.each do |s| %>
+                    <div class="badge badge-sm badge-secondary badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">
+                      <%= timetable_makeup_label(s, @teacher) %>
+                    </div>
+                  <% end %>
+                </div>
               <% end %>
             </td>
           <% end %>

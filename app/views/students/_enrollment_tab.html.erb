@@ -14,7 +14,6 @@
       <div class="ml-auto flex gap-2">
         <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
         <% if enrollment.status == "active" %>
-          <%= link_to "수업 변경", reschedule_form_enrollment_path(enrollment), class: "btn btn-xs btn-outline" %>
           <%= button_to "휴원", leave_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-warning btn-outline" %>
         <% elsif enrollment.status == "leave" %>
           <%= button_to "복귀", return_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-success btn-outline" %>
@@ -208,6 +207,14 @@
 
 <script>
 (function() {
+  // Per-enrollment reschedule data
+  window._enrollmentData = window._enrollmentData || {};
+  window._enrollmentData['<%= enrollment.id %>'] = {
+    lessonDay:  '<%= enrollment.lesson_day %>',
+    lessonTime: '<%= enrollment.lesson_time.strftime("%H:%M") %>',
+    teachers:   <%= Teacher.joins(:teacher_subjects).where(teacher_subjects: { subject: enrollment.subject }).by_position.map { |t| { id: t.id, name: t.name } }.to_json.html_safe %>
+  };
+
   // 결제 접기/펼치기
   window.togglePayments = window.togglePayments || function(enrollmentId) {
     const extras = document.querySelectorAll('.payment-extra-' + enrollmentId);
@@ -296,6 +303,7 @@
         }
         html += `<button onclick="if(confirm('결석 차감 처리하시겠습니까?')) submitPatch('/schedules/${scheduleId}/deduct','${csrf}')"
                          class="btn btn-sm btn-error btn-outline w-full">결석 차감</button>`;
+        html += `<button onclick="showReschedule()" class="btn btn-sm btn-outline w-full mt-1">수업 일자 변경</button>`;
       } else if (status === 'deducted') {
         html += `<p class="text-xs text-error mb-1">결석 차감 처리됨</p>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/undo_deduct','${csrf}')" class="btn btn-sm btn-warning btn-outline w-full">차감 취소</button>`;
@@ -486,13 +494,93 @@
         `<input type="hidden" name="pass_reason" value="${reason}">`);
     }
 
+    // ── 수업 일자 변경 ─────────────────────────────────────
+    function showReschedule() {
+      titleEl.textContent = '수업 일자 변경';
+      const ed = (window._enrollmentData || {})[enrollmentId] || {};
+      const teachers = ed.teachers || [];
+      const DAY_LIST = [['monday','월'],['tuesday','화'],['wednesday','수'],['thursday','목'],['friday','금'],['saturday','토'],['sunday','일']];
+      const dayOptions = DAY_LIST.map(([val, ko]) =>
+        `<option value="${val}" ${val === ed.lessonDay ? 'selected' : ''}>${ko}요일</option>`
+      ).join('');
+      const teacherOptions = teachers.map(t =>
+        `<option value="${t.id}">${t.name}</option>`
+      ).join('');
+
+      actionsEl.innerHTML = `
+        <div class="space-y-2 text-sm">
+          <p class="text-xs text-base-content/50">이 날짜 이후 예정된 수업이 모두 변경됩니다.</p>
+          <div>
+            <p class="text-xs font-medium mb-1">변경 기준 날짜</p>
+            <input type="date" id="rs-date" value="${lessonDateStr}" class="input input-sm input-bordered w-full">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <p class="text-xs font-medium mb-1">새 요일</p>
+              <select id="rs-day" class="select select-sm select-bordered w-full" onchange="updateRescheduleTimes()">${dayOptions}</select>
+            </div>
+            <div>
+              <p class="text-xs font-medium mb-1">새 시간</p>
+              <select id="rs-time" class="select select-sm select-bordered w-full"></select>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-medium mb-1">선생님</p>
+            <select id="rs-teacher" class="select select-sm select-bordered w-full">${teacherOptions}</select>
+          </div>
+          <button onclick="submitReschedule()" class="btn btn-sm btn-primary w-full">변경 적용</button>
+          <button onclick="showMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>
+        </div>`;
+      updateRescheduleTimes();
+    }
+
+    function updateRescheduleTimes() {
+      const day = document.getElementById('rs-day')?.value;
+      const sel = document.getElementById('rs-time');
+      if (!sel || !day) return;
+      const ed  = (window._enrollmentData || {})[enrollmentId] || {};
+      let start = 13 * 60, end = 21 * 60;
+      if (day === 'monday') { start = 14 * 60; end = 17 * 60; }
+      const opts = [];
+      for (let m = start; m <= end; m += 30) {
+        const h   = String(Math.floor(m / 60)).padStart(2, '0');
+        const min = String(m % 60).padStart(2, '0');
+        const t   = `${h}:${min}`;
+        opts.push(`<option value="${t}" ${t === ed.lessonTime ? 'selected' : ''}>${t}</option>`);
+      }
+      sel.innerHTML = opts.join('');
+    }
+
+    function submitReschedule() {
+      const date      = document.getElementById('rs-date')?.value;
+      const day       = document.getElementById('rs-day')?.value;
+      const time      = document.getElementById('rs-time')?.value;
+      const teacherId = document.getElementById('rs-teacher')?.value;
+      if (!date || !day || !time || !teacherId) { alert('모든 항목을 입력해주세요.'); return; }
+      const DAY_KO = { monday:'월', tuesday:'화', wednesday:'수', thursday:'목', friday:'금', saturday:'토', sunday:'일' };
+      if (!confirm(`${date} 이후 예정 수업을 ${DAY_KO[day] || day}요일 ${time}으로 변경합니다. 계속하시겠습니까?`)) return;
+      const f = document.createElement('form');
+      f.method = 'POST'; f.action = `/enrollments/${enrollmentId}/reschedule`;
+      f.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf}">
+                     <input type="hidden" name="_method" value="patch">
+                     <input type="hidden" name="change_date" value="${date}">
+                     <input type="hidden" name="lesson_day" value="${day}">
+                     <input type="hidden" name="lesson_time" value="${time}">
+                     <input type="hidden" name="teacher_id" value="${teacherId}">`;
+      document.body.appendChild(f);
+      f.submit();
+    }
+
     // window에 노출 (동적 HTML onclick에서 접근 가능하도록)
-    window.showMain           = showMain;
-    window.showMakeup         = showMakeup;
-    window.showPass           = showPass;
-    window.submitPass         = submitPass;
-    window.navigateMakeupWeek = navigateMakeupWeek;
-    window.confirmMakeup      = confirmMakeup;
+    window.showMain              = showMain;
+    window.showMakeup            = showMakeup;
+    window.showPass              = showPass;
+    window.submitPass            = submitPass;
+    window.navigateMakeupWeek    = navigateMakeupWeek;
+    window.confirmMakeup         = confirmMakeup;
+    window.showReschedule        = showReschedule;
+    window.updateRescheduleTimes = updateRescheduleTimes;
+    window.submitReschedule      = submitReschedule;
 
     showMain();
     modal.showModal();

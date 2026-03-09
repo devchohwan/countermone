@@ -1,0 +1,46 @@
+<% content_for :title, "가입승인" %>
+
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-xl font-bold mb-6">가입승인 관리</h1>
+
+  <% if @pending_users.empty? %>
+    <div class="card bg-base-100 shadow">
+      <div class="card-body text-center text-base-content/50 py-12">
+        대기 중인 가입 신청이 없습니다.
+      </div>
+    </div>
+  <% else %>
+    <div class="card bg-base-100 shadow">
+      <div class="card-body p-0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>이메일</th>
+              <th>가입일시</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @pending_users.each do |user| %>
+              <tr>
+                <td class="font-medium"><%= user.name %></td>
+                <td class="text-sm text-base-content/70"><%= user.email_address %></td>
+                <td class="text-sm text-base-content/50"><%= user.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+                <td class="text-right">
+                  <div class="flex gap-2 justify-end">
+                    <%= button_to "승인", approve_user_path(user), method: :patch,
+                        class: "btn btn-success btn-xs" %>
+                    <%= button_to "거절", reject_user_path(user), method: :delete,
+                        data: { turbo_confirm: "#{user.name}님의 가입을 거절하고 계정을 삭제합니다. 계속하시겠습니까?" },
+                        class: "btn btn-error btn-xs btn-outline" %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% end %>
+</div>

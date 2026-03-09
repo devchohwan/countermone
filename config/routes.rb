@@ -8,6 +8,10 @@ Rails.application.routes.draw do
   get  "signup", to: "users#new",    as: :signup
   post "signup", to: "users#create"
 
+  get    "approvals",          to: "users#approvals", as: :approvals
+  patch  "users/:id/approve",  to: "users#approve",   as: :approve_user
+  delete "users/:id/reject",   to: "users#reject",    as: :reject_user
+
   resources :students do
     collection do
       get :check_attendance_code

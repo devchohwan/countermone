@@ -101,6 +101,14 @@
               <li><%= link_to "통계/마감", statistics_path,  class: nav_link_class(statistics_path) %></li>
               <li><%= link_to "가격표",    price_plans_path, class: nav_link_class(price_plans_path) %></li>
               <li><%= link_to "선생님",   teachers_path,    class: nav_link_class(teachers_path) %></li>
+              <% if Current.user&.admin? %>
+                <% pending_count = User.where(approved: false).count %>
+                <li>
+                  <%= link_to approvals_path, class: nav_link_class(approvals_path) do %>
+                    가입승인<% if pending_count > 0 %>&nbsp;<span class="badge badge-error badge-xs"><%= pending_count %></span><% end %>
+                  <% end %>
+                </li>
+              <% end %>
               <li class="divider my-1"></li>
               <li><%= link_to "키패드 ↗",  keypad_path, target: "_blank", class: "text-base-content/60" %></li>
             </ul>

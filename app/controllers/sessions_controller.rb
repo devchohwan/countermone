@@ -7,8 +7,12 @@ class SessionsController < ApplicationController
 
   def create
     if user = User.authenticate_by(params.permit(:email_address, :password))
-      start_new_session_for user
-      redirect_to after_authentication_url
+      if user.approved?
+        start_new_session_for user
+        redirect_to after_authentication_url
+      else
+        redirect_to new_session_path, alert: "계정이 승인되지 않았습니다. 관리자 승인 후 이용 가능합니다."
+      end
     else
       redirect_to new_session_path, alert: "이메일 또는 비밀번호가 올바르지 않습니다."
     end

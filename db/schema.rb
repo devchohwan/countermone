@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_09_000001) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_09_053758) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -274,7 +274,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_000001) do
     t.string "status", default: "active", null: false
     t.string "rank", default: "first", null: false
     t.boolean "has_car", default: false
-    t.boolean "consent_form", default: false
+    t.boolean "consent_form", default: true
     t.boolean "second_transfer_form", default: false
     t.boolean "cover_recorded", default: false
     t.text "reason_for_joining"

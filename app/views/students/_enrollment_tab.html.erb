@@ -132,7 +132,7 @@
         <% payments_ordered.each_with_index do |(payment, schedules), idx| %>
           <% is_last = idx == payments_ordered.size - 1 %>
           <% cnt_attended  = schedules.count { |s| s.status.in?(%w[attended late makeup_done]) } %>
-          <% cnt_pass      = schedules.count { |s| s.status.in?(%w[pass emergency_pass]) } %>
+          <% cnt_pass      = schedules.count { |s| s.status.in?(%w[pass emergency_pass holiday]) } %>
           <% cnt_deducted  = schedules.count { |s| s.status == "deducted" } %>
           <% cnt_remaining = schedules.count { |s| s.status.in?(%w[scheduled makeup_scheduled]) } %>
           <div class="mb-1 border border-base-200 rounded-lg overflow-hidden">
@@ -155,7 +155,7 @@
                   <% filter_key = case s.status
                      when "attended", "late" then "attended"
                      when "makeup_scheduled", "makeup_done" then "makeup"
-                     when "pass", "emergency_pass" then "pass"
+                     when "pass", "emergency_pass", "holiday" then "pass"
                      when "scheduled" then "scheduled"
                      else "other"
                      end %>
@@ -168,7 +168,7 @@
                       when 'attended', 'makeup_done' then 'text-success'
                       when 'scheduled' then 'text-info'
                       when 'deducted' then 'text-error'
-                      when 'pass', 'emergency_pass' then 'text-secondary'
+                      when 'pass', 'emergency_pass', 'holiday' then 'text-secondary'
                       else 'text-base-content/40'
                       end %>">●</span>
                   </div>
@@ -275,10 +275,10 @@
     function showMain() {
       titleEl.textContent = '출결 처리';
       let html = '';
-      if (['scheduled', 'pass', 'emergency_pass'].includes(status)) {
+      if (['scheduled', 'pass', 'emergency_pass', 'holiday'].includes(status)) {
         if (status !== 'scheduled') {
-          const label = status === 'emergency_pass' ? '긴급패스' : '패스';
-          html += `<p class="text-xs text-secondary mb-2">${label} 처리됨 — 변경 가능</p>`;
+          const labelMap = { emergency_pass: '긴급패스', holiday: '공휴일패스', pass: '패스' };
+          html += `<p class="text-xs text-secondary mb-2">${labelMap[status] || '패스'} 처리됨 — 변경 가능</p>`;
         }
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/attend','${csrf}')" class="btn btn-sm btn-success w-full">출석</button>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/late','${csrf}')"   class="btn btn-sm btn-warning w-full">지각</button>`;
@@ -430,22 +430,51 @@
       titleEl.textContent = '패스 처리';
       actionsEl.innerHTML = `
         <div class="space-y-3">
-          <div class="bg-orange-50 border border-orange-200 rounded p-2 text-xs text-orange-700">
-            ⚠️ 패스 처리 시 개근 카운트가 리셋됩니다.
+
+          <div class="border rounded-lg p-3 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-semibold text-purple-700">일반 패스</span>
+              <span class="badge badge-xs badge-warning">횟수 1회 소진 · 개근 리셋</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="passreason-pass-${scheduleId}" placeholder="사유 (선택)"
+                     class="input input-bordered input-sm flex-1 text-sm">
+              <button onclick="submitPass('pass')" class="btn btn-sm bg-purple-100 text-purple-700 hover:bg-purple-200 border-0">패스</button>
+            </div>
           </div>
-          <div>
-            <label class="text-xs text-base-content/60">패스 사유</label>
-            <input type="text" id="passreason-${scheduleId}" placeholder="사유 입력 (선택)"
-                   class="input input-bordered input-sm w-full mt-1">
+
+          <div class="border rounded-lg p-3 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-semibold text-pink-700">긴급 패스</span>
+              <span class="badge badge-xs badge-ghost">횟수 소진 없음</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="passreason-emergency-${scheduleId}" placeholder="사유 (선택)"
+                     class="input input-bordered input-sm flex-1 text-sm">
+              <button onclick="submitPass('emergency_pass')" class="btn btn-sm bg-pink-100 text-pink-700 hover:bg-pink-200 border-0">긴급패스</button>
+            </div>
           </div>
-          <button onclick="submitPass()" class="btn btn-sm btn-secondary w-full">패스 처리</button>
+
+          <div class="border rounded-lg p-3 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-semibold text-green-700">공휴일 패스</span>
+              <span class="badge badge-xs badge-ghost">횟수 소진 없음</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="passreason-holiday-${scheduleId}" placeholder="공휴일명 (예: 삼일절)"
+                     class="input input-bordered input-sm flex-1 text-sm">
+              <button onclick="submitPass('holiday')" class="btn btn-sm bg-green-100 text-green-700 hover:bg-green-200 border-0">공휴일</button>
+            </div>
+          </div>
+
           <button onclick="showMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>
         </div>`;
     }
 
-    function submitPass() {
-      const reason = document.getElementById(`passreason-${scheduleId}`)?.value || '';
-      patchForm(`/schedules/${scheduleId}/pass`,
+    function submitPass(type) {
+      const keyMap = { pass: 'pass', emergency_pass: 'emergency', holiday: 'holiday' };
+      const reason = document.getElementById(`passreason-${keyMap[type]}-${scheduleId}`)?.value || '';
+      patchForm(`/schedules/${scheduleId}/${type}`,
         `<input type="hidden" name="pass_reason" value="${reason}">`);
     }
 

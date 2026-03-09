@@ -4,14 +4,14 @@ class DashboardController < ApplicationController
       .includes(:student, :teacher, :enrollment, :attendance)
       .where(lesson_date: Date.today)
       .where(status: %w[scheduled attended late makeup_scheduled])
-      .select { |s| s.lesson_time.hour == Time.now.hour }
+      .select { |s| s.lesson_time.in_time_zone('Seoul').hour == Time.current.hour }
     render partial: "dashboard/current_schedules"
   end
 
   def index
     @date     = params[:date].present? ? Date.parse(params[:date]) : Date.today
     @is_today = @date == Date.today
-    @current_hour = @is_today ? Time.now.hour : nil
+    @current_hour = @is_today ? Time.current.hour : nil
 
     # 시간표
     @today_schedules = Schedule
@@ -28,7 +28,7 @@ class DashboardController < ApplicationController
       .where(status: %w[makeup_scheduled makeup_done])
 
     # 현재 시간대 수업 중 (오늘만)
-    @current_schedules = @is_today ? @today_schedules.select { |s| s.lesson_time.hour == @current_hour } : []
+    @current_schedules = @is_today ? @today_schedules.select { |s| s.lesson_time.in_time_zone('Seoul').hour == @current_hour } : []
 
     # 시간대별 수업 텍스트용: 수강권별 잔여 scheduled 횟수 (N+1 방지)
     enrollment_ids = @today_schedules.map(&:enrollment_id).uniq

@@ -106,12 +106,13 @@
   <% visible = @enrollments.first(3) %>
   <% overflow = @enrollments.drop(3) %>
 
+  <% target_tab = params[:tab]&.to_i %>
   <div role="tablist" class="tabs tabs-bordered mb-0">
     <% visible.each_with_index do |enrollment, idx| %>
       <input type="radio" name="enrollment-tabs" role="tab" class="tab"
              id="tab-<%= enrollment.id %>"
              aria-label="<%= enrollment.subject %> (<%= status_badge_text(enrollment.status) %>)"
-             <%= idx == 0 ? "checked" : "" %> />
+             <%= (target_tab ? target_tab == enrollment.id : idx == 0) ? "checked" : "" %> />
       <div role="tabpanel" class="tab-content">
         <%= render "enrollment_tab", enrollment: enrollment, student: @student %>
       </div>

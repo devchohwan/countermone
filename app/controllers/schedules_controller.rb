@@ -24,7 +24,7 @@ class SchedulesController < ApplicationController
           partial: "dashboard/current_schedules"
         )
       end
-      format.html { redirect_back fallback_location: schedules_path, notice: "출석 처리되었습니다." }
+      format.html { tab_redirect(notice: "출석 처리되었습니다.") }
     end
   end
 
@@ -32,7 +32,7 @@ class SchedulesController < ApplicationController
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "late")
     create_attendance_record(@schedule)
-    redirect_back fallback_location: schedules_path, notice: "지각 처리되었습니다."
+    tab_redirect(notice: "지각 처리되었습니다.")
   end
 
   def deduct
@@ -40,7 +40,7 @@ class SchedulesController < ApplicationController
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "deducted",
                       makeup_date: nil, makeup_time: nil, makeup_teacher_id: nil)
-    redirect_back fallback_location: schedules_path, notice: "결석 차감 처리되었습니다."
+    tab_redirect(notice: "결석 차감 처리되었습니다.")
   end
 
   def pass
@@ -92,20 +92,19 @@ class SchedulesController < ApplicationController
 
     @schedule.update!(status: "pass", pass_reason: params[:pass_reason])
     create_pass_schedule(@schedule)
-    redirect_back fallback_location: schedules_path,
-      notice: "패스 처리되었습니다. ⚠️ 개근 카운트가 리셋됩니다."
+    tab_redirect(notice: "패스 처리되었습니다. ⚠️ 개근 카운트가 리셋됩니다.")
   end
 
   def emergency_pass
     @schedule.update!(status: "emergency_pass", pass_reason: params[:pass_reason])
     create_pass_schedule(@schedule)
-    redirect_back fallback_location: schedules_path, notice: "긴급패스 처리되었습니다."
+    tab_redirect(notice: "긴급패스 처리되었습니다.")
   end
 
   def holiday
     @schedule.update!(status: "holiday", pass_reason: params[:pass_reason])
     create_pass_schedule(@schedule)
-    redirect_back fallback_location: schedules_path, notice: "공휴일 처리되었습니다."
+    tab_redirect(notice: "공휴일 처리되었습니다.")
   end
 
   def makeup
@@ -165,7 +164,7 @@ class SchedulesController < ApplicationController
       rank = @schedule.enrollment.student.rank
       notice += "믹싱 #{rank == 'second' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."
     end
-    redirect_back fallback_location: schedules_path, notice: notice
+    tab_redirect(notice: notice)
   end
 
   def approve_makeup
@@ -233,11 +232,9 @@ class SchedulesController < ApplicationController
     period_expired = range.nil? || range.last < Date.today
 
     if period_expired
-      redirect_back fallback_location: schedules_path,
-        notice: "차감 취소되었습니다. ⚠️ 보강 가능 기간이 만료되어 보강/패스 전환이 불가합니다."
+      tab_redirect(notice: "차감 취소되었습니다. ⚠️ 보강 가능 기간이 만료되어 보강/패스 전환이 불가합니다.")
     else
-      redirect_back fallback_location: schedules_path,
-        notice: "차감 취소되었습니다. 보강 또는 패스 전환이 가능합니다. (보강 기간: #{range.first} ~ #{range.last})"
+      tab_redirect(notice: "차감 취소되었습니다. 보강 또는 패스 전환이 가능합니다. (보강 기간: #{range.first} ~ #{range.last})")
     end
   end
 
@@ -245,6 +242,16 @@ class SchedulesController < ApplicationController
 
   def set_schedule
     @schedule = Schedule.find(params[:id])
+  end
+
+  # 수강생 상세 페이지에서 온 경우 해당 클래스 탭을 유지해서 리다이렉트
+  def tab_redirect(notice: nil, alert: nil)
+    if request.referer&.match?(%r{/students/\d+})
+      redirect_to student_path(@schedule.student, tab: @schedule.enrollment_id),
+                  notice: notice, alert: alert
+    else
+      redirect_back fallback_location: schedules_path, notice: notice, alert: alert
+    end
   end
 
   def create_attendance_record(schedule)

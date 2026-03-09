@@ -1,5 +1,5 @@
 class PaymentsController < ApplicationController
-  before_action :set_payment, only: %i[show refund pay_balance]
+  before_action :set_payment, only: %i[show refund pay_balance destroy]
 
   def index
     scope = Payment.includes(:student, :enrollment, :discounts)
@@ -61,6 +61,14 @@ class PaymentsController < ApplicationController
     else
       redirect_to @payment, alert: "환불 처리 실패"
     end
+  end
+
+  def destroy
+    student = @payment.student
+    @payment.schedules.destroy_all
+    @payment.discounts.destroy_all
+    @payment.destroy!
+    redirect_to student_path(student), notice: "결제가 삭제되었습니다."
   end
 
   def pay_balance

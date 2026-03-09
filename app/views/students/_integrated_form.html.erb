@@ -1,4 +1,5 @@
-<%= form_with model: student, class: "space-y-6" do |f| %>
+<%= form_with model: student, class: "space-y-6",
+    data: (student.new_record? ? { turbo_confirm: "이 정보로 등록하시겠습니까?" } : {}) do |f| %>
   <% all_errors = student.errors.full_messages +
        student.enrollments.flat_map { |e|
          e.errors.full_messages + e.payments.flat_map { |p| p.errors.full_messages }

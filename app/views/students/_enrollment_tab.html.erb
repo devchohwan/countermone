@@ -79,6 +79,11 @@
                                   data: { turbo_confirm: "잔금 납부 완료 처리하시겠습니까?" } %>
                           </li>
                         <% end %>
+                        <li>
+                          <%= button_to "삭제", payment_path(payment), method: :delete,
+                                class: "text-error text-left w-full px-3 py-1.5 hover:bg-base-200",
+                                data: { turbo_confirm: "결제를 삭제하면 관련 수업 일정(#{payment.schedules.count}회)도 모두 삭제됩니다. 삭제하시겠습니까?" } %>
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -116,7 +121,9 @@
           <h4 class="text-sm font-semibold">수업 이력</h4>
           <%# 필터 버튼 %>
           <div class="flex gap-1" id="filter-btns-<%= enrollment.id %>">
-            <% [["전체", "all"], ["예정", "scheduled"], ["출석", "attended"], ["보강", "makeup"], ["패스", "pass"]].each do |label, key| %>
+            <% filters = [["전체", "all"], ["예정", "scheduled"], ["출석", "attended"], ["보강", "makeup"]]
+               filters << ["패스", "pass"] unless enrollment.subject.include?("믹싱") %>
+            <% filters.each do |label, key| %>
               <button onclick="filterSchedules('<%= enrollment.id %>', '<%= key %>')"
                       class="btn btn-xs <%= key == 'all' ? 'btn-neutral' : 'btn-ghost' %>"
                       data-filter="<%= key %>"
@@ -162,7 +169,7 @@
                   <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline cursor-pointer hover:badge-primary"
                        data-filter="<%= filter_key %>"
                        title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %>"
-                       onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>')">
+                       onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>', '<%= enrollment.subject %>')">
                     <%= s.lesson_date.strftime("%-m/%-d") %>
                     <span class="<%= case s.status
                       when 'attended', 'makeup_done' then 'text-success'
@@ -231,7 +238,7 @@
   };
 
   // 수업 처리 모달
-  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr) {
+  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr, subject) {
     const el = document.querySelector(`[onclick*="openScheduleAction('${scheduleId}'"]`);
     if (!el) return;
     const classMatch = el.className.match(/schedule-item-(\d+)/);
@@ -283,7 +290,7 @@
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/attend','${csrf}')" class="btn btn-sm btn-success w-full">출석</button>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/late','${csrf}')"   class="btn btn-sm btn-warning w-full">지각</button>`;
         html += `<button onclick="showMakeup()" class="btn btn-sm btn-info btn-outline w-full">보강</button>`;
-        if (status === 'scheduled') {
+        if (status === 'scheduled' && !(subject || '').includes('믹싱')) {
           html += `<button onclick="showPass()" class="btn btn-sm btn-secondary btn-outline w-full">패스</button>`;
         }
         html += `<button onclick="if(confirm('결석 차감 처리하시겠습니까?')) submitPatch('/schedules/${scheduleId}/deduct','${csrf}')"

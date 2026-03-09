@@ -43,22 +43,20 @@
       <% end %>
     </div>
 
-    <% unless student.new_record? %>
-      <div class="flex flex-wrap gap-4 pt-2 border-t">
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <%= f.check_box :has_car %> 자차 보유
-        </label>
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <%= f.check_box :consent_form %> 수강동의서 수령
-        </label>
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <%= f.check_box :second_transfer_form %> 2차전직서 수령
-        </label>
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <%= f.check_box :cover_recorded %> 커버 촬영
-        </label>
-      </div>
-    <% end %>
+    <div class="flex flex-wrap gap-4 pt-2 border-t">
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <%= f.check_box :has_car %> 자차 보유
+      </label>
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <%= f.check_box :consent_form %> 수강동의서 수령
+      </label>
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <%= f.check_box :second_transfer_form %> 2차전직서 수령
+      </label>
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <%= f.check_box :cover_recorded %> 커버 촬영
+      </label>
+    </div>
   </div>
 
   <% if student.new_record? %>

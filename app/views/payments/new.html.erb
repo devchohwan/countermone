@@ -64,31 +64,66 @@
             "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
           <% end %>
         };
-        const ENROLLMENT_SUBJECT = "<%= @enrollment&.subject %>";
+        const ENROLLMENT_SUBJECT  = "<%= @enrollment&.subject %>";
+        const MULTI_CLASS_DISCOUNT = <%= @multi_class_discount.to_i %>;
 
         document.addEventListener("DOMContentLoaded", function() {
-          const monthsEl  = document.getElementById("payment_months");
-          const amountEl  = document.getElementById("payment_amount");
-          const lessonsEl = document.getElementById("payment_total_lessons");
-          const hintEl    = document.getElementById("price-hint");
+          const monthsEl        = document.getElementById("payment_months");
+          const amountEl        = document.getElementById("payment_amount");
+          const lessonsEl       = document.getElementById("payment_total_lessons");
+          const hintEl          = document.getElementById("price-hint");
+          const multiMonthLine  = document.getElementById("multi-month-line");
+          const multiMonthMemo  = document.getElementById("multi-month-memo");
+          const multiMonthAmt   = document.getElementById("multi-month-amount");
+          const totalDiscountEl = document.getElementById("total-discount-amount");
+
+          function formatWon(n) {
+            return "-" + n.toLocaleString("ko-KR") + "원";
+          }
+
+          function updateDiscountPreview(months) {
+            if (!multiMonthLine) return;
+            const subject    = ENROLLMENT_SUBJECT || "";
+            const singlePrice = PRICE_TABLE[subject + "_1"];
+            const multiPrice  = PRICE_TABLE[subject + "_" + months];
+            let multiMonthDiscount = 0;
+
+            if (months > 1 && singlePrice && multiPrice) {
+              multiMonthDiscount = (singlePrice * months) - multiPrice;
+            }
+
+            if (multiMonthDiscount > 0) {
+              multiMonthMemo.textContent  = months + "개월 다개월 할인";
+              multiMonthAmt.textContent   = formatWon(multiMonthDiscount);
+              multiMonthLine.classList.remove("hidden");
+            } else {
+              multiMonthLine.classList.add("hidden");
+            }
+
+            if (totalDiscountEl) {
+              const total = MULTI_CLASS_DISCOUNT + multiMonthDiscount;
+              totalDiscountEl.textContent = formatWon(total);
+            }
+          }
 
           function lookupPrice() {
-            const months  = monthsEl?.value;
+            const months  = parseInt(monthsEl?.value) || 0;
             const subject = ENROLLMENT_SUBJECT || "";
             if (!months || !subject) return;
 
             // 총 수업 횟수 자동 입력 (1개월 = 4회)
-            if (lessonsEl) lessonsEl.value = parseInt(months) * 4;
+            if (lessonsEl) lessonsEl.value = months * 4;
 
             // 금액 자동 입력
-            const key   = subject + "_" + months;
-            const price = PRICE_TABLE[key];
+            const price = PRICE_TABLE[subject + "_" + months];
             if (price) {
               amountEl.value = price;
               hintEl.textContent = "자동 입력";
               hintEl.classList.remove("hidden");
               setTimeout(() => hintEl.classList.add("hidden"), 2000);
             }
+
+            updateDiscountPreview(months);
           }
 
           monthsEl?.addEventListener("change", lookupPrice);
@@ -115,6 +150,30 @@
         </label>
       </div>
     </div>
+
+    <%# ── 예상 할인 안내 ── %>
+    <% if @enrollment && (@multi_class_discount.to_i > 0 || @price_plans.any?) %>
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-2" id="discount-preview">
+        <h4 class="text-sm font-semibold text-purple-800">예상 할인 안내</h4>
+        <div class="space-y-1 text-sm" id="discount-lines">
+          <% if @multi_class_discount.to_i > 0 %>
+            <div class="flex justify-between text-purple-700">
+              <span><%= @multi_class_memo %></span>
+              <span class="font-medium">-<%= number_with_delimiter(@multi_class_discount) %>원</span>
+            </div>
+          <% end %>
+          <div class="flex justify-between text-purple-700 hidden" id="multi-month-line">
+            <span id="multi-month-memo">다개월 할인</span>
+            <span class="font-medium" id="multi-month-amount"></span>
+          </div>
+        </div>
+        <div class="border-t border-purple-200 pt-2 flex justify-between text-sm font-semibold text-purple-900">
+          <span>합계 할인</span>
+          <span id="total-discount-amount">-<%= number_with_delimiter(@multi_class_discount.to_i) %>원</span>
+        </div>
+        <p class="text-xs text-purple-500">결제 등록 시 자동 적용됩니다.</p>
+      </div>
+    <% end %>
 
     <!-- 가격표 참고 -->
     <div class="bg-base-200 rounded-lg border p-3">

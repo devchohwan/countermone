@@ -23,9 +23,15 @@ class PaymentsController < ApplicationController
   end
 
   def new
-    @enrollment = Enrollment.find(params[:enrollment_id]) if params[:enrollment_id]
-    @payment    = Payment.new(enrollment: @enrollment)
+    @enrollment  = Enrollment.find(params[:enrollment_id]) if params[:enrollment_id]
+    @payment     = Payment.new(enrollment: @enrollment)
     @price_plans = PricePlan.active.order(:subject, :months)
+
+    if @enrollment
+      active_count = @enrollment.student.enrollments.where(status: "active").count
+      @multi_class_discount = active_count >= 2 ? (active_count - 1) * 50_000 : 0
+      @multi_class_memo     = active_count >= 2 ? "#{active_count}클래스 중복 수강 할인" : nil
+    end
   end
 
   def create

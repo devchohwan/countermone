@@ -60,86 +60,199 @@
   </div>
 
   <% if student.new_record? %>
-    <%= f.fields_for :enrollments, student.enrollments.any? ? student.enrollments : [student.enrollments.build] do |enrollment_fields| %>
-      <% enrollment_errors = student.errors.messages.keys.any? { |k| k.to_s.start_with?('enrollments') } %>
-      <div class="bg-base-100 rounded-lg <%= 'border-2 border-red-300' if enrollment_errors %> shadow-sm p-4 space-y-4">
-        <h3 class="font-semibold text-sm">클래스 정보</h3>
+    <%# ── 복수 과목 등록 컨테이너 ── %>
+    <div id="enrollments-container" class="space-y-4">
+      <%= f.fields_for :enrollments, (student.enrollments.any? ? student.enrollments : [student.enrollments.build]) do |ef| %>
+        <% pf = ef.object.payments.any? ? ef.object.payments.first : ef.object.payments.build %>
+        <%= ef.fields_for :payments, [pf] do |pf_fields| %>
+          <div class="enrollment-section bg-base-100 rounded-lg shadow-sm p-4 space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="font-semibold text-sm">클래스 정보</h3>
+              <button type="button" class="remove-enrollment-btn text-xs text-red-500 hover:text-red-700 hidden">✕ 제거</button>
+            </div>
+
+            <% enrollment_errors = ef.object.errors.any? %>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <%= ef.label :subject, "과목", class: "block text-sm font-medium text-base-content mb-1" %>
+                <%= ef.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" },
+                      class: "select select-bordered w-full text-sm #{'select-error' if ef.object.errors[:subject].any?}",
+                      data: { role: "subject" } %>
+                <% if ef.object.errors[:subject].any? %>
+                  <p class="text-xs text-red-600 mt-1">과목을 선택해주세요</p>
+                <% end %>
+              </div>
+              <div>
+                <%= ef.label :teacher_id, "선생님", class: "block text-sm font-medium text-base-content mb-1" %>
+                <%= ef.select :teacher_id, teachers.map { |t| [t.name, t.id] }, { prompt: "선생님 선택" },
+                      class: "select select-bordered w-full text-sm #{'select-error' if ef.object.errors[:teacher_id].any? || ef.object.errors[:teacher].any?}",
+                      data: { role: "teacher" } %>
+                <% if ef.object.errors[:teacher_id].any? || ef.object.errors[:teacher].any? %>
+                  <p class="text-xs text-red-600 mt-1">선생님을 선택해주세요</p>
+                <% end %>
+              </div>
+              <div>
+                <%= ef.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-base-content mb-1" %>
+                <%= ef.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" },
+                      class: "select select-bordered w-full text-sm #{'select-error' if ef.object.errors[:lesson_day].any?}",
+                      data: { role: "day" } %>
+                <% if ef.object.errors[:lesson_day].any? %>
+                  <p class="text-xs text-red-600 mt-1">수업 요일을 선택해주세요</p>
+                <% end %>
+              </div>
+              <div>
+                <%= ef.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-base-content mb-1" %>
+                <%= ef.select :lesson_time, [], { prompt: "시간 선택" },
+                      class: "select select-bordered w-full text-sm #{'select-error' if ef.object.errors[:lesson_time].any?}",
+                      data: { role: "time" } %>
+                <% if ef.object.errors[:lesson_time].any? %>
+                  <p class="text-xs text-red-600 mt-1">수업 시간을 선택해주세요</p>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t space-y-3">
+              <h4 class="font-semibold text-sm">결제 정보</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <%= pf_fields.label :payment_type, "결제 유형", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.select :payment_type, [["일시불","new"],["예약금","deposit"]], {},
+                        class: "select select-bordered w-full text-sm", data: { role: "payment-type" } %>
+                </div>
+                <div>
+                  <%= pf_fields.label :months, "개월", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.number_field :months, value: 1, min: 1,
+                        class: "input input-bordered w-full text-sm", data: { role: "months" } %>
+                </div>
+                <div>
+                  <%= pf_fields.label :total_lessons, "총 수업 횟수", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.number_field :total_lessons, value: 4, min: 1,
+                        class: "input input-bordered w-full text-sm", data: { role: "lessons" } %>
+                </div>
+                <div>
+                  <%= pf_fields.label :amount, "금액", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.number_field :amount, step: 1000,
+                        class: "input input-bordered w-full text-sm", data: { role: "amount" } %>
+                </div>
+                <div>
+                  <%= pf_fields.label :payment_method, "결제 수단", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.select :payment_method, [["카드","card"],["계좌이체","transfer"],["현금","cash"]], {},
+                        class: "select select-bordered w-full text-sm" %>
+                </div>
+                <div>
+                  <%= pf_fields.label :starts_at, "수업 시작일", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.date_field :starts_at, value: Date.today, class: "input input-bordered w-full text-sm" %>
+                </div>
+              </div>
+
+              <div data-role="deposit-fields" class="grid grid-cols-2 gap-4" style="display:none">
+                <div>
+                  <%= pf_fields.label :deposit_amount, "예약금액", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.number_field :deposit_amount, step: 1000, class: "input input-bordered w-full text-sm" %>
+                </div>
+                <div>
+                  <%= pf_fields.label :deposit_paid_at, "예약금 납부일", class: "block text-sm font-medium text-base-content mb-1" %>
+                  <%= pf_fields.datetime_field :deposit_paid_at, value: Time.current, class: "input input-bordered w-full text-sm" %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <%# ── 추가 섹션 템플릿 (브라우저가 렌더링 안 함) ── %>
+    <template id="enrollment-template">
+      <div class="enrollment-section bg-base-100 rounded-lg shadow-sm p-4 space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="font-semibold text-sm">클래스 정보</h3>
+          <button type="button" class="remove-enrollment-btn text-xs text-red-500 hover:text-red-700">✕ 제거</button>
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <%= enrollment_fields.label :subject, "과목", class: "block text-sm font-medium text-base-content mb-1" %>
-            <%= enrollment_fields.select :subject, TeacherSubject::SUBJECTS, { prompt: "과목 선택" }, class: "select select-bordered w-full text-sm #{'select-error' if enrollment_fields.object.errors[:subject].any?}", id: "enrollment_subject" %>
-            <% if enrollment_fields.object.errors[:subject].any? %>
-              <p class="text-xs text-red-600 mt-1">과목을 선택해주세요</p>
-            <% end %>
+            <label class="block text-sm font-medium text-base-content mb-1">과목</label>
+            <select name="student[enrollments_attributes][NEW_RECORD][subject]" data-role="subject" class="select select-bordered w-full text-sm">
+              <option value="">과목 선택</option>
+              <% TeacherSubject::SUBJECTS.each do |subj| %>
+                <option value="<%= subj %>"><%= subj %></option>
+              <% end %>
+            </select>
           </div>
           <div>
-            <%= enrollment_fields.label :teacher_id, "선생님", class: "block text-sm font-medium text-base-content mb-1" %>
-            <%= enrollment_fields.select :teacher_id, teachers.map { |t| [t.name, t.id] }, { prompt: "선생님 선택" }, class: "select select-bordered w-full text-sm #{'select-error' if enrollment_fields.object.errors[:teacher_id].any? || enrollment_fields.object.errors[:teacher].any?}", id: "enrollment_teacher" %>
-            <% if enrollment_fields.object.errors[:teacher_id].any? || enrollment_fields.object.errors[:teacher].any? %>
-              <p class="text-xs text-red-600 mt-1">선생님을 선택해주세요</p>
-            <% end %>
+            <label class="block text-sm font-medium text-base-content mb-1">선생님</label>
+            <select name="student[enrollments_attributes][NEW_RECORD][teacher_id]" data-role="teacher" class="select select-bordered w-full text-sm">
+              <option value="">선생님 선택</option>
+            </select>
           </div>
           <div>
-            <%= enrollment_fields.label :lesson_day, "수업 요일", class: "block text-sm font-medium text-base-content mb-1" %>
-            <%= enrollment_fields.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] }, { prompt: "요일 선택" }, class: "select select-bordered w-full text-sm #{'select-error' if enrollment_fields.object.errors[:lesson_day].any?}", id: "enrollment_lesson_day" %>
-            <% if enrollment_fields.object.errors[:lesson_day].any? %>
-              <p class="text-xs text-red-600 mt-1">수업 요일을 선택해주세요</p>
-            <% end %>
+            <label class="block text-sm font-medium text-base-content mb-1">수업 요일</label>
+            <select name="student[enrollments_attributes][NEW_RECORD][lesson_day]" data-role="day" class="select select-bordered w-full text-sm">
+              <option value="">요일 선택</option>
+              <% Enrollment::LESSON_DAYS.each do |day| %>
+                <option value="<%= day %>"><%= ApplicationHelper::LESSON_DAY_KO[day] %>요일</option>
+              <% end %>
+            </select>
           </div>
           <div>
-            <%= enrollment_fields.label :lesson_time, "수업 시간", class: "block text-sm font-medium text-base-content mb-1" %>
-            <%= enrollment_fields.select :lesson_time, [], { prompt: "시간 선택" }, class: "select select-bordered w-full text-sm #{'select-error' if enrollment_fields.object.errors[:lesson_time].any?}", id: "enrollment_lesson_time" %>
-            <% if enrollment_fields.object.errors[:lesson_time].any? %>
-              <p class="text-xs text-red-600 mt-1">수업 시간을 선택해주세요</p>
-            <% end %>
+            <label class="block text-sm font-medium text-base-content mb-1">수업 시간</label>
+            <select name="student[enrollments_attributes][NEW_RECORD][lesson_time]" data-role="time" class="select select-bordered w-full text-sm">
+              <option value="">시간 선택</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t space-y-3">
+          <h4 class="font-semibold text-sm">결제 정보</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">결제 유형</label>
+              <select name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][payment_type]" data-role="payment-type" class="select select-bordered w-full text-sm">
+                <option value="new">일시불</option>
+                <option value="deposit">예약금</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">개월</label>
+              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][months]" data-role="months" value="1" min="1" class="input input-bordered w-full text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">총 수업 횟수</label>
+              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][total_lessons]" data-role="lessons" value="4" min="1" class="input input-bordered w-full text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">금액</label>
+              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][amount]" data-role="amount" step="1000" class="input input-bordered w-full text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">결제 수단</label>
+              <select name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][payment_method]" class="select select-bordered w-full text-sm">
+                <option value="card">카드</option>
+                <option value="transfer">계좌이체</option>
+                <option value="cash">현금</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">수업 시작일</label>
+              <input type="date" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][starts_at]" value="<%= Date.today %>" class="input input-bordered w-full text-sm">
+            </div>
+          </div>
+
+          <div data-role="deposit-fields" class="grid grid-cols-2 gap-4" style="display:none">
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">예약금액</label>
+              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][deposit_amount]" step="1000" class="input input-bordered w-full text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">예약금 납부일</label>
+              <input type="datetime-local" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][deposit_paid_at]" value="<%= Time.current.strftime('%Y-%m-%dT%H:%M') %>" class="input input-bordered w-full text-sm">
+            </div>
           </div>
         </div>
       </div>
+    </template>
 
-      <%= enrollment_fields.fields_for :payments, enrollment_fields.object.payments.any? ? enrollment_fields.object.payments : [enrollment_fields.object.payments.build] do |payment_fields| %>
-        <% payment_errors = student.errors.messages.keys.any? { |k| k.to_s.include?('payments') } %>
-        <div class="bg-base-100 rounded-lg <%= 'border-2 border-red-300' if payment_errors %> shadow-sm p-4 space-y-4">
-          <h3 class="font-semibold text-sm">결제 정보</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <%= payment_fields.label :payment_type, "결제 유형", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.select :payment_type, [["일시불", "new"], ["예약금", "deposit"]], {}, class: "select select-bordered w-full text-sm", id: "payment_type" %>
-            </div>
-            <div>
-              <%= payment_fields.label :months, "개월", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.number_field :months, value: 1, min: 1, class: "input input-bordered w-full text-sm", id: "payment_months" %>
-            </div>
-            <div>
-              <%= payment_fields.label :total_lessons, "총 수업 횟수", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.number_field :total_lessons, value: 4, min: 1, class: "input input-bordered w-full text-sm", id: "payment_total_lessons" %>
-            </div>
-            <div>
-              <%= payment_fields.label :amount, "금액", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.number_field :amount, step: 1000, class: "input input-bordered w-full text-sm" %>
-            </div>
-            <div>
-              <%= payment_fields.label :payment_method, "결제 수단", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.select :payment_method, [["카드", "card"], ["계좌이체", "transfer"], ["현금", "cash"]], {}, class: "select select-bordered w-full text-sm" %>
-            </div>
-            <div>
-              <%= payment_fields.label :starts_at, "수업 시작일", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.date_field :starts_at, value: Date.today, class: "input input-bordered w-full text-sm" %>
-            </div>
-          </div>
-
-          <div id="deposit-fields" class="grid grid-cols-2 gap-4" style="display: none;">
-            <div>
-              <%= payment_fields.label :deposit_amount, "예약금액", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.number_field :deposit_amount, step: 1000, class: "input input-bordered w-full text-sm" %>
-            </div>
-            <div>
-              <%= payment_fields.label :deposit_paid_at, "예약금 납부일", class: "block text-sm font-medium text-base-content mb-1" %>
-              <%= payment_fields.datetime_field :deposit_paid_at, value: Time.current, class: "input input-bordered w-full text-sm" %>
-            </div>
-          </div>
-        </div>
-      <% end %>
-    <% end %>
+    <button type="button" id="add-enrollment-btn" class="btn btn-sm btn-outline btn-primary">+ 과목 추가</button>
   <% end %>
 
   <div class="bg-base-100 rounded-lg shadow-sm p-4 space-y-4">
@@ -174,155 +287,153 @@
 <% end %>
 
 <script>
-  <% if student.new_record? %>
-  const subjectSelect = document.getElementById('enrollment_subject');
-  const teacherSelect = document.getElementById('enrollment_teacher');
-  const lessonDaySelect = document.getElementById('enrollment_lesson_day');
-  const lessonTimeSelect = document.getElementById('enrollment_lesson_time');
-  const paymentTypeSelect = document.getElementById('payment_type');
-  const depositFields = document.getElementById('deposit-fields');
-  const monthsField = document.getElementById('payment_months');
-  const lessonsField = document.getElementById('payment_total_lessons');
-  const amountField = document.getElementById('student_enrollments_attributes_0_payments_attributes_0_amount');
-  <% end %>
-
+  <%# ── 출결코드 중복 체크 ── %>
   const attendanceCodeInput = document.getElementById('student_attendance_code');
   const attendanceCodeFeedback = document.getElementById('attendance-code-feedback');
   let checkTimeout = null;
 
   async function checkAttendanceCode() {
     const code = attendanceCodeInput.value.trim();
-
     if (!code) {
       attendanceCodeFeedback.classList.add('hidden');
       attendanceCodeInput.classList.remove('input-error', 'input-success');
       return;
     }
-
     try {
       const response = await fetch(`/students/check_attendance_code?code=${encodeURIComponent(code)}<% unless student.new_record? %>&student_id=<%= student.id %><% end %>`);
       const data = await response.json();
-
       attendanceCodeFeedback.classList.remove('hidden');
-
       if (data.available) {
         attendanceCodeInput.classList.remove('input-error');
         attendanceCodeInput.classList.add('input-success');
-        attendanceCodeFeedback.classList.remove('text-red-600');
-        attendanceCodeFeedback.classList.add('text-green-600');
+        attendanceCodeFeedback.classList.replace('text-red-600', 'text-green-600');
         attendanceCodeFeedback.textContent = '✓ 사용 가능한 출결코드입니다';
       } else {
         attendanceCodeInput.classList.remove('input-success');
         attendanceCodeInput.classList.add('input-error');
-        attendanceCodeFeedback.classList.remove('text-green-600');
-        attendanceCodeFeedback.classList.add('text-red-600');
+        attendanceCodeFeedback.classList.replace('text-green-600', 'text-red-600');
         attendanceCodeFeedback.textContent = `✗ 이미 사용 중입니다 (${data.student_name})`;
       }
-    } catch (error) {
-      console.error('Error checking attendance code:', error);
-    }
+    } catch (e) { console.error(e); }
   }
-
   attendanceCodeInput.addEventListener('input', () => {
     clearTimeout(checkTimeout);
     checkTimeout = setTimeout(checkAttendanceCode, 100);
   });
 
   <% if student.new_record? %>
-  const teachersBySubject = {};
+  <%# ── 선생님/금액 데이터 ── %>
+  window.teachersBySubject = {};
   <% teachers.each do |teacher| %>
     <% teacher.teacher_subjects.each do |ts| %>
-      if (!teachersBySubject['<%= ts.subject %>']) teachersBySubject['<%= ts.subject %>'] = [];
-      teachersBySubject['<%= ts.subject %>'].push({id: <%= teacher.id %>, name: '<%= teacher.name %>'});
+      if (!window.teachersBySubject['<%= ts.subject %>']) window.teachersBySubject['<%= ts.subject %>'] = [];
+      window.teachersBySubject['<%= ts.subject %>'].push({ id: <%= teacher.id %>, name: '<%= teacher.name %>' });
     <% end %>
   <% end %>
 
-  const pricePlans = {
+  window.pricePlans = {
     <% PricePlan.all.each do |plan| %>
       '<%= plan.subject %>_<%= plan.months %>': <%= plan.amount %>,
     <% end %>
   };
 
-  function updateTeacherOptions() {
-    const subject = subjectSelect.value;
-    teacherSelect.innerHTML = '<option value="">선생님 선택</option>';
+  <%# ── 섹션 초기화 함수 ── %>
+  function initEnrollmentSection(section) {
+    const subjectEl  = section.querySelector('[data-role="subject"]');
+    const teacherEl  = section.querySelector('[data-role="teacher"]');
+    const dayEl      = section.querySelector('[data-role="day"]');
+    const timeEl     = section.querySelector('[data-role="time"]');
+    const monthsEl   = section.querySelector('[data-role="months"]');
+    const lessonsEl  = section.querySelector('[data-role="lessons"]');
+    const amountEl   = section.querySelector('[data-role="amount"]');
+    const typeEl     = section.querySelector('[data-role="payment-type"]');
+    const depositEl  = section.querySelector('[data-role="deposit-fields"]');
+    const removeBtn  = section.querySelector('.remove-enrollment-btn');
 
-    if (!subject) return;
+    function updateTeachers() {
+      const subject = subjectEl.value;
+      teacherEl.innerHTML = '<option value="">선생님 선택</option>';
+      (window.teachersBySubject[subject] || []).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id; opt.textContent = t.name;
+        teacherEl.appendChild(opt);
+      });
+      updateAmount();
+    }
 
-    const teachers = teachersBySubject[subject] || [];
-    teachers.forEach(t => {
-      const option = document.createElement('option');
-      option.value = t.id;
-      option.textContent = t.name;
-      teacherSelect.appendChild(option);
+    function updateTimes() {
+      const day = dayEl.value;
+      timeEl.innerHTML = '<option value="">시간 선택</option>';
+      if (!day) return;
+      const hours = day === 'monday' ? [14, 15, 16, 17] : [13, 14, 15, 16, 17, 18, 19, 20, 21];
+      hours.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = `${h.toString().padStart(2,'0')}:00`;
+        opt.textContent = `${h}:00`;
+        timeEl.appendChild(opt);
+      });
+    }
+
+    function updateAmount() {
+      const subject = subjectEl.value;
+      const months  = parseInt(monthsEl.value) || 1;
+      if (!subject) return;
+      const price = window.pricePlans[`${subject}_${months}`]
+                 || (window.pricePlans[`${subject}_1`] && window.pricePlans[`${subject}_1`] * months);
+      if (price) amountEl.value = price;
+    }
+
+    function updateLessons() {
+      lessonsEl.value = (parseInt(monthsEl.value) || 1) * 4;
+      updateAmount();
+    }
+
+    function toggleDeposit() {
+      if (depositEl) depositEl.style.display = typeEl.value === 'deposit' ? 'grid' : 'none';
+    }
+
+    subjectEl.addEventListener('change', updateTeachers);
+    dayEl.addEventListener('change', updateTimes);
+    monthsEl.addEventListener('input', updateLessons);
+    typeEl?.addEventListener('change', toggleDeposit);
+
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        section.remove();
+        updateRemoveButtons();
+      });
+    }
+
+    updateTeachers();
+    updateTimes();
+    toggleDeposit();
+  }
+
+  function updateRemoveButtons() {
+    const sections = document.querySelectorAll('#enrollments-container .enrollment-section');
+    sections.forEach(s => {
+      const btn = s.querySelector('.remove-enrollment-btn');
+      if (btn) btn.style.display = sections.length > 1 ? '' : 'none';
     });
-
-    updateAmount();
   }
 
-  function updateTimeOptions() {
-    const day = lessonDaySelect.value;
-    lessonTimeSelect.innerHTML = '<option value="">시간 선택</option>';
+  <%# ── 과목 추가 버튼 ── %>
+  const addBtn      = document.getElementById('add-enrollment-btn');
+  const container   = document.getElementById('enrollments-container');
+  const tmpl        = document.getElementById('enrollment-template');
+  let enrollmentIdx = document.querySelectorAll('#enrollments-container .enrollment-section').length;
 
-    if (!day) return;
+  addBtn.addEventListener('click', () => {
+    const html = tmpl.innerHTML.replace(/NEW_RECORD/g, enrollmentIdx);
+    container.insertAdjacentHTML('beforeend', html);
+    const newSection = container.lastElementChild;
+    initEnrollmentSection(newSection);
+    enrollmentIdx++;
+    updateRemoveButtons();
+  });
 
-    let hours = [];
-    if (day === 'monday') {
-      hours = [14, 15, 16, 17];
-    } else {
-      hours = [13, 14, 15, 16, 17, 18, 19, 20, 21];
-    }
-
-    hours.forEach(h => {
-      const option = document.createElement('option');
-      const timeStr = `${h.toString().padStart(2, '0')}:00`;
-      option.value = timeStr;
-      option.textContent = `${h}:00`;
-      lessonTimeSelect.appendChild(option);
-    });
-  }
-
-  function toggleDepositFields() {
-    if (paymentTypeSelect.value === 'deposit') {
-      depositFields.style.display = 'grid';
-    } else {
-      depositFields.style.display = 'none';
-    }
-  }
-
-  function updateLessons() {
-    const months = parseInt(monthsField.value) || 1;
-    lessonsField.value = months * 4;
-    updateAmount();
-  }
-
-  function updateAmount() {
-    const subject = subjectSelect.value;
-    const months = parseInt(monthsField.value) || 1;
-
-    if (!subject) return;
-
-    const key = `${subject}_${months}`;
-    const price = pricePlans[key];
-
-    if (price) {
-      amountField.value = price;
-    } else {
-      const singleMonthKey = `${subject}_1`;
-      const singlePrice = pricePlans[singleMonthKey];
-      if (singlePrice) {
-        amountField.value = singlePrice * months;
-      }
-    }
-  }
-
-  subjectSelect.addEventListener('change', updateTeacherOptions);
-  lessonDaySelect.addEventListener('change', updateTimeOptions);
-  paymentTypeSelect.addEventListener('change', toggleDepositFields);
-  monthsField.addEventListener('input', updateLessons);
-
-  updateTeacherOptions();
-  updateTimeOptions();
-  toggleDepositFields();
+  <%# ── 기존 섹션 초기화 ── %>
+  document.querySelectorAll('#enrollments-container .enrollment-section').forEach(initEnrollmentSection);
+  updateRemoveButtons();
   <% end %>
 </script>

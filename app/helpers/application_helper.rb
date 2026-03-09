@@ -20,6 +20,7 @@ module ApplicationHelper
     "deducted"        => "결석차감",
     "pass"            => "패스",
     "emergency_pass"  => "긴급패스",
+    "holiday"         => "공휴일",
     "makeup_scheduled" => "보강예정",
     "makeup_done"     => "보강완료",
     "minus_lesson"    => "마이너스"
@@ -50,6 +51,7 @@ module ApplicationHelper
       "deducted"         => "badge-error",
       "pass"             => "badge-secondary",
       "emergency_pass"   => "badge-secondary badge-outline",
+      "holiday"          => "badge-accent",
       "makeup_scheduled" => "badge-primary",
       "makeup_done"      => "badge-success badge-outline",
       "minus_lesson"     => "badge-error badge-outline"
@@ -91,6 +93,8 @@ module ApplicationHelper
       tags << "대기"
     elsif s.status == "leave"
       tags << "휴"
+    elsif schedule.status == "holiday"
+      tags << "공"
     elsif schedule.status.in?(%w[pass emergency_pass])
       tags << "패"
     elsif schedule.sequence == 1

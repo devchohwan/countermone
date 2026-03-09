@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend late deduct pass emergency_pass makeup approve_makeup complete_makeup undo_deduct makeup_slots]
+  before_action :set_schedule, only: %i[show attend late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct makeup_slots]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -100,6 +100,12 @@ class SchedulesController < ApplicationController
     @schedule.update!(status: "emergency_pass", pass_reason: params[:pass_reason])
     create_pass_schedule(@schedule)
     redirect_back fallback_location: schedules_path, notice: "긴급패스 처리되었습니다."
+  end
+
+  def holiday
+    @schedule.update!(status: "holiday", pass_reason: params[:pass_reason])
+    create_pass_schedule(@schedule)
+    redirect_back fallback_location: schedules_path, notice: "공휴일 처리되었습니다."
   end
 
   def makeup
@@ -270,9 +276,9 @@ class SchedulesController < ApplicationController
     )
   end
 
-  # 패스/긴급패스 → 다른 상태 전환 시 from_pass schedule 삭제
+  # 패스/긴급패스/공휴일 → 다른 상태 전환 시 from_pass schedule 삭제
   def remove_pass_schedule_if_needed(schedule)
-    return unless schedule.status.in?(%w[pass emergency_pass])
+    return unless schedule.status.in?(%w[pass emergency_pass holiday])
     schedule.payment.schedules.where(from_pass: true).order(lesson_date: :desc).first&.destroy
   end
 

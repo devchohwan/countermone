@@ -23,7 +23,7 @@
         <div class="flex gap-2"><dt class="text-base-content/60 w-24">보강일</dt><dd><%= @schedule.makeup_date.strftime("%Y.%m.%d") %></dd></div>
         <div class="flex gap-2"><dt class="text-base-content/60 w-24">보강시간</dt><dd><%= @schedule.makeup_time&.strftime("%H:%M") %></dd></div>
       <% end %>
-      <% if @schedule.status.in?(%w[pass emergency_pass]) && @schedule.pass_reason.present? %>
+      <% if @schedule.status.in?(%w[pass emergency_pass holiday]) && @schedule.pass_reason.present? %>
         <div class="flex gap-2"><dt class="text-base-content/60 w-24">패스사유</dt><dd><%= @schedule.pass_reason %></dd></div>
       <% end %>
     </dl>
@@ -47,11 +47,11 @@
         </div>
       <% end %>
 
-      <%# pass / emergency_pass: 보강 전환 or 차감 전환 %>
-      <% if @schedule.status.in?(%w[pass emergency_pass]) %>
+      <%# pass / emergency_pass / holiday: 보강 전환 or 차감 전환 %>
+      <% if @schedule.status.in?(%w[pass emergency_pass holiday]) %>
         <div class="w-full">
-          <p class="text-xs text-purple-600 mb-2">
-            <%= @schedule.status == "emergency_pass" ? "긴급패스" : "패스" %> 처리됨 —
+          <p class="text-xs <%= @schedule.status == "holiday" ? "text-green-700" : "text-purple-600" %> mb-2">
+            <%= { "emergency_pass" => "긴급패스", "holiday" => "공휴일" }.fetch(@schedule.status, "패스") %> 처리됨 —
             보강 또는 차감으로 전환할 수 있습니다.
           </p>
           <%= button_to "차감으로 전환", deduct_schedule_path(@schedule), method: :patch,
@@ -84,8 +84,8 @@
     </div>
   </div>
 
-  <%# ── 보강 등록 (scheduled / makeup_scheduled / pass / emergency_pass) ── %>
-  <% show_makeup = @schedule.status.in?(%w[scheduled makeup_scheduled pass emergency_pass]) %>
+  <%# ── 보강 등록 (scheduled / makeup_scheduled / pass / emergency_pass / holiday) ── %>
+  <% show_makeup = @schedule.status.in?(%w[scheduled makeup_scheduled pass emergency_pass holiday]) %>
   <% if show_makeup %>
     <div class="bg-base-100 rounded-lg border shadow-sm p-4">
       <h3 class="font-semibold text-sm mb-3">보강 등록</h3>
@@ -97,9 +97,9 @@
             ⚠️ 당일 취소 보강입니다. 상담원 확인 후 진행하세요.
           </div>
         <% end %>
-        <% if @schedule.status.in?(%w[pass emergency_pass]) %>
+        <% if @schedule.status.in?(%w[pass emergency_pass holiday]) %>
           <div class="bg-purple-50 border border-purple-200 rounded p-2 mb-3 text-xs text-purple-700">
-            패스 → 보강 전환 시 추가 생성된 Schedule이 삭제됩니다.
+            패스/공휴일 → 보강 전환 시 추가 생성된 Schedule이 삭제됩니다.
           </div>
         <% end %>
         <%= form_with url: makeup_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
@@ -170,6 +170,12 @@
             <%= form_with url: emergency_pass_schedule_path(@schedule), method: :patch, class: "flex gap-2" do |f| %>
               <%= f.text_field :pass_reason, placeholder: "긴급패스 사유", class: "input input-bordered flex-1 text-sm" %>
               <%= f.submit "긴급패스", class: "bg-pink-100 text-pink-700 px-3 py-1.5 rounded text-sm hover:bg-pink-200 cursor-pointer" %>
+            <% end %>
+          </div>
+          <div class="mt-3 pt-3 border-t">
+            <%= form_with url: holiday_schedule_path(@schedule), method: :patch, class: "flex gap-2" do |f| %>
+              <%= f.text_field :pass_reason, placeholder: "공휴일명 (예: 삼일절)", class: "input input-bordered flex-1 text-sm" %>
+              <%= f.submit "공휴일", class: "bg-green-100 text-green-700 px-3 py-1.5 rounded text-sm hover:bg-green-200 cursor-pointer" %>
             <% end %>
           </div>
         <% end %>

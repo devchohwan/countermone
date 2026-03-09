@@ -22,7 +22,7 @@ class TimetableController < ApplicationController
     @pass_data = @teachers.map do |teacher|
       passes = Schedule.includes(:student, :enrollment)
                        .where(teacher: teacher, lesson_date: range)
-                       .where(status: %w[pass emergency_pass])
+                       .where(status: %w[pass emergency_pass holiday])
                        .order(:lesson_date)
       { teacher: teacher, passes: passes }
     end.reject { |d| d[:passes].empty? }
@@ -35,7 +35,7 @@ class TimetableController < ApplicationController
       .includes(:student, :enrollment, :teacher)
       .joins(:enrollment)
       .where(teacher: teacher, lesson_date: week_days)
-      .where(status: %w[scheduled attended late pass emergency_pass makeup_scheduled])
+      .where(status: %w[scheduled attended late pass emergency_pass holiday makeup_scheduled])
       .where(enrollments: { status: "active" })
 
     makeups = Schedule

@@ -34,8 +34,13 @@
                   <td><%= s.student.name %></td>
                   <td><%= s.subject %></td>
                   <td>
-                    <span class="badge badge-xs <%= s.status == 'emergency_pass' ? 'badge-error' : 'badge-secondary' %>">
-                      <%= s.status == 'emergency_pass' ? '긴급패스' : '패스' %>
+                    <% badge_cls = case s.status
+                       when 'emergency_pass' then 'badge-error'
+                       when 'holiday' then 'badge-accent'
+                       else 'badge-secondary'
+                       end %>
+                    <span class="badge badge-xs <%= badge_cls %>">
+                      <%= SCHEDULE_STATUS_KO[s.status] %>
                     </span>
                   </td>
                   <td class="text-base-content/60 text-xs"><%= s.pass_reason.presence || "-" %></td>

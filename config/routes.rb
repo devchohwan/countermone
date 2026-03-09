@@ -42,6 +42,7 @@ Rails.application.routes.draw do
       patch :deduct
       patch :pass
       patch :emergency_pass
+      patch :holiday
       patch :makeup
       patch :approve_makeup
       patch :complete_makeup

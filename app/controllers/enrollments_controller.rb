@@ -65,6 +65,11 @@ class EnrollmentsController < ApplicationController
     redirect_to student_path(@enrollment.student), notice: "클래스 퇴원 처리되었습니다."
   end
 
+  def dismiss_attendance_event
+    @enrollment.update!(attendance_event_pending: false)
+    redirect_back fallback_location: root_path, notice: "개근 처리 완료. 다음 결제 시 수업 횟수 1회 추가 입력 필요."
+  end
+
   def reschedule_form
     @teachers = Teacher.includes(:teacher_subjects)
                        .joins(:teacher_subjects)

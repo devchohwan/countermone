@@ -28,6 +28,7 @@ Rails.application.routes.draw do
         patch :leave
         patch :return
         patch :dropout
+        patch :dismiss_attendance_event
         get   :reschedule_form
         patch :reschedule
       end

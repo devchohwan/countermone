@@ -151,7 +151,7 @@
         </div>
 
         <%# 결제분 단위 아코디언 %>
-        <% payments_ordered = enrollment.payments.order(:starts_at).map { |p| [p, p.schedules.order(:lesson_date).to_a] }.reject { |_, s| s.empty? } %>
+        <% payments_ordered = enrollment.payments.order(:starts_at).map { |p| [p, p.schedules.includes(:attendance).order(:lesson_date).to_a] }.reject { |_, s| s.empty? } %>
         <% payments_ordered.each_with_index do |(payment, schedules), idx| %>
           <% is_last = idx == payments_ordered.size - 1 %>
           <% cnt_attended  = schedules.count { |s| s.status.in?(%w[attended late makeup_done]) } %>
@@ -185,7 +185,7 @@
                   <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline cursor-pointer hover:badge-primary"
                        data-filter="<%= filter_key %>"
                        title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %>"
-                       onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>', '<%= enrollment.subject %>')">
+                       onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>', '<%= enrollment.subject %>', '<%= s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M') %>', '<%= s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M') %>')">
                     <%= s.lesson_date.strftime("%-m/%-d") %>
                     <span class="<%= case s.status
                       when 'attended', 'makeup_done' then 'text-success'
@@ -262,7 +262,7 @@
   };
 
   // 수업 처리 모달
-  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr, subject) {
+  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr, subject, checkedIn, checkedOut) {
     const el = document.querySelector(`[onclick*="openScheduleAction('${scheduleId}'"]`);
     if (!el) return;
     const classMatch = el.className.match(/schedule-item-(\d+)/);
@@ -326,6 +326,12 @@
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-ghost w-full mt-1">수업 상세 보기</a>`;
       } else if (status === 'makeup_scheduled') {
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">수업 상세 / 전환</a>`;
+      } else if (['attended', 'late', 'makeup_done'].includes(status)) {
+        titleEl.textContent = status === 'late' ? '지각' : '출석 완료';
+        html += `<div class="space-y-2 text-sm py-1">`;
+        html += `<div class="flex justify-between"><span class="text-base-content/50">등원</span><span class="font-medium text-success">${checkedIn || '미기록'}</span></div>`;
+        html += `<div class="flex justify-between"><span class="text-base-content/50">하원</span><span class="font-medium text-info">${checkedOut || '미기록'}</span></div>`;
+        html += `</div>`;
       }
       actionsEl.innerHTML = html;
     }

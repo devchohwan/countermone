@@ -14,6 +14,7 @@ class Payment < ApplicationRecord
   validates :amount,         numericality: { greater_than_or_equal_to: 0 }
   validates :starts_at,      presence: true
 
+  before_create :auto_set_deposit_paid_at
   after_create  :generate_schedules
   after_create  :apply_attendance_event_if_pending
   after_create  :apply_referral_discount_if_pending
@@ -47,6 +48,12 @@ class Payment < ApplicationRecord
   end
 
   private
+
+  def auto_set_deposit_paid_at
+    if payment_type == "deposit" && deposit_paid_at.blank?
+      self.deposit_paid_at = Time.current
+    end
+  end
 
   def generate_schedules
     total_lessons.times.each_with_index do |_, i|

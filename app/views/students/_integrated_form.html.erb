@@ -166,11 +166,11 @@
               <div data-role="deposit-fields" class="grid grid-cols-2 gap-4" style="display:none">
                 <div>
                   <%= pf_fields.label :deposit_amount, "예약금액", class: "block text-sm font-medium text-base-content mb-1" %>
-                  <%= pf_fields.number_field :deposit_amount, step: 1000, class: "input input-bordered w-full text-sm" %>
+                  <%= pf_fields.number_field :deposit_amount, step: 1000,
+                        class: "input input-bordered w-full text-sm", data: { role: "deposit-amount" } %>
                 </div>
-                <div>
-                  <%= pf_fields.label :deposit_paid_at, "예약금 납부일", class: "block text-sm font-medium text-base-content mb-1" %>
-                  <%= pf_fields.datetime_field :deposit_paid_at, value: Time.current, class: "input input-bordered w-full text-sm" %>
+                <div class="flex items-end">
+                  <p class="text-xs text-base-content/50">잔금은 금액 자동계산됩니다</p>
                 </div>
               </div>
             </div>
@@ -259,11 +259,10 @@
           <div data-role="deposit-fields" class="grid grid-cols-2 gap-4" style="display:none">
             <div>
               <label class="block text-sm font-medium text-base-content mb-1">예약금액</label>
-              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][deposit_amount]" step="1000" class="input input-bordered w-full text-sm">
+              <input type="number" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][deposit_amount]" data-role="deposit-amount" step="1000" class="input input-bordered w-full text-sm">
             </div>
-            <div>
-              <label class="block text-sm font-medium text-base-content mb-1">예약금 납부일</label>
-              <input type="datetime-local" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][deposit_paid_at]" value="<%= Time.current.strftime('%Y-%m-%dT%H:%M') %>" class="input input-bordered w-full text-sm">
+            <div class="flex items-end">
+              <p class="text-xs text-base-content/50">잔금은 금액 자동계산됩니다</p>
             </div>
           </div>
         </div>
@@ -392,12 +391,14 @@
     const teacherEl  = section.querySelector('[data-role="teacher"]');
     const dayEl      = section.querySelector('[data-role="day"]');
     const timeEl     = section.querySelector('[data-role="time"]');
-    const monthsEl   = section.querySelector('[data-role="months"]');
-    const lessonsEl  = section.querySelector('[data-role="lessons"]');
-    const amountEl   = section.querySelector('[data-role="amount"]');
-    const typeEl     = section.querySelector('[data-role="payment-type"]');
-    const depositEl  = section.querySelector('[data-role="deposit-fields"]');
-    const removeBtn  = section.querySelector('.remove-enrollment-btn');
+    const monthsEl      = section.querySelector('[data-role="months"]');
+    const lessonsEl     = section.querySelector('[data-role="lessons"]');
+    const amountEl      = section.querySelector('[data-role="amount"]');
+    const typeEl        = section.querySelector('[data-role="payment-type"]');
+    const depositEl     = section.querySelector('[data-role="deposit-fields"]');
+    const depositAmtEl  = section.querySelector('[data-role="deposit-amount"]');
+    const removeBtn     = section.querySelector('.remove-enrollment-btn');
+    let fullPrice = 0;
 
     function updateTeachers() {
       const subject = subjectEl.value;
@@ -429,7 +430,19 @@
       if (!subject) return;
       const price = window.pricePlans[`${subject}_${months}`]
                  || (window.pricePlans[`${subject}_1`] && window.pricePlans[`${subject}_1`] * months);
-      if (price) amountEl.value = price;
+      if (price) {
+        fullPrice = price;
+        recalcAmount();
+      }
+    }
+
+    function recalcAmount() {
+      if (typeEl.value === 'deposit' && fullPrice > 0) {
+        const deposit = parseInt(depositAmtEl?.value) || 0;
+        amountEl.value = Math.max(0, fullPrice - deposit);
+      } else if (fullPrice > 0) {
+        amountEl.value = fullPrice;
+      }
     }
 
     function updateLessons() {
@@ -439,12 +452,14 @@
 
     function toggleDeposit() {
       if (depositEl) depositEl.style.display = typeEl.value === 'deposit' ? 'grid' : 'none';
+      recalcAmount();
     }
 
     subjectEl.addEventListener('change', updateTeachers);
     dayEl.addEventListener('change', updateTimes);
     monthsEl.addEventListener('input', updateLessons);
     typeEl?.addEventListener('change', toggleDeposit);
+    depositAmtEl?.addEventListener('input', recalcAmount);
 
     if (removeBtn) {
       removeBtn.addEventListener('click', () => {

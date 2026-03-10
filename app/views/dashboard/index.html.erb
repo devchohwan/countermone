@@ -48,7 +48,9 @@
             schedules: @today_schedules,
             enrollment_remaining: @enrollment_remaining %>
 
-      <%= render "hourly_arrival_text" %>
+      <%= turbo_frame_tag "hourly_arrival", src: dashboard_today_arrivals_path, loading: :lazy do %>
+        <%= render "hourly_arrival_text", schedules: [] %>
+      <% end %>
 
       <div>
         <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>

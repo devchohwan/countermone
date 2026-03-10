@@ -1,4 +1,13 @@
 class DashboardController < ApplicationController
+  def today_arrivals
+    @today_schedules = Schedule
+      .includes(:student, :teacher, :enrollment, :attendance)
+      .where(lesson_date: Date.today)
+      .where(status: %w[scheduled attended late makeup_scheduled])
+      .order(:lesson_time)
+    render partial: "dashboard/hourly_arrival_text", locals: { schedules: @today_schedules }
+  end
+
   def current_schedules
     @current_schedules = Schedule
       .includes(:student, :teacher, :enrollment, :attendance)

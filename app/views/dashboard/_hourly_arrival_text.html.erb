@@ -1,6 +1,50 @@
-<div class="card bg-base-100 shadow-sm">
-  <div class="card-body p-4">
-    <h3 class="card-title text-sm mb-2 text-base-content/40">시간대별 등하원</h3>
-    <p class="text-sm text-base-content/30">준비 중</p>
+<%= turbo_frame_tag "hourly_arrival" do %>
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4">
+      <h3 class="card-title text-sm mb-2">시간대별 등하원</h3>
+
+      <% hourly_groups = schedules.group_by { |s| s.lesson_time.in_time_zone('Seoul').hour }.sort %>
+
+      <% if hourly_groups.empty? %>
+        <p class="text-sm text-base-content/40">수업이 없습니다.</p>
+      <% else %>
+        <div class="flex flex-col gap-3 overflow-y-auto max-h-72">
+          <% hourly_groups.each do |hour, hour_schedules| %>
+            <div>
+              <p class="text-xs font-bold text-base-content/50 mb-1"><%= hour %>시</p>
+              <div class="flex flex-col gap-1">
+                <% hour_schedules.each do |s| %>
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class="font-medium w-14 truncate"><%= s.student.name %></span>
+
+                    <%# 등원 %>
+                    <% if s.attendance&.checked_in_at %>
+                      <span class="text-success w-12"><%= s.attendance.checked_in_at.in_time_zone('Seoul').strftime("%H:%M") %> ✓</span>
+                    <% elsif s.status == "scheduled" %>
+                      <%= button_to "등원", attend_schedule_path(s),
+                            method: :patch,
+                            class: "btn btn-xs btn-outline btn-success w-12" %>
+                    <% else %>
+                      <span class="w-12 text-base-content/30">-</span>
+                    <% end %>
+
+                    <%# 하원 %>
+                    <% if s.attendance&.checked_out_at %>
+                      <span class="text-info w-12"><%= s.attendance.checked_out_at.in_time_zone('Seoul').strftime("%H:%M") %> ✓</span>
+                    <% elsif s.attendance&.checked_in_at %>
+                      <%= button_to "하원", checkout_schedule_path(s),
+                            method: :patch,
+                            class: "btn btn-xs btn-outline btn-info w-12" %>
+                    <% else %>
+                      <span class="w-12 text-base-content/20">-</span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
   </div>
-</div>
+<% end %>

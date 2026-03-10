@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   root "dashboard#index"
   get "dashboard/current_schedules", to: "dashboard#current_schedules"
+  get "dashboard/today_arrivals",    to: "dashboard#today_arrivals"
 
   resource  :session
   resources :passwords, param: :token
@@ -43,6 +44,7 @@ Rails.application.routes.draw do
   resources :schedules do
     member do
       patch :attend
+      patch :checkout
       patch :late
       get   :makeup_slots
       patch :deduct

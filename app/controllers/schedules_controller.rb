@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct makeup_slots]
+  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct makeup_slots]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -19,12 +19,30 @@ class SchedulesController < ApplicationController
     check_gift_voucher(@schedule)
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          "current_schedules",
-          partial: "dashboard/current_schedules"
-        )
+        render turbo_stream: [
+          turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
+          turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
+                               locals: { schedules: today_arrival_schedules })
+        ]
       end
       format.html { tab_redirect(notice: "출석 처리되었습니다.") }
+    end
+  end
+
+  def checkout
+    attendance = @schedule.attendance
+    if attendance
+      attendance.update!(checked_out_at: Time.current)
+    end
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "hourly_arrival",
+          partial: "dashboard/hourly_arrival_text",
+          locals: { schedules: today_arrival_schedules }
+        )
+      end
+      format.html { redirect_back fallback_location: root_path, notice: "하원 처리되었습니다." }
     end
   end
 
@@ -287,6 +305,13 @@ class SchedulesController < ApplicationController
   def remove_pass_schedule_if_needed(schedule)
     return unless schedule.status.in?(%w[pass emergency_pass holiday])
     schedule.payment.schedules.where(from_pass: true).order(lesson_date: :desc).first&.destroy
+  end
+
+  def today_arrival_schedules
+    Schedule.includes(:student, :teacher, :enrollment, :attendance)
+            .where(lesson_date: Date.today)
+            .where(status: %w[scheduled attended late makeup_scheduled])
+            .order(:lesson_time)
   end
 
   def available_passes(enrollment)

@@ -82,17 +82,7 @@ class DashboardController < ApplicationController
       end
     end
 
-    # 2. 잔금 미납 (첫 수업 아닌 경우)
-    Payment.where(fully_paid: false, payment_type: "deposit")
-           .includes(:student, :enrollment, :schedules)
-           .each do |p|
-      first_schedule = p.schedules.order(:lesson_date).first
-      unless first_schedule&.lesson_date == Date.today
-        results << { student: p.student, enrollment: p.enrollment, type: :balance_due, payment: p }
-      end
-    end
-
-    # 3. 잔여 횟수 1회 (완납)
+    # 2. 잔여 횟수 1회 (완납)
     Enrollment.where(status: "active").includes(:student, :payments).each do |e|
       last_payment = e.payments.where(fully_paid: true).order(:created_at).last
       next unless last_payment

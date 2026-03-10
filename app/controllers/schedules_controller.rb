@@ -12,6 +12,14 @@ class SchedulesController < ApplicationController
   def show; end
 
   def attend
+    # 완납필요: 예약금 미완납 + 첫 수업이면 등원 차단
+    if @schedule.payment.fully_paid == false && @schedule.payment.payment_type == "deposit"
+      first = @schedule.payment.schedules.order(:lesson_date, :id).first
+      if first&.id == @schedule.id
+        return redirect_back fallback_location: root_path, alert: "완납 후 등원 처리 가능합니다."
+      end
+    end
+
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "attended")
     create_attendance_record(@schedule)

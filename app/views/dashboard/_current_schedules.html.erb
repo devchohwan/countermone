@@ -45,7 +45,10 @@
                     <% end %>
                   </td>
                   <td class="flex gap-1">
-                    <% if s.status == "scheduled" %>
+                    <% unpaid_first = !s.payment.fully_paid && s.payment.payment_type == "deposit" && s.payment.schedules.order(:lesson_date, :id).first&.id == s.id %>
+                    <% if s.status == "scheduled" && unpaid_first %>
+                      <span class="btn btn-xs btn-error btn-disabled opacity-60">완납필요</span>
+                    <% elsif s.status == "scheduled" %>
                       <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "btn btn-xs btn-success" %>
                     <% end %>
                     <% if s.attendance&.checked_in_at && s.attendance.checked_out_at.nil? %>

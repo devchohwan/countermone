@@ -118,7 +118,23 @@
       <%# 오른쪽: 수업 이력 (필터) %>
       <div>
         <div class="flex items-center justify-between mb-2">
-          <h4 class="text-sm font-semibold">수업 이력</h4>
+          <h4 class="text-sm font-semibold">수업 이력
+            <%
+              total_weeks = student.total_attended_weeks_for(enrollment)
+              months_part = total_weeks / 4
+              weeks_part  = total_weeks % 4
+              period_str  = if months_part > 0 && weeks_part > 0
+                              "#{months_part}개월 #{weeks_part}주"
+                            elsif months_part > 0
+                              "#{months_part}개월"
+                            elsif total_weeks > 0
+                              "#{weeks_part}주"
+                            end
+            %>
+            <% if period_str %>
+              <span class="text-xs font-normal text-base-content/40 ml-1">(재원 <%= period_str %>)</span>
+            <% end %>
+          </h4>
           <%# 필터 버튼 %>
           <div class="flex gap-1" id="filter-btns-<%= enrollment.id %>">
             <% filters = [["전체", "all"], ["예정", "scheduled"], ["출석", "attended"], ["보강", "makeup"]]

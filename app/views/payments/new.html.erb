@@ -127,6 +127,19 @@
           }
 
           monthsEl?.addEventListener("change", lookupPrice);
+
+          // 예약금 입력 시 잔금 자동 계산
+          const depositEl  = document.getElementById("payment_deposit_amount");
+          const balanceEl  = document.getElementById("payment_balance_amount");
+
+          function recalcBalance() {
+            const total   = parseInt(amountEl?.value)  || 0;
+            const deposit = parseInt(depositEl?.value) || 0;
+            if (balanceEl && total > 0) balanceEl.value = Math.max(0, total - deposit);
+          }
+
+          depositEl?.addEventListener("input", recalcBalance);
+          amountEl?.addEventListener("input",  recalcBalance);
         });
       </script>
 

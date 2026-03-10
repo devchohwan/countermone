@@ -73,6 +73,12 @@
                   <% @payment_due_today.each do |item| %>
                     <% color = item[:type] == :deposit_first_lesson ? "border-error" : item[:type] == :balance_due ? "border-warning" : "border-info" %>
                     <li class="flex items-center gap-2 text-sm border-l-2 pl-2 <%= color %>">
+                      <% s = @today_schedules.find { |s| s.enrollment_id == item[:enrollment].id } %>
+                      <% if s %>
+                        <span class="text-xs font-mono text-base-content/40 w-20 shrink-0">
+                          <%= s.lesson_time.in_time_zone('Seoul').hour %>시 [<%= s.teacher.name %>]
+                        </span>
+                      <% end %>
                       <span class="font-medium"><%= item[:student].name %></span>
                       <span class="text-base-content/50">— <%= item[:enrollment].subject %></span>
                       <span class="badge badge-xs <%= item[:type] == :deposit_first_lesson ? 'badge-error' : item[:type] == :balance_due ? 'badge-warning' : 'badge-info' %>">

@@ -48,9 +48,7 @@
             schedules: @today_schedules,
             enrollment_remaining: @enrollment_remaining %>
 
-      <%= turbo_frame_tag "hourly_arrival", src: dashboard_today_arrivals_path do %>
-        <div class="card bg-base-100 shadow-sm p-4 text-sm text-base-content/40">등하원 로딩 중...</div>
-      <% end %>
+      <%= render "hourly_arrival_text", schedules: @today_schedules %>
 
       <div>
         <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>

@@ -45,7 +45,7 @@ class DashboardController < ApplicationController
                                     .group(:enrollment_id).count
 
     # 해당일 마감 집계
-    @daily_payments = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @date)
+    @daily_payments = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @date).includes(:student)
     @daily_leaves   = Enrollment.where(leave_at: @date)
     @daily_returns  = Enrollment.where(return_at: @date).where(status: "active")
     @daily_dropouts = Enrollment.where(status: "dropout").where("DATE(updated_at) = ?", @date)

@@ -39,28 +39,31 @@
     </div>
   </div>
 
-  <% if @is_today %>
-    <%# 3×2 그리드 %>
-    <div class="grid grid-cols-3 gap-4">
+  <%# Row 1: 시간대별수업 / 시간대별등하원 / 지금이순간(오늘만) %>
+  <div class="grid <%= @is_today ? 'grid-cols-3' : 'grid-cols-2' %> gap-4">
 
-      <%# Row 1: 시간대별수업 / 시간대별등하원 / 지금이순간 %>
-      <%= render "hourly_schedule_text",
-            schedules: @today_schedules,
-            enrollment_remaining: @enrollment_remaining %>
+    <%= render "hourly_schedule_text",
+          schedules: @today_schedules,
+          enrollment_remaining: @enrollment_remaining %>
 
-      <%= render "hourly_arrival_text", schedules: @today_schedules %>
+    <%= render "hourly_arrival_text", schedules: @today_schedules, readonly: !@is_today %>
 
+    <% if @is_today %>
       <div>
         <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>
           <%= render "current_schedules" %>
         <% end %>
       </div>
+    <% end %>
 
-      <%# Row 2: 오늘결제/연락/확인 / 내일결제자 / 오늘마감 %>
+  </div>
 
-      <%# 오늘 결제자·연락·확인·개근 (탭) %>
+  <%# Row 2: 결제 / 내일결제자(오늘만) / 마감 %>
+  <div class="grid <%= @is_today ? 'grid-cols-3' : 'grid-cols-2' %> gap-4">
+
+    <% if @is_today %>
+      <%# 오늘: 결제/연락/확인/개근 탭 %>
       <%
-        # 복사 텍스트 사전 계산
         sched_by_enroll = @today_schedules.index_by(&:enrollment_id)
         with_sched    = @payment_due_today.select { |i| sched_by_enroll[i[:enrollment].id] }
         without_sched = @payment_due_today.reject { |i| sched_by_enroll[i[:enrollment].id] }
@@ -120,7 +123,6 @@
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-4">
 
-          <%# 복사버튼 — 탭 우측상단 %>
           <div class="flex justify-end mb-1">
             <button id="todo-copy-btn"
                     class="btn btn-xs btn-ghost"
@@ -254,34 +256,40 @@
         </div>
       </div>
 
-      <%# 내일 결제자 %>
-      <%= render "tomorrow_payments" %>
-
-      <%# 오늘 마감 %>
+    <% else %>
+      <%# 과거: 그날 완납 결제 내역 %>
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-4">
-          <div class="flex items-center justify-between mb-1">
-            <h3 class="card-title text-sm">오늘 마감</h3>
-            <%= link_to "마감 톡 생성 →", statistics_path(date: @date), class: "btn btn-xs btn-primary" %>
-          </div>
-          <%= render "daily_summary" %>
+          <h3 class="card-title text-sm mb-2">결제 완료</h3>
+          <% if @daily_payments.empty? %>
+            <p class="text-sm text-base-content/40">결제 완료 없음</p>
+          <% else %>
+            <ul class="space-y-1">
+              <% @daily_payments.each do |p| %>
+                <li class="text-sm"><%= p.student.name %> — <%= p.subject %> (<%= format_amount(p.amount) %>)</li>
+              <% end %>
+            </ul>
+          <% end %>
         </div>
       </div>
+    <% end %>
 
-    </div>
+    <% if @is_today %>
+      <%= render "tomorrow_payments" %>
+    <% end %>
 
-  <% else %>
-    <%# 과거/미래: 마감 요약만 %>
+    <%# 마감 %>
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body p-4">
         <div class="flex items-center justify-between mb-1">
-          <h3 class="card-title text-sm"><%= @date.strftime("%m/%d") %> 마감</h3>
+          <h3 class="card-title text-sm"><%= @is_today ? "오늘 마감" : @date.strftime("%m/%d 마감") %></h3>
           <%= link_to "마감 톡 생성 →", statistics_path(date: @date), class: "btn btn-xs btn-primary" %>
         </div>
         <%= render "daily_summary" %>
       </div>
     </div>
-  <% end %>
+
+  </div>
 
   <%# 시간표 — /timetable/4 그대로 임베드 %>
   <%= turbo_frame_tag "timetable_embed", src: teacher_timetable_path(4, date: @date.to_s), loading: :lazy do %>

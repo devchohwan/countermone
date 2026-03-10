@@ -1,3 +1,4 @@
+<% readonly = local_assigns.fetch(:readonly, false) %>
 <%= turbo_frame_tag "hourly_arrival" do %>
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body p-4">
@@ -20,7 +21,7 @@
                     <%# 등원 %>
                     <% if s.attendance&.checked_in_at %>
                       <span class="text-success w-12"><%= s.attendance.checked_in_at.in_time_zone('Seoul').strftime("%H:%M") %> ✓</span>
-                    <% elsif s.status == "scheduled" %>
+                    <% elsif s.status == "scheduled" && !readonly %>
                       <%= button_to "등원", attend_schedule_path(s),
                             method: :patch,
                             class: "btn btn-xs btn-outline btn-success w-12" %>
@@ -31,7 +32,7 @@
                     <%# 하원 %>
                     <% if s.attendance&.checked_out_at %>
                       <span class="text-info w-12"><%= s.attendance.checked_out_at.in_time_zone('Seoul').strftime("%H:%M") %> ✓</span>
-                    <% elsif s.attendance&.checked_in_at %>
+                    <% elsif s.attendance&.checked_in_at && !readonly %>
                       <%= button_to "하원", checkout_schedule_path(s),
                             method: :patch,
                             class: "btn btn-xs btn-outline btn-info w-12" %>

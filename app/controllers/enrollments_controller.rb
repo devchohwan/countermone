@@ -66,8 +66,37 @@ class EnrollmentsController < ApplicationController
   end
 
   def dismiss_attendance_event
+    payment = @enrollment.payments.where(fully_paid: true).order(:created_at).last
+    unless payment
+      return redirect_back fallback_location: root_path, alert: "완납 결제 내역이 없어 수업을 추가할 수 없습니다."
+    end
+
+    last_schedule = payment.schedules.order(lesson_date: :desc).first
+    unless last_schedule
+      return redirect_back fallback_location: root_path, alert: "스케줄이 없어 수업을 추가할 수 없습니다."
+    end
+
+    new_date = last_schedule.lesson_date + 7.days
+    payment.schedules.create!(
+      student:     @enrollment.student,
+      enrollment:  @enrollment,
+      teacher:     last_schedule.teacher,
+      lesson_date: new_date,
+      lesson_time: last_schedule.lesson_time,
+      subject:     @enrollment.subject,
+      status:      "scheduled",
+      sequence:    payment.schedules.maximum(:sequence).to_i + 1,
+      from_pass:   false
+    )
+
+    payment.discounts.create!(
+      discount_type: "attendance_event",
+      amount: 0,
+      memo: "12주 개근 1회 무료"
+    )
+
     @enrollment.update!(attendance_event_pending: false)
-    redirect_back fallback_location: root_path, notice: "개근 처리 완료. 다음 결제 시 수업 횟수 1회 추가 입력 필요."
+    redirect_back fallback_location: root_path, notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
   end
 
   def reschedule_form

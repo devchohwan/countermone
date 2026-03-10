@@ -235,9 +235,10 @@
                       <span class="font-medium"><%= e.student.name %></span>
                       <span class="text-base-content/50"><%= e.subject %></span>
                       <span class="badge badge-xs badge-success">12주 개근</span>
-                      <%= button_to "처리완료", dismiss_attendance_event_enrollment_path(e),
+                      <%= button_to "개근처리", dismiss_attendance_event_enrollment_path(e),
                             method: :patch,
-                            class: "btn btn-xs btn-ghost text-success ml-auto" %>
+                            class: "btn btn-xs btn-success ml-auto",
+                            data: { turbo_confirm: "#{e.student.name} 개근 1회 추가 처리하시겠습니까?" } %>
                     </li>
                   <% end %>
                 </ul>

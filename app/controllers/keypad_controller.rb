@@ -14,6 +14,18 @@ class KeypadController < ApplicationController
     now   = Time.current
     today = Date.today
 
+    # 이미 등원했고 하원 안 한 경우 → 하원 처리
+    pending_checkout = Attendance.joins(:schedule)
+                                 .where(student: student)
+                                 .where(schedules: { lesson_date: today })
+                                 .where(checked_out_at: nil)
+                                 .order(checked_in_at: :desc)
+                                 .first
+    if pending_checkout
+      pending_checkout.update!(checked_out_at: now)
+      render json: { message: "하원 처리되었습니다.", student: student.name } and return
+    end
+
     # 클래스 선택 후 schedule_id가 넘어온 경우
     if params[:schedule_id].present?
       schedule = Schedule.find_by(id: params[:schedule_id], student: student,

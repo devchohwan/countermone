@@ -44,7 +44,7 @@
     btn.addEventListener("click", () => {
       if (code.length >= 6) return;
       code += btn.dataset.value;
-      display.textContent = code.split("").map(() => "●").join(" ");
+      display.textContent = code.split("").join(" ");
     });
   });
 

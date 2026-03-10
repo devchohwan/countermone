@@ -77,7 +77,32 @@
                     .group_by { |i| sched_by_enroll[i[:enrollment].id].lesson_time.in_time_zone('Seoul').hour }
                     .sort
                     .map { |hour, items| [hour, items.group_by { |i| sched_by_enroll[i[:enrollment].id].teacher }] }
+                  pay_copy_lines = []
+                  grouped.each do |hour, by_teacher|
+                    pay_copy_lines << "#{hour}시"
+                    by_teacher.each do |teacher, items|
+                      pay_copy_lines << "[#{teacher.name}]"
+                      items.each do |item|
+                        lbl = item[:type] == :deposit_first_lesson ? "완납필요" : item[:type] == :balance_due ? "잔금미납" : "결제예정"
+                        pay_copy_lines << "#{item[:student].name} #{lbl}"
+                      end
+                    end
+                    pay_copy_lines << ""
+                  end
+                  unless without_sched.empty?
+                    pay_copy_lines << "오늘 수업 없음"
+                    without_sched.each do |item|
+                      lbl = item[:type] == :deposit_first_lesson ? "완납필요" : item[:type] == :balance_due ? "잔금미납" : "결제예정"
+                      pay_copy_lines << "#{item[:student].name} #{item[:enrollment].subject} #{lbl}"
+                    end
+                  end
+                  pay_copy_text = pay_copy_lines.join("\n").strip
                 %>
+                <div class="flex justify-end mb-1">
+                  <button class="btn btn-xs btn-ghost"
+                    data-copy-text="<%= pay_copy_text %>"
+                    onclick="navigator.clipboard.writeText(this.dataset.copyText).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='복사',1500)}).catch(()=>{})">복사</button>
+                </div>
                 <div class="flex flex-col gap-3 font-mono text-sm leading-snug overflow-y-auto max-h-60">
                   <% grouped.each do |hour, by_teacher| %>
                     <div>
@@ -112,6 +137,23 @@
               <% if @contact_list.empty? %>
                 <p class="text-sm text-base-content/40">오늘 연락할 대상 없음</p>
               <% else %>
+                <%
+                  contact_copy_lines = @contact_list.map do |item|
+                    type_label = case item[:type]
+                    when :contact_due     then "연락기한"
+                    when :return_due      then "복귀예정"
+                    when :waiting_expired then "자리대기만료"
+                    end
+                    subj = item[:enrollment] ? " #{item[:enrollment].subject}" : ""
+                    "#{item[:student].name}#{subj} #{type_label}"
+                  end
+                  contact_copy_text = contact_copy_lines.join("\n")
+                %>
+                <div class="flex justify-end mb-1">
+                  <button class="btn btn-xs btn-ghost"
+                    data-copy-text="<%= contact_copy_text %>"
+                    onclick="navigator.clipboard.writeText(this.dataset.copyText).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='복사',1500)}).catch(()=>{})">복사</button>
+                </div>
                 <ul class="space-y-2">
                   <% @contact_list.each do |item| %>
                     <li class="flex items-center gap-2 text-sm">
@@ -137,6 +179,19 @@
 
             <input type="radio" name="todo-tabs" role="tab" class="tab" aria-label="✅ 확인" />
             <div role="tabpanel" class="tab-content pt-3">
+              <%
+                confirm_copy_lines = []
+                @minus_enrollments.each { |e| confirm_copy_lines << "#{e.student.name} — #{e.subject} (#{e.minus_lesson_count}회) 마이너스" }
+                @pending_consents.each  { |s| confirm_copy_lines << "#{s.name} 동의서미수령" }
+                confirm_copy_text = confirm_copy_lines.join("\n")
+              %>
+              <% if confirm_copy_lines.any? %>
+                <div class="flex justify-end mb-1">
+                  <button class="btn btn-xs btn-ghost"
+                    data-copy-text="<%= confirm_copy_text %>"
+                    onclick="navigator.clipboard.writeText(this.dataset.copyText).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='복사',1500)}).catch(()=>{})">복사</button>
+                </div>
+              <% end %>
               <% if @minus_enrollments.any? %>
                 <p class="text-xs font-bold text-error mb-1">마이너스 수업</p>
                 <% @minus_enrollments.each do |e| %>

@@ -69,28 +69,40 @@
               <% if @payment_due_today.empty? %>
                 <p class="text-sm text-base-content/40">오늘 결제 예정 없음</p>
               <% else %>
-                <ul class="space-y-2">
-                  <% @payment_due_today.each do |item| %>
-                    <% color = item[:type] == :deposit_first_lesson ? "border-error" : item[:type] == :balance_due ? "border-warning" : "border-info" %>
-                    <li class="flex items-center gap-2 text-sm border-l-2 pl-2 <%= color %>">
-                      <% s = @today_schedules.find { |s| s.enrollment_id == item[:enrollment].id } %>
-                      <% if s %>
-                        <span class="text-xs font-mono text-base-content/40 w-20 shrink-0">
-                          <%= s.lesson_time.in_time_zone('Seoul').hour %>시 [<%= s.teacher.name %>]
-                        </span>
+                <%
+                  sched_by_enroll = @today_schedules.index_by(&:enrollment_id)
+                  with_sched    = @payment_due_today.select { |i| sched_by_enroll[i[:enrollment].id] }
+                  without_sched = @payment_due_today.reject { |i| sched_by_enroll[i[:enrollment].id] }
+                  grouped = with_sched
+                    .group_by { |i| sched_by_enroll[i[:enrollment].id].lesson_time.in_time_zone('Seoul').hour }
+                    .sort
+                    .map { |hour, items| [hour, items.group_by { |i| sched_by_enroll[i[:enrollment].id].teacher }] }
+                %>
+                <div class="flex flex-col gap-3 font-mono text-sm leading-snug overflow-y-auto max-h-60">
+                  <% grouped.each do |hour, by_teacher| %>
+                    <div>
+                      <p class="text-xs font-bold text-base-content/50 mb-1"><%= hour %>시</p>
+                      <% by_teacher.each do |teacher, items| %>
+                        <p class="text-xs text-base-content/40">[<%= teacher.name %>]</p>
+                        <% items.each do |item| %>
+                          <% badge_color = item[:type] == :deposit_first_lesson ? "badge-error" : item[:type] == :balance_due ? "badge-warning" : "badge-info" %>
+                          <% label = item[:type] == :deposit_first_lesson ? "완납필요" : item[:type] == :balance_due ? "잔금미납" : "결제예정" %>
+                          <p><%= item[:student].name %> <span class="badge badge-xs <%= badge_color %>"><%= label %></span></p>
+                        <% end %>
                       <% end %>
-                      <span class="font-medium"><%= item[:student].name %></span>
-                      <span class="text-base-content/50">— <%= item[:enrollment].subject %></span>
-                      <span class="badge badge-xs <%= item[:type] == :deposit_first_lesson ? 'badge-error' : item[:type] == :balance_due ? 'badge-warning' : 'badge-info' %>">
-                        <%= case item[:type]
-                            when :deposit_first_lesson then "오늘 첫수업, 완납필요"
-                            when :balance_due          then "잔금미납"
-                            when :next_payment_due     then "다음결제예정"
-                            end %>
-                      </span>
-                    </li>
+                    </div>
                   <% end %>
-                </ul>
+                  <% if without_sched.any? %>
+                    <div>
+                      <p class="text-xs font-bold text-base-content/50 mb-1">오늘 수업 없음</p>
+                      <% without_sched.each do |item| %>
+                        <% badge_color = item[:type] == :deposit_first_lesson ? "badge-error" : item[:type] == :balance_due ? "badge-warning" : "badge-info" %>
+                        <% label = item[:type] == :deposit_first_lesson ? "완납필요" : item[:type] == :balance_due ? "잔금미납" : "결제예정" %>
+                        <p><%= item[:student].name %> — <%= item[:enrollment].subject %> <span class="badge badge-xs <%= badge_color %>"><%= label %></span></p>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
               <% end %>
             </div>
 

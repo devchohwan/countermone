@@ -18,7 +18,8 @@ class DashboardController < ApplicationController
   end
 
   def index
-    @date     = params[:date].present? ? Date.parse(params[:date]) : Date.today
+    default_date = Time.current.hour >= 22 ? Date.tomorrow : Date.today
+    @date     = params[:date].present? ? Date.parse(params[:date]) : default_date
     @is_today = @date == Date.today
     @current_hour = @is_today ? Time.current.hour : nil
 

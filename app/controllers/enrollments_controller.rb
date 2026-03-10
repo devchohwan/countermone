@@ -96,7 +96,7 @@ class EnrollmentsController < ApplicationController
     )
 
     @enrollment.update!(attendance_event_pending: false)
-    redirect_back fallback_location: root_path, notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
+    redirect_to root_path(todo_tab: "keungeun"), notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
   end
 
   def reschedule_form

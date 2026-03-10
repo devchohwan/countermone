@@ -130,14 +130,18 @@
           <script>
             document.addEventListener('DOMContentLoaded', function() {
               const btn = document.getElementById('todo-copy-btn');
-              if (btn && window._todoCopy) btn.dataset.copyText = window._todoCopy.pay || '';
+              if (btn && window._todoCopy) {
+                const tab = '<%= params[:todo_tab].presence || 'pay' %>';
+                btn.dataset.copyText = window._todoCopy[tab] || window._todoCopy.pay || '';
+              }
             });
           </script>
 
           <div role="tablist" class="tabs tabs-bordered tabs-sm">
 
             <input type="radio" name="todo-tabs" role="tab" class="tab"
-                   aria-label="💳 결제 (<%= @payment_due_today.count %>)" checked
+                   aria-label="💳 결제 (<%= @payment_due_today.count %>)"
+                   <%= params[:todo_tab].blank? || params[:todo_tab] == 'pay' ? 'checked' : '' %>
                    onchange="switchTodoCopy('pay')" />
             <div role="tabpanel" class="tab-content pt-3">
               <% if @payment_due_today.empty? %>
@@ -223,6 +227,7 @@
 
             <input type="radio" name="todo-tabs" role="tab" class="tab"
                    aria-label="🎯 개근 (<%= @attendance_events.count %>)"
+                   <%= params[:todo_tab] == 'keungeun' ? 'checked' : '' %>
                    onchange="switchTodoCopy('keungeun')" />
             <div role="tabpanel" class="tab-content pt-3">
               <% if @attendance_events.empty? %>

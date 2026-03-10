@@ -44,9 +44,12 @@
                       <span class="text-base-content/30 text-xs">-</span>
                     <% end %>
                   </td>
-                  <td>
+                  <td class="flex gap-1">
                     <% if s.status == "scheduled" %>
                       <%= button_to "출석", attend_schedule_path(s), method: :patch, class: "btn btn-xs btn-success" %>
+                    <% end %>
+                    <% if s.attendance&.checked_in_at && s.attendance.checked_out_at.nil? %>
+                      <%= button_to "하원", checkout_schedule_path(s), method: :patch, class: "btn btn-xs btn-info" %>
                     <% end %>
                   </td>
                 </tr>

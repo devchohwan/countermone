@@ -36,11 +36,11 @@ class SchedulesController < ApplicationController
     end
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          "hourly_arrival",
-          partial: "dashboard/hourly_arrival_text",
-          locals: { schedules: today_arrival_schedules }
-        )
+        render turbo_stream: [
+          turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
+          turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
+                               locals: { schedules: today_arrival_schedules })
+        ]
       end
       format.html { redirect_back fallback_location: root_path, notice: "하원 처리되었습니다." }
     end

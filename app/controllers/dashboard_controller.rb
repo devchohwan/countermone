@@ -82,14 +82,14 @@ class DashboardController < ApplicationController
       end
     end
 
-    # 2. 잔여 횟수 1회 (완납)
+    # 2. 잔여 횟수 1회 + 마지막 수업이 오늘인 경우 (완납)
     Enrollment.where(status: "active").includes(:student, :payments).each do |e|
       last_payment = e.payments.where(fully_paid: true).order(:created_at).last
       next unless last_payment
-      remaining = last_payment.schedules.where(status: "scheduled").count
-      if remaining == 1
-        results << { student: e.student, enrollment: e, type: :next_payment_due, payment: last_payment }
-      end
+      last_scheduled = last_payment.schedules.where(status: "scheduled").order(:lesson_date).first
+      next unless last_scheduled&.lesson_date == Date.today
+      next unless last_payment.schedules.where(status: "scheduled").count == 1
+      results << { student: e.student, enrollment: e, type: :next_payment_due, payment: last_payment }
     end
 
     results

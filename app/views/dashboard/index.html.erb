@@ -118,13 +118,15 @@
       </script>
 
       <div class="card bg-base-100 shadow-sm">
-        <div class="card-body p-4 relative">
+        <div class="card-body p-4">
 
-          <%# 복사버튼 — 카드 우측상단 %>
-          <button id="todo-copy-btn"
-                  class="btn btn-xs btn-ghost absolute right-4 top-4 z-10"
-                  data-copy-text=""
-                  onclick="navigator.clipboard.writeText(this.dataset.copyText).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='복사',1500)}).catch(()=>{})">복사</button>
+          <%# 복사버튼 — 탭 우측상단 %>
+          <div class="flex justify-end mb-1">
+            <button id="todo-copy-btn"
+                    class="btn btn-xs btn-ghost"
+                    data-copy-text=""
+                    onclick="navigator.clipboard.writeText(this.dataset.copyText).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='복사',1500)}).catch(()=>{})">복사</button>
+          </div>
           <script>
             document.addEventListener('DOMContentLoaded', function() {
               const btn = document.getElementById('todo-copy-btn');

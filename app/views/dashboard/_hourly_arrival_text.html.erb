@@ -18,11 +18,8 @@
                     <span class="font-medium w-14 truncate"><%= s.student.name %></span>
 
                     <%# 등원 %>
-                    <% unpaid_first = !s.payment.fully_paid && s.payment.payment_type == "deposit" && s.payment.schedules.order(:lesson_date, :id).first&.id == s.id %>
                     <% if s.attendance&.checked_in_at %>
                       <span class="text-success w-12"><%= s.attendance.checked_in_at.in_time_zone('Seoul').strftime("%H:%M") %> ✓</span>
-                    <% elsif unpaid_first %>
-                      <span class="btn btn-xs btn-outline btn-error w-12 pointer-events-none opacity-60">완납↑</span>
                     <% elsif s.status == "scheduled" %>
                       <%= button_to "등원", attend_schedule_path(s),
                             method: :patch,

@@ -1,5 +1,8 @@
 class KeypadController < ApplicationController
   skip_before_action :require_authentication
+  rate_limit to: 60, within: 1.minute, with: -> {
+    render json: { error: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." }, status: :too_many_requests
+  }
 
   def index; end
 

@@ -1,6 +1,9 @@
 class PasswordsController < ApplicationController
   allow_unauthenticated_access
   before_action :set_user_by_token, only: %i[ edit update ]
+  rate_limit to: 3, within: 5.minutes, only: [:create], with: -> {
+    redirect_to new_password_path, alert: "잠시 후 다시 시도해주세요."
+  }
 
   def new
   end

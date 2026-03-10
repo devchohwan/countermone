@@ -1,6 +1,9 @@
 class UsersController < ApplicationController
   allow_unauthenticated_access only: %i[new create]
   before_action :require_admin, only: %i[approvals approve reject]
+  rate_limit to: 3, within: 10.minutes, only: [:create], with: -> {
+    redirect_to signup_path, alert: "잠시 후 다시 시도해주세요."
+  }
 
   def new
     @user = User.new

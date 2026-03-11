@@ -77,17 +77,11 @@ class StudentsController < ApplicationController
   end
 
   def leave
-    @student.enrollments.where(status: "active").each(&:leave!)
-    redirect_to @student, notice: "휴원 처리되었습니다."
+    redirect_to @student, alert: "과목별 휴원은 각 클래스 카드에서 처리해주세요."
   end
 
   def return
-    if params[:new_attendance_code].present?
-      @student.update!(attendance_code: params[:new_attendance_code])
-    end
     redirect_to @student
-  rescue ActiveRecord::RecordInvalid => e
-    redirect_to @student, alert: e.message
   end
 
   def dropout

@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct makeup_slots]
+  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct makeup_slots cancel_pass]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today

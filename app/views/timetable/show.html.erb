@@ -20,8 +20,12 @@
 
 <%# 시간표 테이블 %>
 <style>
-  .timetable-table tbody tr { border-bottom: 1px solid #aaa; }
-  .timetable-table thead tr { border-bottom: 2px solid #666; }
+  .timetable-table tbody tr { border-bottom: 1px solid rgba(0,0,0,0.2); }
+  .timetable-table thead tr { border-bottom: 2px solid rgba(0,0,0,0.4); }
+  @media (prefers-color-scheme: dark) {
+    .timetable-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.2); }
+    .timetable-table thead tr { border-bottom: 2px solid rgba(255,255,255,0.4); }
+  }
 </style>
 <div class="card bg-base-100 shadow-sm overflow-x-auto">
   <table class="table table-sm w-full timetable-table">

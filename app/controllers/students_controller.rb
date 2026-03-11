@@ -82,24 +82,25 @@ class StudentsController < ApplicationController
   end
 
   def return
-    ActiveRecord::Base.transaction do
-      if params[:new_attendance_code].present?
-        @student.attendance_code = params[:new_attendance_code]
-        @student.save!
-      end
-      
-      @student.enrollments.where(status: "leave").each do |e|
-        if e.returnable?
-          e.return!
-        else
-          raise ActiveRecord::Rollback, "완납 이후에만 복귀 처리가 가능합니다."
-        end
+    if params[:new_attendance_code].present?
+      @student.update!(attendance_code: params[:new_attendance_code])
+    end
+
+    failed = []
+    @student.enrollments.where(status: "leave").each do |e|
+      if e.returnable?
+        e.return!
+      else
+        failed << e.subject
       end
     end
-    redirect_to @student, notice: "복귀 처리되었습니다."
+
+    if failed.any?
+      redirect_to @student, alert: "#{failed.join(', ')} — 완납 이후에만 복귀 처리가 가능합니다."
+    else
+      redirect_to @student, notice: "복귀 처리되었습니다."
+    end
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to @student, alert: e.message
-  rescue ActiveRecord::Rollback => e
     redirect_to @student, alert: e.message
   end
 

@@ -59,7 +59,7 @@ class Enrollment < ApplicationRecord
   end
 
   def returnable?
-    payments.where(fully_paid: true).exists?
+    remaining_on_leave == 0 || payments.where(fully_paid: true).exists?
   end
 
   private

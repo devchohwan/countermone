@@ -33,7 +33,6 @@ class Enrollment < ApplicationRecord
   end
 
   def dropout!
-    schedules.where(status: "scheduled").where("lesson_date > ?", Date.today).destroy_all
     update_columns(status: "dropout")
     student.update_columns(status: "dropout") if student.enrollments.where(status: %w[active leave]).none?
   end

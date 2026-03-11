@@ -15,6 +15,8 @@
         <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
         <% if enrollment.status == "active" %>
           <%= button_to "휴원", leave_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-warning btn-outline", data: { turbo_confirm: "휴원 처리하시겠습니까?" } %>
+        <% elsif enrollment.status == "leave" %>
+          <button type="button" onclick="document.getElementById('return-dialog-<%= enrollment.id %>').showModal()" class="btn btn-xs btn-success btn-outline">복귀</button>
         <% end %>
       </div>
     </div>

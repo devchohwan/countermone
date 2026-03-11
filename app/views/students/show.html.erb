@@ -7,15 +7,6 @@
   <%= status_badge(@student.status) %>
   <div class="ml-auto flex gap-2">
     <%= link_to "수정", edit_student_path(@student), class: "btn btn-sm btn-ghost" %>
-    <% if @student.status == "active" %>
-      <%= button_to "휴원", leave_student_path(@student), method: :patch, class: "btn btn-sm btn-warning", data: { turbo_confirm: "휴원 처리하시겠습니까?" } %>
-    <% elsif @student.status == "leave" %>
-      <% @student.enrollments.where(status: "leave").each do |e| %>
-        <button type="button" onclick="document.getElementById('return-dialog-<%= e.id %>').showModal()" class="btn btn-sm btn-success">
-          복귀<% if @student.enrollments.where(status: "leave").count > 1 %> (<%= e.subject %>)<% end %>
-        </button>
-      <% end %>
-    <% end %>
     <button onclick="document.getElementById('delete-confirm-modal').showModal()" class="btn btn-sm btn-ghost text-error">삭제</button>
 
     <dialog id="delete-confirm-modal" class="modal">

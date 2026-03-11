@@ -20,21 +20,21 @@ class Enrollment < ApplicationRecord
 
   def leave!
     future = schedules.where(status: "scheduled").where("lesson_date > ?", Date.today)
-    update!(remaining_on_leave: future.count)
+    update_columns(remaining_on_leave: future.count)
     future.destroy_all
-    update!(status: "leave", leave_at: Date.today)
-    student.update!(status: "leave") if student.enrollments.where(status: "active").none?
+    update_columns(status: "leave", leave_at: Date.today)
+    student.update_columns(status: "leave") if student.enrollments.where(status: "active").none?
   end
 
   def return!
-    update!(status: "active", leave_at: nil, return_at: nil, remaining_on_leave: 0)
-    student.update!(status: "active")
+    update_columns(status: "active", leave_at: nil, return_at: nil, remaining_on_leave: 0)
+    student.update_columns(status: "active")
   end
 
   def dropout!
     schedules.where(status: "scheduled").where("lesson_date > ?", Date.today).destroy_all
-    update!(status: "dropout")
-    student.update!(status: "dropout") if student.enrollments.where(status: %w[active leave]).none?
+    update_columns(status: "dropout")
+    student.update_columns(status: "dropout") if student.enrollments.where(status: %w[active leave]).none?
   end
 
   def returnable?

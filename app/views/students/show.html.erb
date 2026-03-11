@@ -74,9 +74,28 @@
       <h3 class="card-title text-sm">할인 / 기타</h3>
       <table class="table table-xs">
         <tbody>
-          <% if @student.referrers.any? %>
-            <tr><td class="text-base-content/50">추천인</td><td><%= @student.referrers.map { |r| link_to r.name, student_path(r), class: "link link-hover" }.join(', ').html_safe %></td></tr>
-          <% end %>
+          <tr>
+            <td class="text-base-content/50">추천인</td>
+            <td>
+              <% if @student.referrers.any? %>
+                <%= @student.referrers.map { |r| link_to r.name, student_path(r), class: "link link-hover" }.join(', ').html_safe %>
+              <% else %>
+                <span class="text-base-content/30">-</span>
+              <% end %>
+            </td>
+          </tr>
+          <% referral_discount = Discount.joins(:payment).where(payments: { student_id: @student.id }, discount_type: 'referral').order(:created_at).last %>
+          <tr>
+            <td class="text-base-content/50">추천인 할인</td>
+            <td>
+              <% if referral_discount %>
+                <span class="text-success">-<%= number_with_delimiter(referral_discount.amount) %>원</span>
+                <span class="text-xs text-base-content/40 ml-1">(<%= referral_discount.created_at.strftime('%Y-%m-%d') %>)</span>
+              <% else %>
+                <span class="text-base-content/30">-</span>
+              <% end %>
+            </td>
+          </tr>
           <tr><td class="text-base-content/50">동의서</td><td><%= @student.consent_form? ? "✓" : %(<span class="badge badge-xs badge-warning">미수령</span>).html_safe %></td></tr>
           <tr><td class="text-base-content/50">2차전직서</td><td><%= @student.second_transfer_form? ? "✓" : "-" %></td></tr>
           <tr><td class="text-base-content/50">후기 할인</td><td><%= @student.review_discount_applied? ? "적용" : "-" %></td></tr>

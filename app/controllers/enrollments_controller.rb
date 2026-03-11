@@ -52,11 +52,12 @@ class EnrollmentsController < ApplicationController
   end
 
   def return
+    return_date = params[:return_date].present? ? Date.parse(params[:return_date]) : Date.today
     if @enrollment.returnable?
-      @enrollment.return!
-      redirect_to enrollment_path(@enrollment), notice: "클래스 복귀 처리되었습니다."
+      @enrollment.return!(return_date)
+      redirect_to student_path(@enrollment.student), notice: "#{@enrollment.subject} 복귀 처리되었습니다. (#{return_date.strftime('%m/%d')}부터)"
     else
-      redirect_to enrollment_path(@enrollment), alert: "완납 이후에만 복귀 처리가 가능합니다."
+      redirect_to student_path(@enrollment.student), alert: "결제 내역이 없어 복귀할 수 없습니다."
     end
   end
 

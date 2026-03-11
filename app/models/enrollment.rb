@@ -19,36 +19,16 @@ class Enrollment < ApplicationRecord
   validate :lesson_time_within_business_hours
 
   def leave!
-    future = schedules.where(status: "scheduled").where("lesson_date > ?", Date.today)
-    update_columns(remaining_on_leave: future.count)
-    future.destroy_all
     update_columns(status: "leave", leave_at: Date.today)
     student.update_columns(status: "leave") if student.enrollments.where(status: "active").none?
   end
 
-  def return!
-    count = remaining_on_leave
-    if count > 0
-      payment = payments.order(:created_at).last
-      if payment
-        start_date = Date.today
-        max_seq    = payment.schedules.maximum(:sequence) || 0
-        count.times.each_with_index do |_, i|
-          lesson_date = next_lesson_date(start_date, lesson_day, i)
-          payment.schedules.create!(
-            student:     student,
-            enrollment:  self,
-            teacher:     teacher,
-            lesson_date: lesson_date,
-            lesson_time: lesson_time,
-            subject:     subject,
-            status:      "scheduled",
-            sequence:    max_seq + i + 1
-          )
-        end
-      end
+  def return!(return_date = Date.today)
+    frozen = schedules.where(status: "scheduled").order(:lesson_date).to_a
+    frozen.each_with_index do |schedule, i|
+      schedule.update_columns(lesson_date: next_lesson_date(return_date, lesson_day, i))
     end
-    update_columns(status: "active", leave_at: nil, return_at: nil, remaining_on_leave: 0)
+    update_columns(status: "active", leave_at: nil, return_at: return_date)
     student.update_columns(status: "active")
   end
 
@@ -59,7 +39,11 @@ class Enrollment < ApplicationRecord
   end
 
   def returnable?
-    remaining_on_leave == 0 || payments.where(fully_paid: true).exists?
+    payments.exists?
+  end
+
+  def frozen_scheduled_count
+    schedules.where(status: "scheduled").count
   end
 
   private

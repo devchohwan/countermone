@@ -85,21 +85,7 @@ class StudentsController < ApplicationController
     if params[:new_attendance_code].present?
       @student.update!(attendance_code: params[:new_attendance_code])
     end
-
-    failed = []
-    @student.enrollments.where(status: "leave").each do |e|
-      if e.returnable?
-        e.return!
-      else
-        failed << e.subject
-      end
-    end
-
-    if failed.any?
-      redirect_to @student, alert: "#{failed.join(', ')} — 완납 이후에만 복귀 처리가 가능합니다."
-    else
-      redirect_to @student, notice: "복귀 처리되었습니다."
-    end
+    redirect_to @student
   rescue ActiveRecord::RecordInvalid => e
     redirect_to @student, alert: e.message
   end

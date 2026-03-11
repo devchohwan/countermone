@@ -14,9 +14,9 @@
       <div class="ml-auto flex gap-2">
         <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
         <% if enrollment.status == "active" %>
-          <%= button_to "휴원", leave_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-warning btn-outline" %>
+          <%= button_to "휴원", leave_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-warning btn-outline", data: { turbo_confirm: "휴원 처리하시겠습니까?" } %>
         <% elsif enrollment.status == "leave" %>
-          <%= button_to "복귀", return_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-success btn-outline" %>
+          <button type="button" onclick="document.getElementById('return-dialog-<%= enrollment.id %>').showModal()" class="btn btn-xs btn-success btn-outline">복귀</button>
         <% end %>
       </div>
     </div>
@@ -187,10 +187,11 @@
                      when "scheduled" then "scheduled"
                      else "other"
                      end %>
-                  <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline cursor-pointer hover:badge-primary"
+                  <% frozen_style = (enrollment.status == "leave" && s.status == "scheduled") ? "opacity-40 grayscale cursor-not-allowed" : "cursor-pointer hover:badge-primary" %>
+                  <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline <%= frozen_style %>"
                        data-filter="<%= filter_key %>"
-                       title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %>"
-                       onclick="openScheduleAction('<%= s.id %>', '<%= s.lesson_date.strftime('%m/%d') %>', '<%= s.status %>', '<%= s.lesson_date.to_s %>', '<%= enrollment.subject %>', '<%= s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M') %>', '<%= s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M') %>')">
+                       title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %><%= enrollment.status == 'leave' && s.status == 'scheduled' ? ' (휴원 중 동결)' : '' %>"
+                       onclick="<%= enrollment.status == 'leave' && s.status == 'scheduled' ? '' : "openScheduleAction('#{s.id}', '#{s.lesson_date.strftime('%m/%d')}', '#{s.status}', '#{s.lesson_date.to_s}', '#{enrollment.subject}', '#{s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', '#{s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M')}')" %>">
                     <%= s.lesson_date.strftime("%-m/%-d") %>
                     <span class="<%= case s.status
                       when 'attended', 'makeup_done' then 'text-success'
@@ -210,6 +211,39 @@
     </div>
   </div>
 </div>
+
+<%# 복귀 날짜 선택 dialog %>
+<% if enrollment.status == "leave" %>
+<dialog id="return-dialog-<%= enrollment.id %>" class="modal">
+  <div class="modal-box max-w-sm">
+    <h3 class="font-bold text-base mb-1">복귀 날짜 선택</h3>
+    <p class="text-sm text-base-content/60 mb-4">
+      <%= enrollment.subject %> — 동결된 수업 <%= enrollment.frozen_scheduled_count %>회
+    </p>
+
+    <%= form_with url: return_enrollment_path(enrollment), method: :patch, data: { turbo: false } do |f| %>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">복귀 시작일</label>
+          <input type="date" name="return_date" id="return-date-<%= enrollment.id %>"
+                 min="<%= Date.today %>" value="<%= Date.today %>"
+                 class="input input-bordered w-full text-sm"
+                 onchange="fetchReturnSlot(<%= enrollment.id %>, '<%= enrollment.teacher_id %>', '<%= enrollment.subject %>', '<%= enrollment.lesson_day %>', '<%= enrollment.lesson_time.utc.strftime('%H:%M') %>', this.value)">
+        </div>
+
+        <div id="return-slot-info-<%= enrollment.id %>" class="text-sm text-base-content/60 bg-base-200 rounded-lg px-3 py-2 hidden">
+        </div>
+
+        <div class="flex gap-2 justify-end">
+          <button type="button" onclick="document.getElementById('return-dialog-<%= enrollment.id %>').close()" class="btn btn-sm btn-ghost">취소</button>
+          <%= f.submit "복귀 확정", class: "btn btn-sm btn-success" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+<% end %>
 
 <%# 수업 처리 모달 (DaisyUI modal) — 보강 시 시간표 표시를 위해 max-w-2xl %>
 <dialog id="schedule-modal-<%= enrollment.id %>" class="modal">
@@ -626,4 +660,38 @@
     form.submit();
   };
 })();
+
+  // 복귀 날짜 선택 시 슬롯 정보 조회
+  window.fetchReturnSlot = function(enrollmentId, teacherId, subject, lessonDay, lessonTime, selectedDate) {
+    const infoEl = document.getElementById('return-slot-info-' + enrollmentId);
+    if (!infoEl || !selectedDate) return;
+
+    // 선택 날짜가 해당 요일인지 확인
+    const dayMap = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
+    const selected = new Date(selectedDate);
+    const targetDay = dayMap[lessonDay];
+
+    if (selected.getDay() !== targetDay) {
+      const dayKo = { monday:'월', tuesday:'화', wednesday:'수', thursday:'목', friday:'금', saturday:'토', sunday:'일' };
+      infoEl.innerHTML = `<span class="text-warning">⚠ 선택한 날짜가 수업 요일(${dayKo[lessonDay]}요일)이 아닙니다. 첫 수업은 이후 첫 ${dayKo[lessonDay]}요일부터 시작됩니다.</span>`;
+      infoEl.classList.remove('hidden');
+      return;
+    }
+
+    fetch(`/slots/check?teacher_id=${teacherId}&subject=${encodeURIComponent(subject)}&lesson_day=${lessonDay}&lesson_time=${encodeURIComponent(lessonTime)}`)
+      .then(r => r.json())
+      .then(data => {
+        const count = data.date_slots?.[selectedDate] ?? 0;
+        const max   = data.max ?? 3;
+        const enroll = typeof data.enrollment_count === 'number' ? data.enrollment_count : 0;
+        const available = max - count;
+        if (available <= 0) {
+          infoEl.innerHTML = `<span class="text-error">⚠ ${selectedDate} 해당 타임 만석 (${count}/${max}명) — 다른 날짜를 선택하세요.</span>`;
+        } else {
+          infoEl.innerHTML = `<span class="text-success">✓ ${selectedDate} 자리 있음 (현재 ${count}/${max}명)</span>`;
+        }
+        infoEl.classList.remove('hidden');
+      })
+      .catch(() => { infoEl.classList.add('hidden'); });
+  };
 </script>

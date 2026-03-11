@@ -15,9 +15,11 @@ class AttendanceCheckJob < ApplicationJob
 
     today_schedules = Schedule
       .includes(:student, :attendance, :enrollment)
+      .joins(:enrollment)
       .where(lesson_date: Date.today)
       .where("EXTRACT(HOUR FROM lesson_time) = ?", hour)
       .where(status: %w[scheduled attended makeup_scheduled])
+      .where(enrollments: { status: "active" })
 
     today_schedules.each do |schedule|
       if check_type.to_s == "checkin"

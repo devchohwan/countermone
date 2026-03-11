@@ -9,7 +9,6 @@
     <%= link_to "수정", edit_student_path(@student), class: "btn btn-sm btn-ghost" %>
     <% if @student.status == "active" %>
       <%= button_to "휴원", leave_student_path(@student), method: :patch, class: "btn btn-sm btn-warning", data: { turbo_confirm: "휴원 처리하시겠습니까?" } %>
-      <%= button_to "퇴원", dropout_student_path(@student), method: :patch, class: "btn btn-sm btn-error btn-outline", data: { turbo_confirm: "퇴원 처리하시겠습니까?" } %>
     <% elsif @student.status == "leave" %>
       <%= button_to "복귀", return_student_path(@student), method: :patch, class: "btn btn-sm btn-success",
             id: "return-btn", form: { onsubmit: "return handleReturn(event, #{@student.id}, '#{@student.attendance_code}')" } %>

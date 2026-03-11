@@ -628,17 +628,24 @@
     document.getElementById('slot-picker-dialog').showModal();
 
     fetch(`/slot_check?teacher_id=${teacherId}&subject=${encodeURIComponent(subject)}&lesson_day=${lessonDay}&lesson_time=${encodeURIComponent(lessonTime)}`)
-      .then(r => r.json())
-      .then(data => renderSlotPicker(data, lessonDay))
-      .catch(() => {
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        console.log('[slot_check]', data);
+        renderSlotPicker(data, lessonDay);
+      })
+      .catch(err => {
+        console.error('[slot_check] 실패', err);
         document.getElementById('slot-picker-body').innerHTML =
-          '<p class="text-xs text-error py-4 text-center">불러오기 실패</p>';
+          '<p class="text-xs text-error py-4 text-center">불러오기 실패: ' + err.message + '</p>';
       });
   }
 
   function renderSlotPicker(data, lessonDay) {
     const body     = document.getElementById('slot-picker-body');
-    const count    = data.enrollment_count;
+    const count    = typeof data.enrollment_count === 'number' ? data.enrollment_count : 0;
     const max      = data.max;
     const dayLabel = SLOT_DAY_KO[lessonDay];
 

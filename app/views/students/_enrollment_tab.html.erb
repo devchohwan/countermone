@@ -125,19 +125,24 @@
         <div class="flex items-center justify-between mb-2">
           <h4 class="text-sm font-semibold">수업 이력
             <%
-              total_weeks = student.total_attended_weeks_for(enrollment)
-              months_part = total_weeks / 4
-              weeks_part  = total_weeks % 4
-              period_str  = if months_part > 0 && weeks_part > 0
-                              "#{months_part}개월 #{weeks_part}주"
-                            elsif months_part > 0
-                              "#{months_part}개월"
-                            elsif total_weeks > 0
-                              "#{weeks_part}주"
-                            end
+              fmt_w = ->(w) {
+                m = w / 4; wk = w % 4
+                [m > 0 ? "#{m}개월" : nil, wk > 0 ? "#{wk}주" : nil].compact.join(' ')
+              }
+              teacher_week_pairs = enrollment.schedules
+                                             .where(status: %w[attended makeup_done deducted])
+                                             .group(:teacher_id).count
+              total_weeks = teacher_week_pairs.values.sum
+              period_str = if teacher_week_pairs.size > 1
+                teachers_map = Teacher.where(id: teacher_week_pairs.keys).index_by(&:id)
+                per = teacher_week_pairs.map { |tid, w| "#{teachers_map[tid]&.name} #{fmt_w.(w)}" }.join(' / ')
+                "#{per} · 도합 #{fmt_w.(total_weeks)}"
+              elsif total_weeks > 0
+                "재원 #{fmt_w.(total_weeks)}"
+              end
             %>
             <% if period_str %>
-              <span class="text-xs font-normal text-base-content/40 ml-1">(재원 <%= period_str %>)</span>
+              <span class="text-xs font-normal text-base-content/40 ml-1">(<%= period_str %>)</span>
             <% end %>
           </h4>
           <%# 필터 버튼 %>
@@ -260,9 +265,19 @@
           </div>
         </div>
 
+        <%# 선생님 선택 %>
+        <div>
+          <label class="text-xs font-medium text-base-content/60 mb-1 block">선생님</label>
+          <select id="return-teacher-<%= enrollment.id %>" name="teacher_id" class="select select-sm select-bordered w-full">
+            <% Teacher.joins(:teacher_subjects).where(teacher_subjects: { subject: enrollment.subject }).by_position.each do |t| %>
+              <option value="<%= t.id %>" <%= enrollment.teacher_id == t.id ? 'selected' : '' %>><%= t.name %></option>
+            <% end %>
+          </select>
+        </div>
+
         <%# 날짜 조회 버튼 %>
         <button type="button"
-                onclick="fetchReturnSlots('<%= enrollment.id %>', '<%= enrollment.teacher_id %>', '<%= enrollment.subject %>')"
+                onclick="fetchReturnSlots('<%= enrollment.id %>', '<%= enrollment.subject %>')"
                 class="btn btn-sm btn-outline w-full">
           날짜 조회
         </button>
@@ -733,11 +748,12 @@
     if (selectedEl) { selectedEl.textContent = ''; selectedEl.classList.add('hidden'); }
   };
 
-  window.fetchReturnSlots = function(eid, teacherId, subject) {
-    const day  = document.getElementById('return-day-'  + eid)?.value;
-    const time = document.getElementById('return-time-' + eid)?.value;
-    const body = document.getElementById('return-slot-body-' + eid);
-    if (!day || !time || !body) return;
+  window.fetchReturnSlots = function(eid, subject) {
+    const day       = document.getElementById('return-day-'     + eid)?.value;
+    const time      = document.getElementById('return-time-'    + eid)?.value;
+    const teacherId = document.getElementById('return-teacher-' + eid)?.value;
+    const body      = document.getElementById('return-slot-body-' + eid);
+    if (!day || !time || !teacherId || !body) return;
 
     document.getElementById('return-day-val-'  + eid).value = day;
     document.getElementById('return-time-val-' + eid).value = time;

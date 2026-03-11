@@ -52,15 +52,19 @@ class EnrollmentsController < ApplicationController
   end
 
   def return
-    return_date  = params[:return_date].present? ? Date.parse(params[:return_date]) : Date.today
-    new_day      = params[:lesson_day].presence  || @enrollment.lesson_day
-    new_time_str = params[:lesson_time].presence
+    return_date    = params[:return_date].present? ? Date.parse(params[:return_date]) : Date.today
+    new_day        = params[:lesson_day].presence   || @enrollment.lesson_day
+    new_time_str   = params[:lesson_time].presence
+    new_teacher_id = params[:teacher_id].present? ? params[:teacher_id].to_i : @enrollment.teacher_id
 
     if @enrollment.returnable?
-      # 요일/시간이 변경된 경우 return! 전에 먼저 업데이트
-      if new_day != @enrollment.lesson_day || (new_time_str && new_time_str != @enrollment.lesson_time.strftime('%H:%M'))
+      # 요일/시간/선생님이 변경된 경우 return! 전에 먼저 업데이트
+      changed = new_day != @enrollment.lesson_day ||
+                new_teacher_id != @enrollment.teacher_id ||
+                (new_time_str && new_time_str != @enrollment.lesson_time.strftime('%H:%M'))
+      if changed
         time_val = new_time_str.present? ? Time.zone.parse(new_time_str) : @enrollment.lesson_time
-        @enrollment.update_columns(lesson_day: new_day, lesson_time: time_val)
+        @enrollment.update_columns(lesson_day: new_day, lesson_time: time_val, teacher_id: new_teacher_id)
       end
       @enrollment.return!(return_date)
       redirect_to student_path(@enrollment.student), notice: "#{@enrollment.subject} 복귀 처리되었습니다. (#{return_date.strftime('%m/%d')}부터)"

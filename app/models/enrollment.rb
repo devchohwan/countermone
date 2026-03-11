@@ -32,7 +32,7 @@ class Enrollment < ApplicationRecord
         teacher_id:  teacher_id
       )
     end
-    update_columns(status: "active", leave_at: nil, return_at: return_date)
+    update_columns(status: "active", return_at: return_date)
     student.update_columns(status: "active")
   end
 

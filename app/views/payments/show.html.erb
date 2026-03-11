@@ -23,6 +23,7 @@
         <th>횟수</th>
         <th>금액</th>
         <th>수단</th>
+        <th>결제일</th>
         <th>예약금</th>
         <th>예약금 납부일</th>
         <th>잔금</th>
@@ -40,8 +41,17 @@
         <td><%= @payment.total_lessons %>회</td>
         <td class="font-medium"><%= format_amount(@payment.amount) %></td>
         <td><%= @payment.payment_method %></td>
-        <td><%= @payment.deposit_amount > 0 ? format_amount(@payment.deposit_amount) : "" %></td>
-        <td><%= @payment.deposit_paid_at&.strftime("%Y.%m.%d") %></td>
+        <td>
+          <% unless @payment.payment_type == "deposit" %>
+            <%= @payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
+          <% end %>
+        </td>
+        <td><%= @payment.payment_type == "deposit" && @payment.deposit_amount > 0 ? format_amount(@payment.deposit_amount) : "" %></td>
+        <td>
+          <% if @payment.payment_type == "deposit" %>
+            <%= @payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
+          <% end %>
+        </td>
         <td>
           <% if @payment.payment_type == "deposit" && @payment.balance_amount > 0 %>
             <%= format_amount(@payment.balance_amount) %>
@@ -70,23 +80,6 @@
       </tr>
     </tbody>
   </table>
-</div>
-
-<!-- 액션 버튼 -->
-<div class="flex gap-2 mb-6">
-  <% unless @payment.fully_paid? %>
-    <%= button_to "잔금 납부 처리", pay_balance_payment_path(@payment), method: :patch,
-          class: "btn btn-sm btn-success",
-          form: { onsubmit: "return confirm('잔금 납부 완료 처리하시겠습니까?')" } %>
-  <% end %>
-  <% unless @payment.refunded? %>
-    <%= form_with url: refund_payment_path(@payment), method: :post, class: "flex items-center gap-2" do |f| %>
-      <%= f.number_field :refund_amount, value: @payment.refund_amount_calculated, class: "input input-bordered input-sm w-28" %>
-      <%= f.text_field :refund_reason, placeholder: "환불 사유", class: "input input-bordered input-sm flex-1" %>
-      <%= f.submit "환불 처리", class: "btn btn-sm btn-error btn-outline cursor-pointer",
-            data: { onsubmit: "return confirm('환불 처리하시겠습니까?')" } %>
-    <% end %>
-  <% end %>
 </div>
 
 <!-- 수업 날짜 리스트 -->

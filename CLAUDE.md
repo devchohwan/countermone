@@ -5,7 +5,7 @@
 * **작업/단계 완료 시 계획 문서에 완료 표시** — TaskUpdate로 completed 처리
 * **모든 작업이 완료될 때까지 멈추지 마라** — 중간에 사용자 확인 없이 끝까지 진행
 * **any / unknown 타입 사용 금지** — Ruby에서는 untyped 변수나 Object 남용 금지
-* **기능 완성 후 반드시 작동 검사** — curl/rails runner로 실제 동작 확인, 단순 페이지 연결이 아닌 의도대로 완벽히 작동하는지 검증
+* **기능 완성 후 반드시 작동 검사** — curl/rails runner로 실제 동작 확인, 단순 페이지 연결이 아닌 의도대로 완벽히 작동하는지 검증. 테스트 데이터가 없으면 rails runner로 직접 생성한 뒤 검증하고, 검증 후 테스트 데이터는 삭제한다
 
 ## Version Control
 * Whenever code changes are made, you must record a one-line description with emoji in korean of the change in `.commit_message.txt` with Edit Tool.

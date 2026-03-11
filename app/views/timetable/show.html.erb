@@ -19,10 +19,14 @@
 </div>
 
 <%# 시간표 테이블 %>
+<style>
+  .timetable-table tbody tr { border-bottom: 1px solid oklch(var(--b3)); }
+  .timetable-table thead tr { border-bottom: 2px solid oklch(var(--bc) / 0.3); }
+</style>
 <div class="card bg-base-100 shadow-sm overflow-x-auto">
-  <table class="table table-sm w-full">
+  <table class="table table-sm w-full timetable-table">
     <thead>
-      <tr class="border-b-2 border-base-content/20">
+      <tr>
         <th class="w-16">시간</th>
         <% @week_days.each do |d| %>
           <th class="text-center min-w-[130px] <%= d == Date.today ? 'bg-primary/10' : '' %>">
@@ -42,8 +46,8 @@
              m = @schedule_data[:makeups].select  { |s| s.makeup_date == wd && s.makeup_time&.hour == hour }
              (r + m).count { |s| s.student.has_car? }
            end %>
-        <tr class="border-b border-base-300 <%= is_break ? 'opacity-40' : 'hover' %>">
-          <td class="font-mono text-xs text-base-content/50 text-center py-3 px-2">
+        <tr class="<%= is_break ? 'opacity-40' : 'hover' %>">
+          <td class="font-mono text-xs text-base-content/50 text-center py-3">
             <%= sprintf("%02d:00", hour) %>
             <% if is_break %>
               <div class="text-xs">브레이크</div>
@@ -57,7 +61,7 @@
             <% makeups = @schedule_data[:makeups].select { |s| s.makeup_date == d && s.makeup_time&.hour == hour } %>
             <% slot_total = regular.count + makeups.count %>
             <% is_full = slot_total >= 3 %>
-            <td class="align-top py-3 px-2 text-center
+            <td class="align-top py-3 text-center
               <%= d == Date.today ? 'bg-primary/5' : '' %>
               <%= is_break && !is_breaktime_open ? 'bg-base-200' : '' %>
               <%= is_full && !(is_break && !is_breaktime_open) ? 'bg-success/15' : '' %>">

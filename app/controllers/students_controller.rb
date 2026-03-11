@@ -31,7 +31,8 @@ class StudentsController < ApplicationController
     @student.first_enrolled_at ||= Date.today
     @student.waiting_expires_at = Date.today + 14.days if @student.status == "pending"
 
-    @student.referral_discount_pending = true if Array(params[:referrer_ids]).reject(&:blank?).any?
+    referrer_count = Array(params[:referrer_ids]).reject(&:blank?).size
+    @student.referral_discount_pending = referrer_count if referrer_count > 0
 
     ActiveRecord::Base.transaction do
       @student.enrollments.each do |enrollment|
@@ -169,7 +170,7 @@ class StudentsController < ApplicationController
     # (notify_referrer_if_applicable은 save 시점에 referrers가 비어있어 여기서 처리)
     if ids.any? && student.payments.where(fully_paid: true).exists?
       Student.where(id: ids).where.not(id: student.id).each do |referrer|
-        referrer.update!(referral_discount_pending: true)
+        referrer.increment!(:referral_discount_pending)
       end
     end
   end

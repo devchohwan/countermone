@@ -548,7 +548,7 @@
     let grandTotal = 0;
     let classCount = 0;
 
-    const hasReferrer = document.querySelectorAll('input[name="referrer_ids[]"]').length > 0;
+    const referrerCount = document.querySelectorAll('input[name="referrer_ids[]"]').length;
 
     sections.forEach((section, idx) => {
       const subject    = section.querySelector('[data-role="subject"]')?.value || '';
@@ -564,7 +564,7 @@
       const multiPrice     = window.pricePlans[`${subject}_${months}`] || 0;
       const multiMonthDisc = (months > 1 && singlePrice && multiPrice) ? (singlePrice * months - multiPrice) : 0;
       const multiClassDisc = (idx > 0) ? 50000 : 0;
-      const referralDisc   = (idx === 0 && hasReferrer) ? 50000 : 0;
+      const referralDisc   = (idx === 0) ? referrerCount * 50000 : 0;
       const balance        = payType === 'deposit' ? Math.max(0, amount - depositAmt) : 0;
 
       rows += `<tr class="border-t border-base-200">

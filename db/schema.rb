@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_11_073327) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_11_084754) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -296,7 +296,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_11_073327) do
     t.text "real_leave_reason"
     t.date "contact_due"
     t.boolean "refund_leave", default: false
-    t.boolean "referral_discount_pending", default: false
     t.boolean "review_discount_applied", default: false
     t.string "review_url"
     t.date "review_due"
@@ -307,6 +306,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_11_073327) do
     t.text "memo"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "referral_discount_pending", default: 0, null: false
   end
 
   create_table "teacher_subjects", force: :cascade do |t|

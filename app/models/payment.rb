@@ -95,9 +95,10 @@ class Payment < ApplicationRecord
   end
 
   def apply_referral_discount_if_pending
-    return unless student.referral_discount_pending?
-    discounts.create!(discount_type: "referral", amount: 50_000, memo: "지인 할인 자동 적용")
-    student.update!(referral_discount_pending: false)
+    count = student.referral_discount_pending
+    return unless count > 0
+    discounts.create!(discount_type: "referral", amount: 50_000 * count, memo: "지인 할인 자동 적용 (#{count}명)")
+    student.update!(referral_discount_pending: 0)
   end
 
   def trigger_return_if_fully_paid
@@ -113,12 +114,12 @@ class Payment < ApplicationRecord
     student.update_column(:waiting_expires_at, nil) if student.waiting_expires_at.present?
   end
 
-  # 피추천인의 첫 결제 완납 시 모든 추천인 referral_discount_pending → true
+  # 피추천인의 첫 결제 완납 시 모든 추천인 referral_discount_pending +1
   def notify_referrer_if_applicable
     return unless fully_paid?
     return unless enrollment.payments.where(fully_paid: true).count == 1
     student.referrers.each do |referrer|
-      referrer.update!(referral_discount_pending: true)
+      referrer.increment!(:referral_discount_pending)
     end
   end
 

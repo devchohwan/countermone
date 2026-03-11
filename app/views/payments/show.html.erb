@@ -91,9 +91,8 @@
     </tbody>
     <tfoot>
       <tr class="border-t-2 border-base-300 font-semibold text-sm">
-        <td colspan="6" class="pt-2 text-base-content/50 text-right pr-3">실수령 합계</td>
-        <td class="pt-2"><%= format_amount(@payments.reject(&:refunded?).sum(&:amount)) %></td>
-        <td colspan="8"></td>
+        <td colspan="14" class="pt-2 text-right pr-3 text-base-content/50">실수령 합계</td>
+        <td class="pt-2 text-right"><%= format_amount(@payments.reject(&:refunded?).sum(&:amount)) %></td>
       </tr>
     </tfoot>
   </table>

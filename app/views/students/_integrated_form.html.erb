@@ -272,6 +272,8 @@
     <button type="button" id="add-enrollment-btn" class="btn btn-sm btn-outline btn-primary">+ 과목 추가</button>
   <% end %>
 
+  <%= render "students/referrer_selector", student: student, existing_referrers: student.referrers %>
+
   <div class="bg-base-100 rounded-lg shadow-sm p-4 space-y-4">
     <h3 class="font-semibold text-sm">상담 정보</h3>
     <div class="space-y-3">
@@ -297,7 +299,14 @@
     </div>
   <% end %>
 
-  <%= render "students/referrer_selector", student: student, existing_referrers: student.referrers %>
+  <% if student.new_record? %>
+    <div class="bg-base-100 rounded-lg border shadow-sm p-4" id="receipt-preview">
+      <h3 class="font-semibold text-sm mb-3">전체 영수증 <span class="text-xs text-base-content/40 font-normal">미리보기</span></h3>
+      <div id="receipt-body">
+        <p class="text-xs text-base-content/40">클래스 정보를 입력하면 자동으로 표시됩니다.</p>
+      </div>
+    </div>
+  <% end %>
 
   <div class="flex gap-3">
     <%= f.submit student.new_record? ? "등록" : "저장", class: "btn btn-primary btn-sm" %>
@@ -501,5 +510,73 @@
   <%# ── 기존 섹션 초기화 ── %>
   document.querySelectorAll('#enrollments-container .enrollment-section').forEach(initEnrollmentSection);
   updateRemoveButtons();
+
+  <%# ── 전체 영수증 미리보기 ── %>
+  function formatWon(n) { return Number(n).toLocaleString('ko-KR') + '원'; }
+
+  function updateReceipt() {
+    const receiptBody = document.getElementById('receipt-body');
+    if (!receiptBody) return;
+    const sections = document.querySelectorAll('#enrollments-container .enrollment-section');
+    if (!sections.length) return;
+
+    let rows = '';
+    let grandTotal = 0;
+    let classCount = 0;
+
+    sections.forEach((section, idx) => {
+      const subject    = section.querySelector('[data-role="subject"]')?.value || '';
+      const months     = parseInt(section.querySelector('[data-role="months"]')?.value) || 1;
+      const amount     = parseInt(section.querySelector('[data-role="amount"]')?.value) || 0;
+      const payType    = section.querySelector('[data-role="payment-type"]')?.value || 'new';
+      const depositAmt = parseInt(section.querySelector('[data-role="deposit-amount"]')?.value) || 0;
+      const lessons    = section.querySelector('[data-role="lessons"]')?.value || '';
+      if (!subject || !amount) return;
+
+      classCount++;
+      const singlePrice   = window.pricePlans[`${subject}_1`] || 0;
+      const multiPrice    = window.pricePlans[`${subject}_${months}`] || 0;
+      const multiMonthDisc = (months > 1 && singlePrice && multiPrice) ? (singlePrice * months - multiPrice) : 0;
+      const multiClassDisc = (idx > 0) ? 50000 : 0;
+      const balance        = payType === 'deposit' ? Math.max(0, amount - depositAmt) : 0;
+
+      rows += `<tr class="border-t border-base-200">
+        <td class="py-2 font-medium text-sm" colspan="2">${subject} ${months}개월 (${lessons}회)</td>
+      </tr>`;
+      rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">정가</td><td class="py-0.5 text-xs text-right">${formatWon(multiPrice || singlePrice * months)}</td></tr>`;
+      if (multiMonthDisc > 0) {
+        rows += `<tr><td class="py-0.5 pl-3 text-xs text-primary">다개월 할인</td><td class="py-0.5 text-xs text-primary text-right">-${formatWon(multiMonthDisc)}</td></tr>`;
+      }
+      if (multiClassDisc > 0) {
+        rows += `<tr><td class="py-0.5 pl-3 text-xs text-secondary">다중수강 할인</td><td class="py-0.5 text-xs text-secondary text-right">-${formatWon(multiClassDisc)}</td></tr>`;
+      }
+      if (payType === 'deposit') {
+        rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">예약금</td><td class="py-0.5 text-xs text-right">${formatWon(depositAmt)}</td></tr>`;
+        rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">잔금</td><td class="py-0.5 text-xs text-right text-warning">${formatWon(balance)}</td></tr>`;
+      }
+      rows += `<tr><td class="py-1 pl-3 text-xs font-semibold">소계</td><td class="py-1 text-xs font-semibold text-right">${formatWon(amount - multiClassDisc)}</td></tr>`;
+      grandTotal += amount - multiClassDisc;
+    });
+
+    if (!rows) {
+      receiptBody.innerHTML = '<p class="text-xs text-base-content/40">클래스 정보를 입력하면 자동으로 표시됩니다.</p>';
+      return;
+    }
+
+    receiptBody.innerHTML = `<table class="w-full text-sm">
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr class="border-t-2 border-base-300">
+          <td class="pt-2 font-bold">합계</td>
+          <td class="pt-2 font-bold text-right">${formatWon(grandTotal)}</td>
+        </tr>
+      </tfoot>
+    </table>`;
+  }
+
+  // 영수증 업데이트 트리거: 모든 입력 변경 시
+  document.getElementById('enrollments-container').addEventListener('input', updateReceipt);
+  document.getElementById('enrollments-container').addEventListener('change', updateReceipt);
+  updateReceipt();
   <% end %>
 </script>

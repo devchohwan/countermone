@@ -159,7 +159,13 @@
                 </div>
                 <div>
                   <%= pf_fields.label :starts_at, "수업 시작일", class: "block text-sm font-medium text-base-content mb-1" %>
-                  <%= pf_fields.date_field :starts_at, value: Date.today, class: "input input-bordered w-full text-sm" %>
+                  <%= pf_fields.hidden_field :starts_at, value: Date.today, data: { role: "starts-at-value" } %>
+                  <button type="button"
+                          class="input input-bordered w-full text-sm text-left cursor-pointer"
+                          data-role="starts-at-btn"
+                          onclick="openSlotPicker(this.closest('.enrollment-section'))">
+                    <%= Date.today %>
+                  </button>
                 </div>
               </div>
 
@@ -252,7 +258,13 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-base-content mb-1">수업 시작일</label>
-              <input type="date" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][starts_at]" value="<%= Date.today %>" class="input input-bordered w-full text-sm">
+              <input type="hidden" name="student[enrollments_attributes][NEW_RECORD][payments_attributes][0][starts_at]" value="<%= Date.today %>" data-role="starts-at-value">
+              <button type="button"
+                      class="input input-bordered w-full text-sm text-left cursor-pointer"
+                      data-role="starts-at-btn"
+                      onclick="openSlotPicker(this.closest('.enrollment-section'))">
+                <%= Date.today %>
+              </button>
             </div>
           </div>
 
@@ -304,6 +316,20 @@
       <h3 class="font-semibold text-sm mb-3">전체 영수증 <span class="text-xs text-base-content/40 font-normal">미리보기</span></h3>
       <div id="receipt-body">
         <p class="text-xs text-base-content/40">클래스 정보를 입력하면 자동으로 표시됩니다.</p>
+      </div>
+    </div>
+  <% end %>
+
+  <% if student.new_record? %>
+    <div id="slot-picker-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="bg-base-100 rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-sm">수업 시작일 선택</h3>
+          <button type="button" onclick="closeSlotPicker()" class="btn btn-ghost btn-xs">✕</button>
+        </div>
+        <div id="slot-picker-body">
+          <p class="text-xs text-base-content/50 py-4 text-center">불러오는 중…</p>
+        </div>
       </div>
     </div>
   <% end %>
@@ -578,5 +604,102 @@
   document.getElementById('enrollments-container').addEventListener('input', updateReceipt);
   document.getElementById('enrollments-container').addEventListener('change', updateReceipt);
   updateReceipt();
+
+  // ── 수업 시작일 슬롯 픽커 ──────────────────────────────────
+  const SLOT_DAY_NUM = { monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6, sunday:0 };
+  const SLOT_DAY_KO  = { monday:'월', tuesday:'화', wednesday:'수', thursday:'목', friday:'금', saturday:'토', sunday:'일' };
+  let _slotPickerSection = null;
+
+  function openSlotPicker(section) {
+    const teacherId = section.querySelector('[data-role="teacher"]')?.value;
+    const subject   = section.querySelector('[data-role="subject"]')?.value;
+    const lessonDay = section.querySelector('[data-role="day"]')?.value;
+    if (!teacherId || !subject || !lessonDay) {
+      alert('과목, 선생님, 수업 요일을 먼저 선택해주세요.');
+      return;
+    }
+    _slotPickerSection = section;
+    const modal = document.getElementById('slot-picker-modal');
+    const body  = document.getElementById('slot-picker-body');
+    modal.classList.remove('hidden');
+    body.innerHTML = '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
+
+    const today = new Date();
+    const from  = today.toISOString().slice(0, 10);
+    fetch(`/slot_check?teacher_id=${teacherId}&subject=${encodeURIComponent(subject)}&from=${from}&weeks=8`)
+      .then(r => r.json())
+      .then(data => renderSlotDates(data, lessonDay))
+      .catch(() => {
+        body.innerHTML = '<p class="text-xs text-error py-4 text-center">불러오기 실패</p>';
+      });
+  }
+
+  function renderSlotDates(data, lessonDay) {
+    const body     = document.getElementById('slot-picker-body');
+    const dayNum   = SLOT_DAY_NUM[lessonDay];
+    const dayLabel = SLOT_DAY_KO[lessonDay];
+    const today    = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const matchDates = data.dates.filter(ds => {
+      const d = new Date(ds + 'T00:00:00');
+      return d.getDay() === dayNum && d >= today;
+    });
+
+    if (!matchDates.length) {
+      body.innerHTML = '<p class="text-xs text-base-content/50 py-4 text-center">선택 가능한 날짜가 없습니다.</p>';
+      return;
+    }
+
+    let html = `<p class="text-xs text-base-content/50 mb-3">${dayLabel}요일 수업 시작일 (최대 3석)</p>`;
+    html += '<div class="grid grid-cols-2 gap-2">';
+    matchDates.forEach(ds => {
+      const count = data.grid[ds] || 0;
+      const d = new Date(ds + 'T00:00:00');
+      const label = `${d.getMonth()+1}/${d.getDate()} (${dayLabel})`;
+      if (count >= 3) {
+        html += `<div class="rounded border border-error/30 bg-error/10 px-3 py-2 text-center opacity-50 select-none">
+          <div class="text-sm font-medium text-error">${label}</div>
+          <div class="text-xs text-error mt-0.5">마감 (3/3)</div>
+        </div>`;
+      } else {
+        const colorCls = count === 0
+          ? 'bg-success/15 border-success/40 hover:bg-success/25'
+          : 'bg-warning/15 border-warning/40 hover:bg-warning/25';
+        const filled = '●'.repeat(count);
+        const empty  = '○'.repeat(3 - count);
+        html += `<div class="rounded border ${colorCls} px-3 py-2 text-center cursor-pointer"
+                      onclick="selectStartDate('${ds}')">
+          <div class="text-sm font-medium">${label}</div>
+          <div class="font-mono text-xs mt-0.5">
+            <span>${filled}</span><span class="opacity-30">${empty}</span>
+            <span class="ml-1 text-base-content/50">${count}/3</span>
+          </div>
+        </div>`;
+      }
+    });
+    html += '</div>';
+    body.innerHTML = html;
+  }
+
+  function selectStartDate(dateStr) {
+    if (!_slotPickerSection) return;
+    const hiddenInput = _slotPickerSection.querySelector('[data-role="starts-at-value"]');
+    const btn         = _slotPickerSection.querySelector('[data-role="starts-at-btn"]');
+    if (hiddenInput) hiddenInput.value = dateStr;
+    if (btn) btn.textContent = dateStr;
+    closeSlotPicker();
+    updateReceipt();
+  }
+
+  function closeSlotPicker() {
+    const modal = document.getElementById('slot-picker-modal');
+    if (modal) modal.classList.add('hidden');
+    _slotPickerSection = null;
+  }
+
+  document.getElementById('slot-picker-modal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeSlotPicker();
+  });
   <% end %>
 </script>

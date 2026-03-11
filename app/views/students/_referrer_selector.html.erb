@@ -64,11 +64,13 @@
     tagsEl.appendChild(span);
     document.getElementById('referrer-search').value = '';
     document.getElementById('referrer-results').classList.add('hidden');
+    if (typeof updateReceipt === 'function') updateReceipt();
   };
 
   window.removeReferrer = function(id) {
     const tag = document.querySelector(`#referrer-tags [data-referrer-id="${id}"]`);
     if (tag) tag.remove();
+    if (typeof updateReceipt === 'function') updateReceipt();
   };
 
   document.addEventListener('click', function(e) {

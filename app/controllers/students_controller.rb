@@ -31,6 +31,8 @@ class StudentsController < ApplicationController
     @student.first_enrolled_at ||= Date.today
     @student.waiting_expires_at = Date.today + 14.days if @student.status == "pending"
 
+    @student.referral_discount_pending = true if Array(params[:referrer_ids]).reject(&:blank?).any?
+
     ActiveRecord::Base.transaction do
       @student.enrollments.each do |enrollment|
         enrollment.status = "active"
@@ -40,7 +42,7 @@ class StudentsController < ApplicationController
           payment.fully_paid = (payment.payment_type == "new")
         end
       end
-      
+
       if @student.save
         save_referrers(@student)
         redirect_to @student, notice: "수강생이 등록되었습니다."
@@ -162,6 +164,13 @@ class StudentsController < ApplicationController
     ids.each do |referrer_id|
       next if referrer_id == student.id
       student.student_referrals.create!(referrer_id: referrer_id)
+    end
+    # 피추천인 첫 완납 결제가 있으면 추천인들에게 할인 대기 알림
+    # (notify_referrer_if_applicable은 save 시점에 referrers가 비어있어 여기서 처리)
+    if ids.any? && student.payments.where(fully_paid: true).exists?
+      Student.where(id: ids).where.not(id: student.id).each do |referrer|
+        referrer.update!(referral_discount_pending: true)
+      end
     end
   end
 

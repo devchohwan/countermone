@@ -548,6 +548,8 @@
     let grandTotal = 0;
     let classCount = 0;
 
+    const hasReferrer = document.querySelectorAll('input[name="referrer_ids[]"]').length > 0;
+
     sections.forEach((section, idx) => {
       const subject    = section.querySelector('[data-role="subject"]')?.value || '';
       const months     = parseInt(section.querySelector('[data-role="months"]')?.value) || 1;
@@ -558,10 +560,11 @@
       if (!subject || !amount) return;
 
       classCount++;
-      const singlePrice   = window.pricePlans[`${subject}_1`] || 0;
-      const multiPrice    = window.pricePlans[`${subject}_${months}`] || 0;
+      const singlePrice    = window.pricePlans[`${subject}_1`] || 0;
+      const multiPrice     = window.pricePlans[`${subject}_${months}`] || 0;
       const multiMonthDisc = (months > 1 && singlePrice && multiPrice) ? (singlePrice * months - multiPrice) : 0;
       const multiClassDisc = (idx > 0) ? 50000 : 0;
+      const referralDisc   = (idx === 0 && hasReferrer) ? 50000 : 0;
       const balance        = payType === 'deposit' ? Math.max(0, amount - depositAmt) : 0;
 
       rows += `<tr class="border-t border-base-200">
@@ -574,12 +577,16 @@
       if (multiClassDisc > 0) {
         rows += `<tr><td class="py-0.5 pl-3 text-xs text-secondary">다중수강 할인</td><td class="py-0.5 text-xs text-secondary text-right">-${formatWon(multiClassDisc)}</td></tr>`;
       }
+      if (referralDisc > 0) {
+        rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">친구 추천 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWon(referralDisc)}</td></tr>`;
+      }
       if (payType === 'deposit') {
         rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">예약금</td><td class="py-0.5 text-xs text-right">${formatWon(depositAmt)}</td></tr>`;
         rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">잔금</td><td class="py-0.5 text-xs text-right text-warning">${formatWon(balance)}</td></tr>`;
       }
-      rows += `<tr><td class="py-1 pl-3 text-xs font-semibold">소계</td><td class="py-1 text-xs font-semibold text-right">${formatWon(amount - multiClassDisc)}</td></tr>`;
-      grandTotal += amount - multiClassDisc;
+      const subtotal = amount - multiClassDisc - referralDisc;
+      rows += `<tr><td class="py-1 pl-3 text-xs font-semibold">소계</td><td class="py-1 text-xs font-semibold text-right">${formatWon(subtotal)}</td></tr>`;
+      grandTotal += subtotal;
     });
 
     if (!rows) {

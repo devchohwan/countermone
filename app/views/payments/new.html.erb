@@ -119,11 +119,11 @@
             // 총 수업 횟수 자동 입력 (1개월 = 4회)
             if (lessonsEl) lessonsEl.value = months * 4;
 
-            // 금액 자동 입력
+            // 금액 자동 입력 (다중수강 할인 적용)
             const price = PRICE_TABLE[subject + "_" + months];
             if (price) {
-              amountEl.value = price;
-              hintEl.textContent = "자동 입력";
+              amountEl.value = Math.max(0, price - MULTI_CLASS_DISCOUNT);
+              hintEl.textContent = MULTI_CLASS_DISCOUNT > 0 ? "자동 입력 (할인 적용)" : "자동 입력";
               hintEl.classList.remove("hidden");
               setTimeout(() => hintEl.classList.add("hidden"), 2000);
             }

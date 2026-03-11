@@ -297,6 +297,8 @@
     </div>
   <% end %>
 
+  <%= render "students/referrer_selector", student: student, existing_referrers: student.referrers %>
+
   <div class="flex gap-3">
     <%= f.submit student.new_record? ? "등록" : "저장", class: "btn btn-primary btn-sm" %>
     <%= link_to "취소", student.new_record? ? students_path : student_path(student), class: "btn btn-ghost btn-sm" %>

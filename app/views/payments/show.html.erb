@@ -92,31 +92,49 @@
   </table>
 </div>
 
-<!-- 수업 날짜 리스트 -->
-<div class="bg-base-100 rounded-lg border shadow-sm p-4">
-  <h3 class="font-semibold text-sm mb-3">수업 날짜 리스트</h3>
-  <table class="w-full text-sm">
-    <thead class="text-xs text-base-content/60 border-b">
-      <tr>
-        <th class="pb-1 text-left">회차</th>
-        <th class="pb-1 text-left">날짜</th>
-        <th class="pb-1 text-left">상태</th>
-        <th class="pb-1 text-left">보강</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y">
-      <% @schedules.each do |s| %>
+<!-- 과목별 수업 날짜 리스트 -->
+<% @schedule_groups.each do |g| %>
+  <div class="bg-base-100 rounded-lg border shadow-sm p-4 mb-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-semibold text-sm"><%= g[:enrollment].subject %> 수업 날짜</h3>
+      <span class="text-xs text-base-content/50">총 <%= g[:total] %>회</span>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-base-content/60 border-b">
         <tr>
-          <td class="py-1.5 text-base-content/60"><%= s.sequence %>회</td>
-          <td><%= s.lesson_date.strftime("%Y.%m.%d (%a)") %></td>
-          <td><%= schedule_status_badge(s.status) %></td>
-          <td class="text-xs text-indigo-500">
-            <% if s.makeup_date %>
-              <%= s.makeup_date.strftime("%m/%d") %> <%= s.makeup_teacher&.name %>
-            <% end %>
-          </td>
+          <th class="pb-1 text-left">회차</th>
+          <th class="pb-1 text-left">날짜</th>
+          <th class="pb-1 text-left">상태</th>
+          <th class="pb-1 text-left">보강</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody class="divide-y">
+        <% g[:schedules].each do |s| %>
+          <tr>
+            <td class="py-1.5 text-base-content/60"><%= s.sequence %>회</td>
+            <td><%= s.lesson_date.strftime("%Y.%m.%d (%a)") %></td>
+            <td><%= schedule_status_badge(s.status) %></td>
+            <td class="text-xs text-indigo-500">
+              <% if s.makeup_date %>
+                <%= s.makeup_date.strftime("%m/%d") %> <%= s.makeup_teacher&.name %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <% if g[:total_pages] > 1 %>
+      <div class="flex items-center gap-2 mt-3 text-xs">
+        <% if g[:page] > 1 %>
+          <%= link_to "← 이전", request.params.merge("page_#{g[:enrollment].id}" => g[:page] - 1),
+                class: "btn btn-xs btn-ghost" %>
+        <% end %>
+        <span class="text-base-content/50"><%= g[:page] %> / <%= g[:total_pages] %></span>
+        <% if g[:page] < g[:total_pages] %>
+          <%= link_to "다음 →", request.params.merge("page_#{g[:enrollment].id}" => g[:page] + 1),
+                class: "btn btn-xs btn-ghost" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

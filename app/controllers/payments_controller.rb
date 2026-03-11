@@ -18,9 +18,25 @@ class PaymentsController < ApplicationController
   end
 
   def show
-    @student   = @payment.student
-    @payments  = Payment.includes(:discounts).where(student: @student).order(:created_at)
-    @schedules = Schedule.joins(:payment).where(payments: { student_id: @student.id }).order(:lesson_date)
+    @student  = @payment.student
+    @payments = Payment.includes(:discounts).where(student: @student).order(:created_at)
+
+    enrollments = @student.enrollments.order(:id)
+    @schedule_groups = enrollments.map do |enrollment|
+      page     = (params["page_#{enrollment.id}"] || 1).to_i
+      per_page = 8
+      all      = enrollment.schedules.order(:lesson_date)
+      total    = all.count
+      records  = all.offset((page - 1) * per_page).limit(per_page)
+      {
+        enrollment: enrollment,
+        schedules:  records,
+        page:       page,
+        total:      total,
+        per_page:   per_page,
+        total_pages: (total.to_f / per_page).ceil
+      }
+    end.reject { |g| g[:total].zero? }
   end
 
   def new

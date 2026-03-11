@@ -1,14 +1,8 @@
 <% content_for :title, "결제 상세" %>
 
 <div class="flex items-center gap-3 mb-6">
-  <%= link_to "← #{@payment.student.name}", student_path(@payment.student), class: "text-sm text-base-content/70 hover:underline" %>
-  <h2 class="text-lg font-bold">결제 상세</h2>
-  <% unless @payment.fully_paid? %>
-    <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded">미완납</span>
-  <% end %>
-  <% if @payment.refunded? %>
-    <span class="bg-base-200 text-base-content/80 text-xs px-2 py-1 rounded">환불완료</span>
-  <% end %>
+  <%= link_to "← #{@enrollment.student.name}", student_path(@enrollment.student), class: "text-sm text-base-content/70 hover:underline" %>
+  <h2 class="text-lg font-bold">결제 내역</h2>
 </div>
 
 <!-- 결제 상세 테이블 -->
@@ -16,8 +10,6 @@
   <table class="table table-xs w-full text-sm">
     <thead>
       <tr class="text-xs text-base-content/60">
-        <th>수강생</th>
-        <th>과목</th>
         <th>유형</th>
         <th>기간</th>
         <th>횟수</th>
@@ -29,55 +21,65 @@
         <th>예약금 납부일</th>
         <th>잔금</th>
         <th>잔금 납부일</th>
+        <th>상태</th>
         <th>환불</th>
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td><%= link_to @payment.student.name, student_path(@payment.student), class: "hover:underline" %></td>
-        <td><%= @payment.subject %></td>
-        <td><%= @payment.payment_type == "deposit" ? "예약금" : "신규" %></td>
-        <td><%= @payment.months %>개월</td>
-        <td><%= @payment.total_lessons %>회</td>
-        <td class="text-purple-600">
-          <% @discounts.each do |d| %>
-            <div><%= d.memo.presence || d.discount_type %> -<%= format_amount(d.amount) %></div>
-          <% end %>
-        </td>
-        <td class="font-medium"><%= format_amount(@payment.amount) %></td>
-        <td><%=({ "card" => "카드", "transfer" => "계좌이체", "cash" => "현금" }[@payment.payment_method] || @payment.payment_method) %></td>
-        <td>
-          <% unless @payment.payment_type == "deposit" %>
-            <%= @payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
-          <% end %>
-        </td>
-        <td><%= @payment.payment_type == "deposit" && @payment.deposit_amount > 0 ? format_amount(@payment.deposit_amount) : "" %></td>
-        <td>
-          <% if @payment.payment_type == "deposit" %>
-            <%= @payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
-          <% end %>
-        </td>
-        <td>
-          <% if @payment.payment_type == "deposit" && @payment.balance_amount > 0 %>
-            <%= format_amount(@payment.balance_amount) %>
-          <% end %>
-        </td>
-        <td>
-          <% if @payment.payment_type == "deposit" %>
-            <% if @payment.balance_paid_at %>
-              <%= @payment.balance_paid_at.strftime("%Y.%m.%d") %>
-            <% else %>
-              <span class="text-error text-xs">미납</span>
+      <% @payments.each do |payment| %>
+        <tr>
+          <td><%= payment.payment_type == "deposit" ? "예약금" : "신규" %></td>
+          <td><%= payment.months %>개월</td>
+          <td><%= payment.total_lessons %>회</td>
+          <td class="text-purple-600">
+            <% payment.discounts.each do |d| %>
+              <div><%= d.memo.presence || d.discount_type %> -<%= format_amount(d.amount) %></div>
             <% end %>
-          <% end %>
-        </td>
-        <td>
-          <% if @payment.refunded? %>
-            <div class="text-error"><%= format_amount(@payment.refund_amount) %></div>
-            <div class="text-xs text-base-content/60"><%= @payment.refund_reason %></div>
-          <% end %>
-        </td>
-      </tr>
+          </td>
+          <td class="font-medium"><%= format_amount(payment.amount) %></td>
+          <td><%= ({ "card" => "카드", "transfer" => "계좌이체", "cash" => "현금" }[payment.payment_method] || payment.payment_method) %></td>
+          <td>
+            <% unless payment.payment_type == "deposit" %>
+              <%= payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
+            <% end %>
+          </td>
+          <td><%= payment.payment_type == "deposit" && payment.deposit_amount > 0 ? format_amount(payment.deposit_amount) : "" %></td>
+          <td>
+            <% if payment.payment_type == "deposit" %>
+              <%= payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
+            <% end %>
+          </td>
+          <td>
+            <% if payment.payment_type == "deposit" && payment.balance_amount > 0 %>
+              <%= format_amount(payment.balance_amount) %>
+            <% end %>
+          </td>
+          <td>
+            <% if payment.payment_type == "deposit" %>
+              <% if payment.balance_paid_at %>
+                <%= payment.balance_paid_at.strftime("%Y.%m.%d") %>
+              <% else %>
+                <span class="text-error text-xs">미납</span>
+              <% end %>
+            <% end %>
+          </td>
+          <td>
+            <% if payment.refunded? %>
+              <span class="badge badge-xs badge-ghost">환불완료</span>
+            <% elsif payment.fully_paid? %>
+              <span class="badge badge-xs badge-success">완납</span>
+            <% else %>
+              <span class="badge badge-xs badge-warning">미완납</span>
+            <% end %>
+          </td>
+          <td>
+            <% if payment.refunded? %>
+              <div class="text-error"><%= format_amount(payment.refund_amount) %></div>
+              <div class="text-xs text-base-content/60"><%= payment.refund_reason %></div>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
     </tbody>
   </table>
 </div>

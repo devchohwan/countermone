@@ -18,8 +18,9 @@ class PaymentsController < ApplicationController
   end
 
   def show
-    @schedules = @payment.schedules.order(:lesson_date)
-    @discounts = @payment.discounts
+    @enrollment = @payment.enrollment
+    @payments   = @enrollment.payments.includes(:discounts).order(:created_at)
+    @schedules  = Schedule.joins(:payment).where(payments: { enrollment_id: @enrollment.id }).order(:lesson_date)
   end
 
   def new

@@ -48,7 +48,13 @@
         </div>
 
         <%# 결제 내역 (최근 1건 기본, 접기/펼치기) %>
-        <h4 class="text-sm font-semibold mb-2">결제 내역</h4>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-sm font-semibold">결제 내역</h4>
+          <% first_payment = enrollment.payments.order(:created_at).first %>
+          <% if first_payment %>
+            <%= link_to "상세", payment_path(first_payment), class: "btn btn-xs btn-ghost" %>
+          <% end %>
+        </div>
         <% payments = enrollment.payments.order(created_at: :desc) %>
         <% if payments.any? %>
           <% payments.each_with_index do |payment, idx| %>

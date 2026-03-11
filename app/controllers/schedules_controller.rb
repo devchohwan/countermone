@@ -133,6 +133,15 @@ class SchedulesController < ApplicationController
     tab_redirect(notice: "공휴일 처리되었습니다.")
   end
 
+  def cancel_pass
+    unless @schedule.status.in?(%w[pass emergency_pass holiday])
+      return redirect_back fallback_location: schedules_path, alert: "패스 상태가 아닙니다."
+    end
+    remove_pass_schedule_if_needed(@schedule)
+    @schedule.update!(status: "scheduled", pass_reason: nil)
+    tab_redirect(notice: "패스가 취소되었습니다.")
+  end
+
   def makeup
     makeup_date = Date.parse(params[:makeup_date])
     makeup_time = params[:makeup_time]

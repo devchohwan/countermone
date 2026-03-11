@@ -56,6 +56,7 @@ Rails.application.routes.draw do
       patch :approve_makeup
       patch :complete_makeup
       patch :undo_deduct
+      patch :cancel_pass
     end
   end
 

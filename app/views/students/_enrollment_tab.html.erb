@@ -320,6 +320,10 @@
         html += `<button onclick="if(confirm('결석 차감 처리하시겠습니까?')) submitPatch('/schedules/${scheduleId}/deduct','${csrf}')"
                          class="btn btn-sm btn-error btn-outline w-full">결석 차감</button>`;
         html += `<button onclick="showReschedule()" class="btn btn-sm btn-outline w-full mt-1">수업 일자 변경</button>`;
+        if (['pass', 'emergency_pass', 'holiday'].includes(status)) {
+          html += `<button onclick="if(confirm('패스를 취소하고 예정 상태로 되돌리시겠습니까?')) submitPatch('/schedules/${scheduleId}/cancel_pass','${csrf}')"
+                           class="btn btn-sm btn-ghost btn-outline w-full mt-1 text-secondary">패스 취소</button>`;
+        }
       } else if (status === 'deducted') {
         html += `<p class="text-xs text-error mb-1">결석 차감 처리됨</p>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/undo_deduct','${csrf}')" class="btn btn-sm btn-warning btn-outline w-full">차감 취소</button>`;

@@ -63,9 +63,9 @@
                 <div class="flex items-center gap-2 mb-1">
                   <span class="font-medium"><%= payment.months %>개월 / <%= payment.total_lessons %>회</span>
                   <span class="font-bold"><%= format_amount(payment.amount) %></span>
-                  <span class="badge badge-xs <%= payment.fully_paid? ? 'badge-success' : 'badge-warning' %>">
-                    <%= payment.fully_paid? ? "완납" : "예약금" %>
-                  </span>
+                  <% badge_label = payment.fully_paid? ? "완납" : (payment.payment_type == "deposit" ? "예약금" : "미납") %>
+                  <% badge_color = payment.fully_paid? ? "badge-success" : (payment.payment_type == "deposit" ? "badge-warning" : "badge-error") %>
+                  <span class="badge badge-xs <%= badge_color %>"><%= badge_label %></span>
                   <div class="ml-auto flex items-center gap-1">
                     <div class="dropdown dropdown-end">
                       <label tabindex="0" class="btn btn-xs btn-ghost">⋯</label>

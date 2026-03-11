@@ -14,6 +14,7 @@ class Payment < ApplicationRecord
   validates :amount,         numericality: { greater_than_or_equal_to: 0 }
   validates :starts_at,      presence: true
 
+  before_create :auto_set_fully_paid
   before_create :auto_set_deposit_paid_at
   after_create  :generate_schedules
   after_create  :apply_attendance_event_if_pending
@@ -48,6 +49,11 @@ class Payment < ApplicationRecord
   end
 
   private
+
+  def auto_set_fully_paid
+    # 일반결제(new)는 fully_paid가 명시적으로 false로 넘어오지 않은 이상 완납 처리
+    self.fully_paid = true if payment_type == "new" && !fully_paid?
+  end
 
   def auto_set_deposit_paid_at
     if payment_type == "deposit" && deposit_paid_at.blank?

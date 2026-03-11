@@ -41,6 +41,7 @@ Rails.application.routes.draw do
     member do
       post  :refund
       patch :pay_balance
+      patch :complete_deposit
     end
   end
 

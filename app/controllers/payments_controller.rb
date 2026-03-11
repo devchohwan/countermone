@@ -1,5 +1,5 @@
 class PaymentsController < ApplicationController
-  before_action :set_payment, only: %i[show refund pay_balance destroy]
+  before_action :set_payment, only: %i[show refund pay_balance complete_deposit destroy]
 
   def index
     scope = Payment.includes(:student, :enrollment, :discounts)
@@ -100,12 +100,32 @@ class PaymentsController < ApplicationController
   end
 
   def pay_balance
-    if @payment.update(fully_paid: true, balance_paid_at: Time.current,
-                       balance_amount: params[:balance_amount] || @payment.balance_amount)
+    update_attrs = {
+      fully_paid:      true,
+      balance_paid_at: Time.current,
+      balance_amount:  params[:balance_amount].presence || @payment.balance_amount,
+      payment_method:  params[:payment_method].presence || @payment.payment_method
+    }
+    if @payment.update(update_attrs)
       @payment.enrollment.student.update!(waiting_expires_at: nil)
       redirect_to @payment, notice: "잔금 납부 처리되었습니다."
     else
       redirect_to @payment, alert: "처리 실패"
+    end
+  end
+
+  def complete_deposit
+    update_attrs = {
+      fully_paid:      true,
+      balance_paid_at: Time.current,
+      balance_amount:  params[:balance_amount].presence || @payment.balance_amount,
+      payment_method:  params[:payment_method].presence || @payment.payment_method
+    }
+    if @payment.update(update_attrs)
+      @payment.enrollment.student.update!(waiting_expires_at: nil)
+      redirect_back fallback_location: root_path, notice: "#{@payment.student.name} 완납 처리되었습니다."
+    else
+      redirect_back fallback_location: root_path, alert: "처리 실패"
     end
   end
 

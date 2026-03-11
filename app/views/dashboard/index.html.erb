@@ -158,7 +158,13 @@
                         <% items.each do |item| %>
                           <% badge_color = item[:type] == :deposit_first_lesson ? "badge-error" : "badge-info" %>
                           <% label = item[:type] == :deposit_first_lesson ? "완납필요" : "결제예정" %>
-                          <p><%= item[:student].name %> <span class="badge badge-xs <%= badge_color %>"><%= label %></span></p>
+                          <p class="flex items-center gap-1">
+                            <%= item[:student].name %>
+                            <span class="badge badge-xs <%= badge_color %>"><%= label %></span>
+                            <% if item[:type] == :deposit_first_lesson %>
+                              <button type="button" onclick="document.getElementById('cpd-<%= item[:payment].id %>').showModal()" class="btn btn-xs btn-error btn-outline">완납</button>
+                            <% end %>
+                          </p>
                         <% end %>
                       <% end %>
                     </div>
@@ -169,11 +175,46 @@
                       <% without_sched.each do |item| %>
                         <% badge_color = item[:type] == :deposit_first_lesson ? "badge-error" : "badge-info" %>
                         <% label = item[:type] == :deposit_first_lesson ? "완납필요" : "결제예정" %>
-                        <p><%= item[:student].name %> — <%= item[:enrollment].subject %> <span class="badge badge-xs <%= badge_color %>"><%= label %></span></p>
+                        <p class="flex items-center gap-1">
+                          <%= item[:student].name %> — <%= item[:enrollment].subject %>
+                          <span class="badge badge-xs <%= badge_color %>"><%= label %></span>
+                          <% if item[:type] == :deposit_first_lesson %>
+                            <button type="button" onclick="document.getElementById('cpd-<%= item[:payment].id %>').showModal()" class="btn btn-xs btn-error btn-outline">완납</button>
+                          <% end %>
+                        </p>
                       <% end %>
                     </div>
                   <% end %>
                 </div>
+              <% end %>
+
+              <%# 완납처리 다이얼로그 %>
+              <% (@payment_due_today || []).select { |i| i[:type] == :deposit_first_lesson }.each do |item| %>
+                <dialog id="cpd-<%= item[:payment].id %>" class="modal">
+                  <div class="modal-box">
+                    <h3 class="font-bold text-base mb-4"><%= item[:student].name %> — <%= item[:enrollment].subject %> 완납처리</h3>
+                    <% balance_default = [item[:payment].amount.to_i - item[:payment].deposit_amount.to_i, 0].max %>
+                    <%= form_with url: complete_deposit_payment_path(item[:payment]), method: :patch do |f| %>
+                      <div class="form-control mb-3">
+                        <label class="label"><span class="label-text text-sm">잔금액 (예약금: <%= number_with_delimiter(item[:payment].deposit_amount.to_i) %>원 / 총액: <%= number_with_delimiter(item[:payment].amount.to_i) %>원)</span></label>
+                        <%= f.number_field :balance_amount, value: balance_default,
+                              class: "input input-bordered w-full", min: 0, step: 1000 %>
+                      </div>
+                      <div class="form-control mb-5">
+                        <label class="label"><span class="label-text text-sm">결제수단</span></label>
+                        <%= f.select :payment_method,
+                              [["카드", "card"], ["계좌이체", "transfer"], ["현금", "cash"]],
+                              { selected: item[:payment].payment_method },
+                              class: "select select-bordered w-full" %>
+                      </div>
+                      <div class="flex justify-end gap-2">
+                        <button type="button" onclick="document.getElementById('cpd-<%= item[:payment].id %>').close()" class="btn btn-ghost btn-sm">취소</button>
+                        <%= f.submit "완납처리", class: "btn btn-error btn-sm" %>
+                      </div>
+                    <% end %>
+                  </div>
+                  <form method="dialog" class="modal-backdrop"><button>닫기</button></form>
+                </dialog>
               <% end %>
             </div>
 

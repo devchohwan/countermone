@@ -23,7 +23,7 @@ class Payment < ApplicationRecord
   after_create  :reset_minus_lesson_count
   after_create  :clear_waiting_expires_at
   after_commit  :set_review_due_if_applicable, on: :create
-  after_save    :trigger_return_if_fully_paid
+  after_update  :trigger_return_if_fully_paid
 
   # 수강 종료일: 동적 계산 (보강/패스 반영)
   def ends_at

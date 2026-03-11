@@ -1,7 +1,7 @@
 <% content_for :title, "결제 상세" %>
 
 <div class="flex items-center gap-3 mb-6">
-  <%= link_to "← #{@enrollment.student.name}", student_path(@enrollment.student), class: "text-sm text-base-content/70 hover:underline" %>
+  <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-base-content/70 hover:underline" %>
   <h2 class="text-lg font-bold">결제 내역</h2>
 </div>
 

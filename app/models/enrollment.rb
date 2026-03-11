@@ -27,6 +27,27 @@ class Enrollment < ApplicationRecord
   end
 
   def return!
+    count = remaining_on_leave
+    if count > 0
+      payment = payments.order(:created_at).last
+      if payment
+        start_date = Date.today
+        max_seq    = payment.schedules.maximum(:sequence) || 0
+        count.times.each_with_index do |_, i|
+          lesson_date = next_lesson_date(start_date, lesson_day, i)
+          payment.schedules.create!(
+            student:     student,
+            enrollment:  self,
+            teacher:     teacher,
+            lesson_date: lesson_date,
+            lesson_time: lesson_time,
+            subject:     subject,
+            status:      "scheduled",
+            sequence:    max_seq + i + 1
+          )
+        end
+      end
+    end
     update_columns(status: "active", leave_at: nil, return_at: nil, remaining_on_leave: 0)
     student.update_columns(status: "active")
   end
@@ -42,6 +63,15 @@ class Enrollment < ApplicationRecord
   end
 
   private
+
+  def next_lesson_date(start_date, lesson_day_name, n)
+    day_map = { "monday" => 1, "tuesday" => 2, "wednesday" => 3,
+                "thursday" => 4, "friday" => 5, "saturday" => 6, "sunday" => 0 }
+    target_wday = day_map[lesson_day_name]
+    first = start_date.dup
+    first += 1.day until first.wday == target_wday
+    first + (n * 7).days
+  end
 
   def teacher_teaches_subject
     return unless teacher.present? && subject.present?

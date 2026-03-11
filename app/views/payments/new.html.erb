@@ -145,6 +145,52 @@
 
           depositEl?.addEventListener("input", recalcBalance);
           amountEl?.addEventListener("input",  recalcBalance);
+
+          // ── 영수증 미리보기 ──────────────────────────────────
+          function formatWonPos(n) { return Number(n).toLocaleString("ko-KR") + "원"; }
+
+          function updateReceipt() {
+            const receiptBody = document.getElementById("payment-receipt-body");
+            if (!receiptBody) return;
+            const months  = parseInt(monthsEl?.value) || 0;
+            const amount  = parseInt(amountEl?.value) || 0;
+            const subject = ENROLLMENT_SUBJECT || "";
+            const typeEl  = document.getElementById("payment_payment_type");
+            const payType = typeEl?.value || "new";
+            const deposit = parseInt(depositEl?.value) || 0;
+            if (!months || !amount || !subject) {
+              receiptBody.innerHTML = '<p class="text-xs text-base-content/40">개월 수와 금액을 입력하면 자동으로 표시됩니다.</p>';
+              return;
+            }
+            const singlePrice    = PRICE_TABLE[subject + "_1"] || 0;
+            const multiPrice     = PRICE_TABLE[subject + "_" + months] || 0;
+            const listPrice      = multiPrice || (singlePrice * months);
+            const multiMonthDisc = (months > 1 && singlePrice && multiPrice) ? (singlePrice * months - multiPrice) : 0;
+            const multiClassDisc = MULTI_CLASS_DISCOUNT || 0;
+            const totalDisc      = multiMonthDisc + multiClassDisc;
+            const balance        = payType === "deposit" ? Math.max(0, amount - deposit) : 0;
+
+            let rows = "";
+            rows += `<tr><td class="py-1 text-xs text-base-content/60">정가 (${months}개월)</td><td class="py-1 text-xs text-right">${formatWonPos(listPrice)}</td></tr>`;
+            if (multiMonthDisc > 0)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-primary">${months}개월 할인</td><td class="py-0.5 text-xs text-primary text-right">-${formatWonPos(multiMonthDisc)}</td></tr>`;
+            if (multiClassDisc > 0)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-secondary">다중수강 할인</td><td class="py-0.5 text-xs text-secondary text-right">-${formatWonPos(multiClassDisc)}</td></tr>`;
+            if (totalDisc > 0)       rows += `<tr class="border-t border-base-200"><td class="py-1 text-xs font-semibold">결제 금액</td><td class="py-1 text-xs font-semibold text-right">${formatWonPos(amount)}</td></tr>`;
+            else                     rows += `<tr class="border-t border-base-200"><td class="py-1 text-xs font-semibold">결제 금액</td><td class="py-1 text-xs font-semibold text-right">${formatWonPos(amount)}</td></tr>`;
+            if (payType === "deposit") {
+              rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">예약금</td><td class="py-0.5 text-xs text-right">${formatWonPos(deposit)}</td></tr>`;
+              rows += `<tr><td class="py-0.5 pl-3 text-xs text-warning">잔금</td><td class="py-0.5 text-xs text-warning text-right">${formatWonPos(balance)}</td></tr>`;
+            }
+
+            receiptBody.innerHTML = `
+              <div class="text-xs text-base-content/60 mb-2">${subject} ${months}개월</div>
+              <table class="w-full"><tbody>${rows}</tbody></table>`;
+          }
+
+          monthsEl?.addEventListener("change", updateReceipt);
+          amountEl?.addEventListener("input",  updateReceipt);
+          depositEl?.addEventListener("input", updateReceipt);
+          document.getElementById("payment_payment_type")?.addEventListener("change", updateReceipt);
+          updateReceipt();
         });
       </script>
 
@@ -192,6 +238,14 @@
         <p class="text-xs text-base-content/50">결제 등록 시 자동 적용됩니다.</p>
       </div>
     <% end %>
+
+    <%# ── 영수증 미리보기 ── %>
+    <div class="bg-base-100 border rounded-lg p-4" id="payment-receipt-preview">
+      <h4 class="text-sm font-semibold mb-3">영수증 미리보기</h4>
+      <div id="payment-receipt-body">
+        <p class="text-xs text-base-content/40">개월 수와 금액을 입력하면 자동으로 표시됩니다.</p>
+      </div>
+    </div>
 
     <!-- 가격표 참고 -->
     <div class="bg-base-200 rounded-lg border p-3">

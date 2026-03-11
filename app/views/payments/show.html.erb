@@ -11,72 +11,86 @@
   <% end %>
 </div>
 
-<div class="grid grid-cols-2 gap-6">
-  <div class="bg-base-100 rounded-lg border shadow-sm p-4">
-    <h3 class="font-semibold text-sm mb-3">결제 정보</h3>
-    <dl class="space-y-2 text-sm">
-      <div class="flex gap-2"><dt class="text-base-content/60 w-28">수강생</dt><dd><%= link_to @payment.student.name, student_path(@payment.student), class: "hover:underline" %></dd></div>
-      <div class="flex gap-2"><dt class="text-base-content/60 w-28">과목</dt><dd><%= @payment.subject %></dd></div>
-      <div class="flex gap-2"><dt class="text-base-content/60 w-28">기간</dt><dd><%= @payment.months %>개월 (<%= @payment.total_lessons %>회)</dd></div>
-      <div class="flex gap-2"><dt class="text-base-content/60 w-28">결제 금액</dt><dd class="font-medium"><%= format_amount(@payment.amount) %></dd></div>
-      <div class="flex gap-2"><dt class="text-base-content/60 w-28">결제 수단</dt><dd><%= @payment.payment_method %></dd></div>
-      <div class="flex gap-2"><dt class="text-base-content/60 w-28">시작일</dt><dd><%= @payment.starts_at.strftime("%Y.%m.%d") %></dd></div>
-      <div class="flex gap-2"><dt class="text-base-content/60 w-28">종료일</dt><dd><%= @payment.ends_at&.strftime("%Y.%m.%d") || "-" %></dd></div>
-      <% if @payment.payment_type == "deposit" %>
-        <div class="flex gap-2 border-t pt-2"><dt class="text-base-content/60 w-28">예약금</dt><dd><%= format_amount(@payment.deposit_amount) %></dd></div>
-        <div class="flex gap-2"><dt class="text-base-content/60 w-28">잔금</dt><dd><%= format_amount(@payment.balance_amount) %></dd></div>
-      <% end %>
-    </dl>
-
-    <% unless @payment.fully_paid? %>
-      <div class="mt-4 border-t pt-3">
-        <%= button_to "잔금 납부 처리", pay_balance_payment_path(@payment), method: :patch, class: "text-sm bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700" %>
-      </div>
-    <% end %>
-
-    <% unless @payment.refunded? %>
-      <div class="mt-3">
-        <%= form_with url: refund_payment_path(@payment), method: :post, class: "flex items-center gap-2" do |f| %>
-          <%= f.number_field :refund_amount, value: @payment.refund_amount_calculated, class: "input input-bordered input-sm text-sm w-28" %>
-          <%= f.text_field :refund_reason, placeholder: "환불 사유", class: "input input-bordered input-sm text-sm flex-1" %>
-          <%= f.submit "환불 처리", class: "text-sm bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 cursor-pointer", data: { turbo_confirm: "환불 처리하시겠습니까?" } %>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
-
-  <div class="space-y-4">
-    <!-- 할인 내역 -->
-    <div class="bg-base-100 rounded-lg border shadow-sm p-4">
-      <h3 class="font-semibold text-sm mb-3">할인 내역</h3>
-      <% if @discounts.any? %>
-        <ul class="space-y-1 text-sm">
-          <% @discounts.each do |d| %>
-            <li class="flex justify-between">
-              <span class="text-base-content/80"><%= d.memo || d.discount_type %></span>
-              <span class="text-purple-600">-<%= format_amount(d.amount) %></span>
-            </li>
+<!-- 결제 상세 테이블 -->
+<div class="bg-base-100 rounded-lg border shadow-sm p-4 mb-6 overflow-x-auto">
+  <table class="table table-xs w-full text-sm">
+    <thead>
+      <tr class="text-xs text-base-content/60">
+        <th>수강생</th>
+        <th>과목</th>
+        <th>유형</th>
+        <th>기간</th>
+        <th>횟수</th>
+        <th>금액</th>
+        <th>수단</th>
+        <th>예약금</th>
+        <th>예약금 납부일</th>
+        <th>잔금</th>
+        <th>잔금 납부일</th>
+        <th>할인</th>
+        <th>환불</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><%= link_to @payment.student.name, student_path(@payment.student), class: "hover:underline" %></td>
+        <td><%= @payment.subject %></td>
+        <td><%= @payment.payment_type == "deposit" ? "예약금" : "신규" %></td>
+        <td><%= @payment.months %>개월</td>
+        <td><%= @payment.total_lessons %>회</td>
+        <td class="font-medium"><%= format_amount(@payment.amount) %></td>
+        <td><%= @payment.payment_method %></td>
+        <td><%= @payment.deposit_amount > 0 ? format_amount(@payment.deposit_amount) : "" %></td>
+        <td><%= @payment.deposit_paid_at&.strftime("%Y.%m.%d") %></td>
+        <td>
+          <% if @payment.payment_type == "deposit" && @payment.balance_amount > 0 %>
+            <%= format_amount(@payment.balance_amount) %>
           <% end %>
-        </ul>
-      <% else %>
-        <p class="text-sm text-base-content/60">없음</p>
-      <% end %>
-    </div>
+        </td>
+        <td>
+          <% if @payment.payment_type == "deposit" %>
+            <% if @payment.balance_paid_at %>
+              <%= @payment.balance_paid_at.strftime("%Y.%m.%d") %>
+            <% else %>
+              <span class="text-error text-xs">미납</span>
+            <% end %>
+          <% end %>
+        </td>
+        <td class="text-purple-600">
+          <% @discounts.each do |d| %>
+            <div><%= d.memo.presence || d.discount_type %> -<%= format_amount(d.amount) %></div>
+          <% end %>
+        </td>
+        <td>
+          <% if @payment.refunded? %>
+            <div class="text-error"><%= format_amount(@payment.refund_amount) %></div>
+            <div class="text-xs text-base-content/60"><%= @payment.refund_reason %></div>
+          <% end %>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-    <!-- 수업 횟수 요약 -->
-    <div class="bg-base-100 rounded-lg border shadow-sm p-4">
-      <h3 class="font-semibold text-sm mb-2">수업 현황</h3>
-      <div class="text-sm space-y-1">
-        <div class="flex justify-between"><span class="text-base-content/70">총 횟수</span><span><%= @payment.total_lessons %>회</span></div>
-        <div class="flex justify-between"><span class="text-base-content/70">출석</span><span><%= @schedules.where(status: %w[attended late makeup_done]).count %>회</span></div>
-        <div class="flex justify-between"><span class="text-base-content/70">잔여</span><span class="font-medium text-blue-600"><%= @schedules.where(status: "scheduled").count %>회</span></div>
-      </div>
-    </div>
-  </div>
+<!-- 액션 버튼 -->
+<div class="flex gap-2 mb-6">
+  <% unless @payment.fully_paid? %>
+    <%= button_to "잔금 납부 처리", pay_balance_payment_path(@payment), method: :patch,
+          class: "btn btn-sm btn-success",
+          form: { onsubmit: "return confirm('잔금 납부 완료 처리하시겠습니까?')" } %>
+  <% end %>
+  <% unless @payment.refunded? %>
+    <%= form_with url: refund_payment_path(@payment), method: :post, class: "flex items-center gap-2" do |f| %>
+      <%= f.number_field :refund_amount, value: @payment.refund_amount_calculated, class: "input input-bordered input-sm w-28" %>
+      <%= f.text_field :refund_reason, placeholder: "환불 사유", class: "input input-bordered input-sm flex-1" %>
+      <%= f.submit "환불 처리", class: "btn btn-sm btn-error btn-outline cursor-pointer",
+            data: { onsubmit: "return confirm('환불 처리하시겠습니까?')" } %>
+    <% end %>
+  <% end %>
 </div>
 
 <!-- 수업 날짜 리스트 -->
-<div class="mt-6 bg-base-100 rounded-lg border shadow-sm p-4">
+<div class="bg-base-100 rounded-lg border shadow-sm p-4">
   <h3 class="font-semibold text-sm mb-3">수업 날짜 리스트</h3>
   <table class="w-full text-sm">
     <thead class="text-xs text-base-content/60 border-b">

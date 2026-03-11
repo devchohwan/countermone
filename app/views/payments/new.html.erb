@@ -25,6 +25,11 @@
             복귀 결제: 잔여 <%= @enrollment.remaining_on_leave %>회 자동 적용됩니다.
           </div>
         <% end %>
+        <% if @enrollment.student.referral_discount_pending? %>
+          <div class="text-sm text-success bg-success/10 rounded px-3 py-2">
+            친구 추천 할인 5만원이 이 결제에 자동 적용됩니다.
+          </div>
+        <% end %>
       <% end %>
 
       <div class="grid grid-cols-2 gap-4">

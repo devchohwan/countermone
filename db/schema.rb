@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_09_071150) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_11_073327) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -266,6 +266,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_071150) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "student_referrals", force: :cascade do |t|
+    t.integer "referred_student_id", null: false
+    t.integer "referrer_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["referred_student_id", "referrer_id"], name: "index_student_referrals_on_referred_student_id_and_referrer_id", unique: true
+    t.index ["referred_student_id"], name: "index_student_referrals_on_referred_student_id"
+    t.index ["referrer_id"], name: "index_student_referrals_on_referrer_id"
+  end
+
   create_table "students", force: :cascade do |t|
     t.string "name", null: false
     t.string "phone", null: false
@@ -286,7 +296,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_071150) do
     t.text "real_leave_reason"
     t.date "contact_due"
     t.boolean "refund_leave", default: false
-    t.bigint "referrer_id"
     t.boolean "referral_discount_pending", default: false
     t.boolean "review_discount_applied", default: false
     t.string "review_url"
@@ -298,7 +307,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_071150) do
     t.text "memo"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["referrer_id"], name: "index_students_on_referrer_id"
   end
 
   create_table "teacher_subjects", force: :cascade do |t|
@@ -350,6 +358,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_09_071150) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "students", "students", column: "referrer_id"
+  add_foreign_key "student_referrals", "students", column: "referred_student_id"
+  add_foreign_key "student_referrals", "students", column: "referrer_id"
   add_foreign_key "teacher_subjects", "teachers"
 end

@@ -107,13 +107,13 @@ class Payment < ApplicationRecord
     student.update_column(:waiting_expires_at, nil) if student.waiting_expires_at.present?
   end
 
-  # 피추천인의 첫 결제 완납 시 추천인 referral_discount_pending → true
+  # 피추천인의 첫 결제 완납 시 모든 추천인 referral_discount_pending → true
   def notify_referrer_if_applicable
     return unless fully_paid?
-    referrer = student.referrer
-    return unless referrer
     return unless enrollment.payments.where(fully_paid: true).count == 1
-    referrer.update!(referral_discount_pending: true)
+    student.referrers.each do |referrer|
+      referrer.update!(referral_discount_pending: true)
+    end
   end
 
   def set_review_due_if_applicable

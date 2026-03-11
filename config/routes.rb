@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   resources :students do
     collection do
       get :check_attendance_code
+      get :search
     end
     member do
       patch :leave

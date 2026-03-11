@@ -42,6 +42,7 @@ class StudentsController < ApplicationController
       end
       
       if @student.save
+        save_referrers(@student)
         redirect_to @student, notice: "수강생이 등록되었습니다."
       else
         @teachers = Teacher.includes(:teacher_subjects).all
@@ -60,6 +61,7 @@ class StudentsController < ApplicationController
 
   def update
     if @student.update(student_params)
+      save_referrers(@student)
       redirect_to @student, notice: "수강생 정보가 수정되었습니다."
     else
       render :edit, status: :unprocessable_entity
@@ -108,6 +110,12 @@ class StudentsController < ApplicationController
     redirect_back fallback_location: root_path, notice: "#{@student.name} 연락 완료 처리되었습니다."
   end
 
+  def search
+    q = params[:q].to_s.strip
+    students = q.length >= 1 ? Student.where("name LIKE ?", "%#{q}%").order(:name).limit(20) : []
+    render json: students.map { |s| { id: s.id, name: s.name } }
+  end
+
   def check_attendance_code
     code = params[:code]
     student_id = params[:student_id]
@@ -134,7 +142,7 @@ class StudentsController < ApplicationController
       :has_car, :consent_form, :second_transfer_form, :cover_recorded,
       :reason_for_joining, :own_problem, :desired_goal, :first_enrolled_at,
       :expected_return, :leave_reason, :real_leave_reason, :contact_due,
-      :refund_leave, :referrer_id, :review_discount_applied, :review_url,
+      :refund_leave, :review_discount_applied, :review_url,
       :review_due, :interview_discount_applied, :interview_completed,
       :memo, :waiting_expires_at,
       enrollments_attributes: [
@@ -146,6 +154,15 @@ class StudentsController < ApplicationController
         ]
       ]
     )
+  end
+
+  def save_referrers(student)
+    ids = Array(params[:referrer_ids]).map(&:to_i).uniq.reject(&:zero?).first(7)
+    student.student_referrals.destroy_all
+    ids.each do |referrer_id|
+      next if referrer_id == student.id
+      student.student_referrals.create!(referrer_id: referrer_id)
+    end
   end
 
   def suggest_attendance_code(student)

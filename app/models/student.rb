@@ -2,8 +2,11 @@ class Student < ApplicationRecord
   STATUSES = %w[active leave dropout pending unregistered].freeze
   RANKS    = %w[first second].freeze
 
-  belongs_to :referrer, class_name: "Student", optional: true
-  has_many :referrals, class_name: "Student", foreign_key: "referrer_id", dependent: :nullify, inverse_of: :referrer
+  # 추천인 관계 (복수, 최대 7명)
+  has_many :student_referrals,    foreign_key: :referred_student_id, dependent: :destroy
+  has_many :referrers,            through: :student_referrals, source: :referrer
+  has_many :referred_referrals,   class_name: "StudentReferral", foreign_key: :referrer_id, dependent: :destroy
+  has_many :referred_students,    through: :referred_referrals, source: :referred_student
   has_many :enrollments, dependent: :destroy
   has_many :teachers, through: :enrollments
   has_many :payments, through: :enrollments

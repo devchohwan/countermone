@@ -109,17 +109,41 @@
         </tr>
       </thead>
       <tbody class="divide-y">
-        <% g[:schedules].each do |s| %>
-          <tr>
-            <td class="py-1.5 text-base-content/60"><%= s.sequence %>회</td>
-            <td><%= s.lesson_date.strftime("%Y.%m.%d (%a)") %></td>
-            <td><%= schedule_status_badge(s.status) %></td>
-            <td class="text-xs text-indigo-500">
-              <% if s.makeup_date %>
-                <%= s.makeup_date.strftime("%m/%d") %> <%= s.makeup_teacher&.name %>
-              <% end %>
-            </td>
-          </tr>
+        <%
+          ev_list = g[:schedules].map { |s| { type: :schedule, date: s.lesson_date, obj: s } }
+          enr = g[:enrollment]
+          ev_list << { type: :leave,  date: enr.leave_at }  if enr.leave_at.present?
+          ev_list << { type: :return, date: enr.return_at } if enr.return_at.present?
+          ev_list.sort_by! { |ev| ev[:date] }
+        %>
+        <% ev_list.each do |ev| %>
+          <% if ev[:type] == :schedule %>
+            <% s = ev[:obj] %>
+            <tr>
+              <td class="py-1.5 text-base-content/60"><%= s.sequence %>회</td>
+              <td><%= s.lesson_date.strftime("%Y.%m.%d (%a)") %></td>
+              <td><%= schedule_status_badge(s.status) %></td>
+              <td class="text-xs text-indigo-500">
+                <% if s.makeup_date %>
+                  <%= s.makeup_date.strftime("%m/%d") %> <%= s.makeup_teacher&.name %>
+                <% end %>
+              </td>
+            </tr>
+          <% elsif ev[:type] == :leave %>
+            <tr class="bg-warning/10">
+              <td class="py-1.5 text-xs font-semibold text-warning">휴원</td>
+              <td class="text-xs text-warning"><%= ev[:date].strftime("%Y.%m.%d (%a)") %></td>
+              <td><span class="badge badge-xs badge-warning">휴원</span></td>
+              <td></td>
+            </tr>
+          <% elsif ev[:type] == :return %>
+            <tr class="bg-success/10">
+              <td class="py-1.5 text-xs font-semibold text-success">복귀</td>
+              <td class="text-xs text-success"><%= ev[:date].strftime("%Y.%m.%d (%a)") %></td>
+              <td><span class="badge badge-xs badge-success">복귀</span></td>
+              <td></td>
+            </tr>
+          <% end %>
         <% end %>
       </tbody>
     </table>

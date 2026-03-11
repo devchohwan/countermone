@@ -84,15 +84,33 @@
               <% end %>
             </td>
           </tr>
-          <% referral_discount = Discount.joins(:payment).where(payments: { student_id: @student.id }, discount_type: 'referral').order(:created_at).last %>
           <tr>
-            <td class="text-base-content/50">추천인 할인</td>
+            <td class="text-base-content/50">내 추천 학생</td>
             <td>
-              <% if referral_discount %>
-                <span class="text-success">-<%= number_with_delimiter(referral_discount.amount) %>원</span>
-                <span class="text-xs text-base-content/40 ml-1">(<%= referral_discount.payment.enrollment.subject %>, <%= referral_discount.created_at.strftime('%Y-%m-%d') %>)</span>
+              <% if @student.referred_students.any? %>
+                <%= @student.referred_students.map { |s| link_to s.name, student_path(s), class: "link link-hover" }.join(', ').html_safe %>
               <% else %>
                 <span class="text-base-content/30">-</span>
+              <% end %>
+            </td>
+          </tr>
+          <% referral_discounts = Discount.joins(:payment).where(payments: { student_id: @student.id }, discount_type: 'referral').order(:created_at) %>
+          <% pending_count = @student.referral_discount_pending %>
+          <tr>
+            <td class="text-base-content/50">추천 할인</td>
+            <td>
+              <% if pending_count == 0 && referral_discounts.none? %>
+                <span class="text-base-content/30">-</span>
+              <% else %>
+                <% if pending_count > 0 %>
+                  <span class="text-warning font-medium">대기 <%= pending_count %>건</span>
+                  <span class="text-xs text-base-content/50 ml-1">(-<%= number_with_delimiter(pending_count * 50_000) %>원 예정)</span>
+                <% end %>
+                <% referral_discounts.each do |d| %>
+                  <% separator = (pending_count > 0) ? ' · ' : '' %>
+                  <%= separator.html_safe %><span class="text-success">사용됨: -<%= number_with_delimiter(d.amount) %>원</span>
+                  <span class="text-xs text-base-content/40 ml-1">(<%= d.payment.enrollment.subject %>, <%= d.created_at.strftime('%Y-%m-%d') %>)</span>
+                <% end %>
               <% end %>
             </td>
           </tr>

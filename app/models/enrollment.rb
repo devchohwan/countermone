@@ -18,8 +18,8 @@ class Enrollment < ApplicationRecord
   validate :teacher_teaches_subject
   validate :lesson_time_within_business_hours
 
-  def leave!
-    update_columns(status: "leave", leave_at: Date.today)
+  def leave!(reason = nil)
+    update_columns(status: "leave", leave_at: Date.today, leave_reason: reason)
     student.update_columns(status: "leave") if student.enrollments.where(status: "active").none?
   end
 

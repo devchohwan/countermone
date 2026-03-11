@@ -47,7 +47,7 @@ class EnrollmentsController < ApplicationController
   end
 
   def leave
-    @enrollment.leave!
+    @enrollment.leave!(params[:leave_reason].presence)
     redirect_to student_path(@enrollment.student, tab: @enrollment.id), notice: "클래스 휴원 처리되었습니다."
   end
 

@@ -14,7 +14,7 @@
       <div class="ml-auto flex gap-2">
         <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
         <% if enrollment.status == "active" %>
-          <%= button_to "휴원", leave_enrollment_path(enrollment), method: :patch, class: "btn btn-xs btn-warning btn-outline", data: { turbo_confirm: "휴원 처리하시겠습니까?" } %>
+          <button type="button" onclick="document.getElementById('leave-dialog-<%= enrollment.id %>').showModal()" class="btn btn-xs btn-warning btn-outline">휴원</button>
         <% elsif enrollment.status == "leave" %>
           <button type="button" onclick="document.getElementById('return-dialog-<%= enrollment.id %>').showModal()" class="btn btn-xs btn-success btn-outline">복귀</button>
         <% end %>
@@ -216,6 +216,33 @@
     </div>
   </div>
 </div>
+
+<%# 휴원 사유 dialog %>
+<% if enrollment.status == "active" %>
+<dialog id="leave-dialog-<%= enrollment.id %>" class="modal">
+  <div class="modal-box max-w-sm">
+    <h3 class="font-bold text-base mb-1">휴원 처리</h3>
+    <p class="text-sm text-base-content/60 mb-4"><%= enrollment.subject %></p>
+    <form action="<%= leave_enrollment_path(enrollment) %>" method="post" data-turbo="false">
+      <input type="hidden" name="_method" value="patch">
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-medium text-base-content/60 mb-1 block">휴원 사유 (선택)</label>
+          <textarea name="leave_reason" rows="2"
+                    class="textarea textarea-bordered w-full text-sm"
+                    placeholder="예: 여행, 개인 사정 등"></textarea>
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button type="button" onclick="document.getElementById('leave-dialog-<%= enrollment.id %>').close()" class="btn btn-sm btn-ghost">취소</button>
+          <button type="submit" class="btn btn-sm btn-warning">휴원 확정</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+<% end %>
 
 <%# 복귀 슬롯피커 dialog %>
 <% if enrollment.status == "leave" %>

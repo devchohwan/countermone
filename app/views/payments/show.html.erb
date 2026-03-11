@@ -45,7 +45,7 @@
           <% end %>
         </td>
         <td class="font-medium"><%= format_amount(@payment.amount) %></td>
-        <td><%= @payment.payment_method %></td>
+        <td><%=({ "card" => "카드", "transfer" => "계좌이체", "cash" => "현금" }[@payment.payment_method] || @payment.payment_method) %></td>
         <td>
           <% unless @payment.payment_type == "deposit" %>
             <%= @payment.deposit_paid_at&.strftime("%Y.%m.%d") %>

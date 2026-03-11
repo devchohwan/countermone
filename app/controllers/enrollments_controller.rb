@@ -48,7 +48,7 @@ class EnrollmentsController < ApplicationController
 
   def leave
     @enrollment.leave!
-    redirect_to enrollment_path(@enrollment), notice: "클래스 휴원 처리되었습니다."
+    redirect_to student_path(@enrollment.student, tab: @enrollment.id), notice: "클래스 휴원 처리되었습니다."
   end
 
   def return
@@ -67,9 +67,9 @@ class EnrollmentsController < ApplicationController
         @enrollment.update_columns(lesson_day: new_day, lesson_time: time_val, teacher_id: new_teacher_id)
       end
       @enrollment.return!(return_date)
-      redirect_to student_path(@enrollment.student), notice: "#{@enrollment.subject} 복귀 처리되었습니다. (#{return_date.strftime('%m/%d')}부터)"
+      redirect_to student_path(@enrollment.student, tab: @enrollment.id), notice: "#{@enrollment.subject} 복귀 처리되었습니다. (#{return_date.strftime('%m/%d')}부터)"
     else
-      redirect_to student_path(@enrollment.student), alert: "결제 내역이 없어 복귀할 수 없습니다."
+      redirect_to student_path(@enrollment.student, tab: @enrollment.id), alert: "결제 내역이 없어 복귀할 수 없습니다."
     end
   end
 

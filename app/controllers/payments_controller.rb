@@ -73,7 +73,7 @@ class PaymentsController < ApplicationController
     @payment.enrollment.student.update!(waiting_expires_at: nil) if @payment.fully_paid?
 
     if @payment.save
-      redirect_to @payment, notice: "결제가 등록되었습니다."
+      redirect_to student_path(@payment.student, tab: @payment.enrollment_id), notice: "결제가 등록되었습니다."
     else
       @enrollment  = @payment.enrollment
       @price_plans = PricePlan.active.order(:subject, :months)

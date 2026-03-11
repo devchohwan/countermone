@@ -164,27 +164,27 @@
       </div>
     </div>
 
-    <%# ── 예상 할인 안내 ── %>
-    <% if @enrollment && (@multi_class_discount.to_i > 0 || @price_plans.any?) %>
-      <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-2" id="discount-preview">
-        <h4 class="text-sm font-semibold text-purple-800">예상 할인 안내</h4>
+    <%# ── 예상 할인 안내 (신규클래스 등록 시에만 표시) ── %>
+    <% if @enrollment && !@is_renewal %>
+      <div class="bg-base-100 border border-primary/30 rounded-lg p-4 space-y-2" id="discount-preview">
+        <h4 class="text-sm font-semibold text-primary">예상 할인 안내</h4>
         <div class="space-y-1 text-sm" id="discount-lines">
           <% if @multi_class_discount.to_i > 0 %>
-            <div class="flex justify-between text-purple-700">
+            <div class="flex justify-between text-primary/80">
               <span><%= @multi_class_memo %></span>
               <span class="font-medium">-<%= number_with_delimiter(@multi_class_discount) %>원</span>
             </div>
           <% end %>
-          <div class="flex justify-between text-purple-700 hidden" id="multi-month-line">
+          <div class="flex justify-between text-primary/80 hidden" id="multi-month-line">
             <span id="multi-month-memo">다개월 할인</span>
             <span class="font-medium" id="multi-month-amount"></span>
           </div>
         </div>
-        <div class="border-t border-purple-200 pt-2 flex justify-between text-sm font-semibold text-purple-900">
+        <div class="border-t border-base-300 pt-2 flex justify-between text-sm font-semibold text-base-content">
           <span>합계 할인</span>
           <span id="total-discount-amount">-<%= number_with_delimiter(@multi_class_discount.to_i) %>원</span>
         </div>
-        <p class="text-xs text-purple-500">결제 등록 시 자동 적용됩니다.</p>
+        <p class="text-xs text-base-content/50">결제 등록 시 자동 적용됩니다.</p>
       </div>
     <% end %>
 

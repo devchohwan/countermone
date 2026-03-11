@@ -45,9 +45,18 @@ class PaymentsController < ApplicationController
     @price_plans = PricePlan.active.order(:subject, :months)
 
     if @enrollment
-      active_count = @enrollment.student.enrollments.where(status: "active").count
-      @multi_class_discount = active_count >= 2 ? (active_count - 1) * 50_000 : 0
-      @multi_class_memo     = active_count >= 2 ? "#{active_count}클래스 중복 수강 할인" : nil
+      @is_renewal = @enrollment.payments.exists?
+      if @is_renewal
+        @multi_class_discount = 0
+        @multi_class_memo     = nil
+      else
+        has_qualifying = @enrollment.student.enrollments
+          .where(status: "active")
+          .where.not(id: @enrollment.id)
+          .any? { |e| e.schedules.where(status: "scheduled").count > 0 }
+        @multi_class_discount = has_qualifying ? 50_000 : 0
+        @multi_class_memo     = has_qualifying ? "다중 수강 할인" : nil
+      end
     end
   end
 
@@ -127,13 +136,19 @@ class PaymentsController < ApplicationController
   end
 
   def apply_multi_class_discount(payment)
-    active_count = payment.enrollment.student.enrollments.where(status: "active").count
-    return unless active_count >= 2
-    discount_amount = (active_count - 1) * 50_000
+    enrollment = payment.enrollment
+    # 연장결제: 이미 결제 내역 있으면 할인 없음
+    return if enrollment.payments.exists?
+    # 신규클래스: 다른 active enrollment 중 잔여≥1 있으면 5만원
+    has_qualifying = enrollment.student.enrollments
+      .where(status: "active")
+      .where.not(id: enrollment.id)
+      .any? { |e| e.schedules.where(status: "scheduled").count > 0 }
+    return unless has_qualifying
     payment.discounts.build(
       discount_type: "multi_class",
-      amount: discount_amount,
-      memo: "#{active_count}클래스 중복 수강 할인"
+      amount: 50_000,
+      memo: "다중 수강 할인"
     )
   end
 end

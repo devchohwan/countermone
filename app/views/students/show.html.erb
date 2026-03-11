@@ -74,8 +74,8 @@
       <h3 class="card-title text-sm">할인 / 기타</h3>
       <table class="table table-xs">
         <tbody>
-          <% if @student.referrer %>
-            <tr><td class="text-base-content/50">추천인</td><td><%= link_to @student.referrer.name, student_path(@student.referrer), class: "link link-hover" %></td></tr>
+          <% if @student.referrers.any? %>
+            <tr><td class="text-base-content/50">추천인</td><td><%= @student.referrers.map { |r| link_to r.name, student_path(r), class: "link link-hover" }.join(', ').html_safe %></td></tr>
           <% end %>
           <tr><td class="text-base-content/50">동의서</td><td><%= @student.consent_form? ? "✓" : %(<span class="badge badge-xs badge-warning">미수령</span>).html_safe %></td></tr>
           <tr><td class="text-base-content/50">2차전직서</td><td><%= @student.second_transfer_form? ? "✓" : "-" %></td></tr>

@@ -49,6 +49,8 @@ class PaymentsController < ApplicationController
       if @is_renewal
         @multi_class_discount = 0
         @multi_class_memo     = nil
+        last_lesson = @enrollment.schedules.order(:lesson_date).last
+        @default_starts_at = last_lesson ? last_lesson.lesson_date + 7.days : Date.today
       else
         has_qualifying = @enrollment.student.enrollments
           .where(status: "active")

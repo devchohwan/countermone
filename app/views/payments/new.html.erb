@@ -53,7 +53,7 @@
         </div>
         <div>
           <%= f.label :starts_at, "수강 시작일", class: "block text-sm font-medium text-base-content mb-1" %>
-          <%= f.date_field :starts_at, value: Date.today, class: "input input-bordered w-full text-sm" %>
+          <%= f.date_field :starts_at, value: @default_starts_at || Date.today, class: "input input-bordered w-full text-sm" %>
         </div>
       </div>
 

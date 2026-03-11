@@ -21,6 +21,7 @@
         <th>유형</th>
         <th>기간</th>
         <th>횟수</th>
+        <th>할인</th>
         <th>금액</th>
         <th>수단</th>
         <th>결제일</th>
@@ -28,7 +29,6 @@
         <th>예약금 납부일</th>
         <th>잔금</th>
         <th>잔금 납부일</th>
-        <th>할인</th>
         <th>환불</th>
       </tr>
     </thead>
@@ -39,6 +39,11 @@
         <td><%= @payment.payment_type == "deposit" ? "예약금" : "신규" %></td>
         <td><%= @payment.months %>개월</td>
         <td><%= @payment.total_lessons %>회</td>
+        <td class="text-purple-600">
+          <% @discounts.each do |d| %>
+            <div><%= d.memo.presence || d.discount_type %> -<%= format_amount(d.amount) %></div>
+          <% end %>
+        </td>
         <td class="font-medium"><%= format_amount(@payment.amount) %></td>
         <td><%= @payment.payment_method %></td>
         <td>
@@ -64,11 +69,6 @@
             <% else %>
               <span class="text-error text-xs">미납</span>
             <% end %>
-          <% end %>
-        </td>
-        <td class="text-purple-600">
-          <% @discounts.each do |d| %>
-            <div><%= d.memo.presence || d.discount_type %> -<%= format_amount(d.amount) %></div>
           <% end %>
         </td>
         <td>

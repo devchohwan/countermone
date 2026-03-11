@@ -212,34 +212,76 @@
   </div>
 </div>
 
-<%# 복귀 날짜 선택 dialog %>
+<%# 복귀 슬롯피커 dialog %>
 <% if enrollment.status == "leave" %>
 <dialog id="return-dialog-<%= enrollment.id %>" class="modal">
-  <div class="modal-box max-w-sm">
-    <h3 class="font-bold text-base mb-1">복귀 날짜 선택</h3>
+  <div class="modal-box max-w-md">
+    <h3 class="font-bold text-base mb-1">복귀 처리</h3>
     <p class="text-sm text-base-content/60 mb-4">
       <%= enrollment.subject %> — 동결된 수업 <%= enrollment.frozen_scheduled_count %>회
     </p>
 
-    <%= form_with url: return_enrollment_path(enrollment), method: :patch, data: { turbo: false } do |f| %>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">복귀 시작일</label>
-          <input type="date" name="return_date" id="return-date-<%= enrollment.id %>"
-                 min="<%= Date.today %>" value="<%= Date.today %>"
-                 class="input input-bordered w-full text-sm"
-                 onchange="fetchReturnSlot(<%= enrollment.id %>, '<%= enrollment.teacher_id %>', '<%= enrollment.subject %>', '<%= enrollment.lesson_day %>', '<%= enrollment.lesson_time.utc.strftime('%H:%M') %>', this.value)">
+    <form id="return-form-<%= enrollment.id %>"
+          action="<%= return_enrollment_path(enrollment) %>" method="post"
+          data-turbo="false">
+      <input type="hidden" name="_method" value="patch">
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+      <input type="hidden" id="return-date-val-<%= enrollment.id %>" name="return_date" value="">
+      <input type="hidden" id="return-day-val-<%= enrollment.id %>"  name="lesson_day"  value="<%= enrollment.lesson_day %>">
+      <input type="hidden" id="return-time-val-<%= enrollment.id %>" name="lesson_time" value="<%= enrollment.lesson_time.strftime('%H:%M') %>">
+
+      <div class="space-y-3">
+        <%# 요일 / 시간 선택 %>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium text-base-content/60 mb-1 block">요일</label>
+            <select id="return-day-<%= enrollment.id %>"
+                    class="select select-sm select-bordered w-full"
+                    onchange="updateReturnTimes('<%= enrollment.id %>')">
+              <% [['monday','월'],['tuesday','화'],['wednesday','수'],['thursday','목'],['friday','금'],['saturday','토'],['sunday','일']].each do |val, ko| %>
+                <option value="<%= val %>" <%= enrollment.lesson_day == val ? 'selected' : '' %>><%= ko %>요일</option>
+              <% end %>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-medium text-base-content/60 mb-1 block">시간</label>
+            <select id="return-time-<%= enrollment.id %>"
+                    class="select select-sm select-bordered w-full"
+                    onchange="clearReturnDate('<%= enrollment.id %>')">
+              <% current_time_str = enrollment.lesson_time.strftime('%H:%M') %>
+              <% hours = enrollment.lesson_day == 'monday' ? (14..17) : (13..21) %>
+              <% hours.each do |h| %>
+                <% [0, 30].each do |min| %>
+                  <% t = "#{h.to_s.rjust(2,'0')}:#{min.to_s.rjust(2,'0')}" %>
+                  <option value="<%= t %>" <%= current_time_str == t ? 'selected' : '' %>><%= t %></option>
+                <% end %>
+              <% end %>
+            </select>
+          </div>
         </div>
 
-        <div id="return-slot-info-<%= enrollment.id %>" class="text-sm text-base-content/60 bg-base-200 rounded-lg px-3 py-2 hidden">
-        </div>
+        <%# 날짜 조회 버튼 %>
+        <button type="button"
+                onclick="fetchReturnSlots('<%= enrollment.id %>', '<%= enrollment.teacher_id %>', '<%= enrollment.subject %>')"
+                class="btn btn-sm btn-outline w-full">
+          날짜 조회
+        </button>
 
-        <div class="flex gap-2 justify-end">
-          <button type="button" onclick="document.getElementById('return-dialog-<%= enrollment.id %>').close()" class="btn btn-sm btn-ghost">취소</button>
-          <%= f.submit "복귀 확정", class: "btn btn-sm btn-success" %>
+        <%# 날짜 그리드 %>
+        <div id="return-slot-body-<%= enrollment.id %>" class="hidden"></div>
+
+        <%# 선택된 날짜 표시 %>
+        <div id="return-selected-<%= enrollment.id %>" class="hidden text-sm bg-success/10 border border-success/30 rounded-lg px-3 py-2 text-success font-medium"></div>
+
+        <div class="flex gap-2 justify-end pt-1">
+          <button type="button"
+                  onclick="document.getElementById('return-dialog-<%= enrollment.id %>').close()"
+                  class="btn btn-sm btn-ghost">취소</button>
+          <button type="submit" id="return-submit-<%= enrollment.id %>"
+                  class="btn btn-sm btn-success" disabled>복귀 확정</button>
         </div>
       </div>
-    <% end %>
+    </form>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
@@ -661,37 +703,109 @@
   };
 })();
 
-  // 복귀 날짜 선택 시 슬롯 정보 조회
-  window.fetchReturnSlot = function(enrollmentId, teacherId, subject, lessonDay, lessonTime, selectedDate) {
-    const infoEl = document.getElementById('return-slot-info-' + enrollmentId);
-    if (!infoEl || !selectedDate) return;
+  // 복귀 팝업 슬롯피커 (첫 enrollment 렌더 시 한번만 정의)
+  if (!window._returnPickerDefined) {
+    window._returnPickerDefined = true;
+    const RETURN_DAY_KO = { monday:'월', tuesday:'화', wednesday:'수', thursday:'목', friday:'금', saturday:'토', sunday:'일' };
 
-    // 선택 날짜가 해당 요일인지 확인
-    const dayMap = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
-    const selected = new Date(selectedDate);
-    const targetDay = dayMap[lessonDay];
-
-    if (selected.getDay() !== targetDay) {
-      const dayKo = { monday:'월', tuesday:'화', wednesday:'수', thursday:'목', friday:'금', saturday:'토', sunday:'일' };
-      infoEl.innerHTML = `<span class="text-warning">⚠ 선택한 날짜가 수업 요일(${dayKo[lessonDay]}요일)이 아닙니다. 첫 수업은 이후 첫 ${dayKo[lessonDay]}요일부터 시작됩니다.</span>`;
-      infoEl.classList.remove('hidden');
-      return;
+  window.updateReturnTimes = function(eid) {
+    const day = document.getElementById('return-day-' + eid)?.value;
+    const sel = document.getElementById('return-time-' + eid);
+    if (!sel || !day) return;
+    let start = 13 * 60, end = 21 * 60;
+    if (day === 'monday') { start = 14 * 60; end = 17 * 60; }
+    const opts = [];
+    for (let m = start; m <= end; m += 30) {
+      const h   = String(Math.floor(m / 60)).padStart(2, '0');
+      const min = String(m % 60).padStart(2, '0');
+      opts.push(`<option value="${h}:${min}">${h}:${min}</option>`);
     }
+    sel.innerHTML = opts.join('');
+    clearReturnDate(eid);
+  };
 
-    fetch(`/slots/check?teacher_id=${teacherId}&subject=${encodeURIComponent(subject)}&lesson_day=${lessonDay}&lesson_time=${encodeURIComponent(lessonTime)}`)
+  window.clearReturnDate = function(eid) {
+    const dateVal   = document.getElementById('return-date-val-' + eid);
+    const submitBtn = document.getElementById('return-submit-' + eid);
+    const selectedEl = document.getElementById('return-selected-' + eid);
+    if (dateVal)    dateVal.value = '';
+    if (submitBtn)  submitBtn.disabled = true;
+    if (selectedEl) { selectedEl.textContent = ''; selectedEl.classList.add('hidden'); }
+  };
+
+  window.fetchReturnSlots = function(eid, teacherId, subject) {
+    const day  = document.getElementById('return-day-'  + eid)?.value;
+    const time = document.getElementById('return-time-' + eid)?.value;
+    const body = document.getElementById('return-slot-body-' + eid);
+    if (!day || !time || !body) return;
+
+    document.getElementById('return-day-val-'  + eid).value = day;
+    document.getElementById('return-time-val-' + eid).value = time;
+
+    body.innerHTML = '<p class="text-xs text-base-content/50 text-center py-2">불러오는 중…</p>';
+    body.classList.remove('hidden');
+    clearReturnDate(eid);
+
+    fetch(`/slot_check?teacher_id=${teacherId}&subject=${encodeURIComponent(subject)}&lesson_day=${day}&lesson_time=${encodeURIComponent(time)}`)
       .then(r => r.json())
       .then(data => {
-        const count = data.date_slots?.[selectedDate] ?? 0;
-        const max   = data.max ?? 3;
-        const enroll = typeof data.enrollment_count === 'number' ? data.enrollment_count : 0;
-        const available = max - count;
-        if (available <= 0) {
-          infoEl.innerHTML = `<span class="text-error">⚠ ${selectedDate} 해당 타임 만석 (${count}/${max}명) — 다른 날짜를 선택하세요.</span>`;
-        } else {
-          infoEl.innerHTML = `<span class="text-success">✓ ${selectedDate} 자리 있음 (현재 ${count}/${max}명)</span>`;
-        }
-        infoEl.classList.remove('hidden');
+        const count    = typeof data.enrollment_count === 'number' ? data.enrollment_count : 0;
+        const max      = data.max || 3;
+        const dayLabel = RETURN_DAY_KO[day] || day;
+        const pct      = Math.round((count / max) * 100);
+        const barColor = count >= max ? 'bg-error' : (count > 0 ? 'bg-warning' : 'bg-success');
+
+        let html = `
+          <div class="mb-3 p-2 bg-base-200 rounded-lg">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-base-content/60">현재 정규 수강인원</span>
+              <span class="font-bold ${count >= max ? 'text-error' : ''}">${count} / ${max}명</span>
+            </div>
+            <div class="w-full bg-base-300 rounded-full h-1.5">
+              <div class="${barColor} h-1.5 rounded-full" style="width:${pct}%"></div>
+            </div>
+          </div>
+          <p class="text-xs text-base-content/50 mb-2">${dayLabel}요일 ${time} — 복귀 시작일 선택</p>
+          <div class="grid grid-cols-2 gap-2">`;
+
+        Object.entries(data.date_slots || {}).forEach(([ds, taken]) => {
+          const d        = new Date(ds + 'T00:00:00');
+          const label    = `${d.getMonth()+1}/${d.getDate()} (${dayLabel})`;
+          const filled   = '●'.repeat(taken);
+          const empty    = '○'.repeat(Math.max(0, max - taken));
+          if (taken >= max) {
+            html += `<div class="rounded border border-error/30 bg-error/10 px-3 py-2 text-center select-none opacity-60">
+              <div class="text-sm font-medium text-error">${label}</div>
+              <div class="font-mono text-xs mt-0.5 text-error">${filled} 마감</div>
+            </div>`;
+          } else {
+            const colorCls = taken === 0 ? 'border-success/40 bg-success/10 hover:bg-success/20' : 'border-warning/40 bg-warning/10 hover:bg-warning/20';
+            html += `<div class="rounded border ${colorCls} px-3 py-2 text-center cursor-pointer"
+                          onclick="selectReturnDate('${ds}', '${eid}')">
+              <div class="text-sm font-medium">${label}</div>
+              <div class="font-mono text-xs mt-0.5">
+                <span class="text-base-content/70">${filled}</span><span class="opacity-30">${empty}</span>
+                <span class="ml-1 text-base-content/40">${taken}/${max}</span>
+              </div>
+            </div>`;
+          }
+        });
+        html += '</div>';
+        body.innerHTML = html;
       })
-      .catch(() => { infoEl.classList.add('hidden'); });
+      .catch(() => {
+        body.innerHTML = '<p class="text-xs text-error text-center py-2">슬롯 조회 실패</p>';
+      });
   };
+
+  window.selectReturnDate = function(dateStr, eid) {
+    document.getElementById('return-date-val-' + eid).value = dateStr;
+    document.getElementById('return-submit-'   + eid).disabled = false;
+    const selectedEl = document.getElementById('return-selected-' + eid);
+    if (selectedEl) {
+      selectedEl.textContent = `✓ ${dateStr} 선택됨`;
+      selectedEl.classList.remove('hidden');
+    }
+  };
+  } // end _returnPickerDefined guard
 </script>

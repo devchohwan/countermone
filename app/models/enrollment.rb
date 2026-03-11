@@ -26,7 +26,10 @@ class Enrollment < ApplicationRecord
   def return!(return_date = Date.today)
     frozen = schedules.where(status: "scheduled").order(:lesson_date).to_a
     frozen.each_with_index do |schedule, i|
-      schedule.update_columns(lesson_date: next_lesson_date(return_date, lesson_day, i))
+      schedule.update_columns(
+        lesson_date: next_lesson_date(return_date, lesson_day, i),
+        lesson_time: lesson_time
+      )
     end
     update_columns(status: "active", leave_at: nil, return_at: return_date)
     student.update_columns(status: "active")

@@ -7,6 +7,7 @@
 * **모든 작업이 완료될 때까지 멈추지 마라** — 중간에 사용자 확인 없이 끝까지 진행
 * **any / unknown 타입 사용 금지** — Ruby에서는 untyped 변수나 Object 남용 금지
 * **기능 완성 후 반드시 작동 검사** — curl/rails runner로 실제 동작 확인, 단순 페이지 연결이 아닌 의도대로 완벽히 작동하는지 검증. 테스트 데이터가 없으면 rails runner로 직접 생성한 뒤 검증하고, 검증 후 테스트 데이터는 삭제한다
+* **모든 경우의 수를 따져라** — 무언가를 분석하거나 구현할 때 모든 순열·조합·경우의 수를 빠짐없이 나열하고, 각각이 올바르게 처리되는지 확인한 뒤 답할 것
 
 ## Version Control
 * Whenever code changes are made, you must record a one-line description with emoji in korean of the change in `.commit_message.txt` with Edit Tool.

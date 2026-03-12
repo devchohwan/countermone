@@ -519,13 +519,13 @@
           window._mkData = data;
           window._mkWeekStart = getMonday(parseDate(lessonDateStr));
           window._mkTeacherId = data.teachers[0]?.id ?? null;
-          renderMakeupWeek();
+          window._mkRender();
         });
     }
 
     // ── 주간 시간표 렌더 ────────────────────────────────────
     // 가로: 요일(월~토), 세로: 시간대, 탭: 선생님
-    function renderMakeupWeek() {
+    window._mkRender = function() {
       const data     = window._mkData;
       const ws       = window._mkWeekStart;
       const rangeMin = parseDate(data.range_min);
@@ -550,17 +550,22 @@
       // 선생님 탭
       const teacherTabs = data.teachers.map(t => {
         const active = window._mkTeacherId === t.id;
-        return `<button onclick="window._mkTeacherId=${t.id};renderMakeupWeek();"
+        return `<button onclick="window._mkTeacherId=${t.id};window._mkRender();"
                         class="btn btn-xs ${active ? 'btn-primary' : 'btn-ghost'}">${t.name}</button>`;
       }).join('');
 
       // 현재 선생님 그리드 (grid[tid][date][time] = count)
       const tid   = String(window._mkTeacherId);
       const tGrid = (data.grid || {})[tid] || {};
-      const times = data.times || [data.lesson_time];
 
-      const teacher = data.teachers.find(t => t.id === window._mkTeacherId);
+      const teacher     = data.teachers.find(t => t.id === window._mkTeacherId);
       const teacherName = teacher?.name || '';
+
+      // 현재 주 + 선택 선생님 기준으로 시간대 계산 (없으면 원래 수업시간)
+      const weekDates = days.filter(d => d >= rangeMin && d <= rangeMax).map(toDateStr);
+      const timeSet   = new Set([data.lesson_time]);
+      weekDates.forEach(ds => Object.keys(tGrid[ds] || {}).forEach(t => timeSet.add(t)));
+      const times = Array.from(timeSet).sort();
 
       // 날짜 헤더 (열)
       const thCells = days.map(d => {
@@ -591,7 +596,7 @@
                       style="background:rgba(34,197,94,0.12);"
                       onmouseover="this.style.background='rgba(34,197,94,0.25)'"
                       onmouseout="this.style.background='rgba(34,197,94,0.12)'"
-                      onclick="confirmMakeup('${ds}',${window._mkTeacherId},'${time}','${teacherName}')"
+                      onclick="window._mkConfirm('${ds}',${window._mkTeacherId},'${time}','${teacherName}')"
                       title="${teacherName} — ${slots}/3명">
                     <span class="font-mono text-xs ${colorCls}">${filled}</span><span class="font-mono text-xs opacity-30">${empty}</span>
                   </td>`;
@@ -607,9 +612,9 @@
         <div class="text-xs text-base-content/50 mb-2">보강 가능: ${data.range_min} ~ ${data.range_max}</div>
         <div class="flex flex-wrap gap-1 mb-3">${teacherTabs}</div>
         <div class="flex items-center justify-between mb-2">
-          <button onclick="navigateMakeupWeek(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>
+          <button onclick="window._mkNav(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>
           <span class="text-sm font-medium">${weekLabel}</span>
-          <button onclick="navigateMakeupWeek(1)"  class="btn btn-xs btn-ghost" ${!nextOk  ? 'disabled' : ''}>→</button>
+          <button onclick="window._mkNav(1)"  class="btn btn-xs btn-ghost" ${!nextOk  ? 'disabled' : ''}>→</button>
         </div>
         <div class="overflow-x-auto">
           <table class="table table-xs w-full">
@@ -618,15 +623,15 @@
           </table>
         </div>
         <button onclick="showMain()" class="btn btn-sm btn-ghost w-full mt-3">← 돌아가기</button>`;
-    }
+    };
 
-    function navigateMakeupWeek(dir) {
+    window._mkNav = function(dir) {
       const ws = window._mkWeekStart;
       window._mkWeekStart = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + dir * 7);
-      renderMakeupWeek();
-    }
+      window._mkRender();
+    };
 
-    function confirmMakeup(date, teacherId, time, teacherName) {
+    window._mkConfirm = function(date, teacherId, time, teacherName) {
       actionsEl.innerHTML = `
         <div class="border rounded-lg p-4 space-y-3">
           <div class="text-sm font-semibold">${date} · ${teacherName} 선생님</div>
@@ -643,10 +648,10 @@
                 '<input type=\\'hidden\\' name=\\'makeup_time\\' value=\\'' + t + '\\'>' +
                 '<input type=\\'hidden\\' name=\\'makeup_teacher_id\\' value=\\'${teacherId}\\'>');
             " class="btn btn-sm btn-primary flex-1">보강 등록</button>
-            <button onclick="renderMakeupWeek()" class="btn btn-sm btn-ghost flex-1">← 취소</button>
+            <button onclick="window._mkRender()" class="btn btn-sm btn-ghost flex-1">← 취소</button>
           </div>
         </div>`;
-    }
+    };
 
     // ── 패스 처리 ───────────────────────────────────────────
     function showPass() {

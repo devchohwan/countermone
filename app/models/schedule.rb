@@ -40,8 +40,7 @@ class Schedule < ApplicationRecord
                                      .where("starts_at > ?", payment.starts_at)
                                      .order(:starts_at).first
                                      &.schedules&.order(:lesson_date)&.first
-      return nil unless next_payment_first
-      next_payment_first.lesson_date - 1.day
+      next_payment_first ? next_payment_first.lesson_date - 1.day : lesson_date + 28.days
     end
 
     lower..upper

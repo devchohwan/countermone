@@ -573,19 +573,19 @@
       const inRangeFn = d => d >= rangeMin && (rangeMax === null || d <= rangeMax);
       const DAY_KO   = ['일','월','화','수','목','금','토'];
 
-      // 월~토 6일
-      const days = Array.from({length: 6}, (_, i) =>
+      // 월~일 7일
+      const days = Array.from({length: 7}, (_, i) =>
         new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i));
 
       // 이전/다음 주 이동 가능 여부
       const prevWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() - 7);
       const nextWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7);
-      const prevDays = Array.from({length:6}, (_,i) => new Date(prevWs.getFullYear(), prevWs.getMonth(), prevWs.getDate()+i));
-      const nextDays = Array.from({length:6}, (_,i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate()+i));
+      const prevDays = Array.from({length:7}, (_,i) => new Date(prevWs.getFullYear(), prevWs.getMonth(), prevWs.getDate()+i));
+      const nextDays = Array.from({length:7}, (_,i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate()+i));
       const prevOk   = prevDays.some(d => inRangeFn(d));
       const nextOk   = rangeMax === null || nextDays.some(d => inRangeFn(d));
 
-      const weekEnd   = days[5];
+      const weekEnd   = days[6];
       const weekLabel = `${ws.getMonth()+1}/${ws.getDate()} ~ ${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
 
       // 선생님 탭

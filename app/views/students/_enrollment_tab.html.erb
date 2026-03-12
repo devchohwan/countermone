@@ -498,6 +498,10 @@
         html += `<div class="flex justify-between"><span class="text-base-content/50">등원</span><span class="font-medium text-success">${checkedIn || '미기록'}</span></div>`;
         html += `<div class="flex justify-between"><span class="text-base-content/50">하원</span><span class="font-medium text-info">${checkedOut || '미기록'}</span></div>`;
         html += `</div>`;
+        if (['attended', 'late'].includes(status)) {
+          html += `<button onclick="if(confirm('등원 취소하시겠습니까?\\n출석 기록이 삭제되고 예정 상태로 돌아갑니다.')) submitPatch('/schedules/${scheduleId}/undo_attend','${csrf}')"
+                           class="btn btn-sm btn-warning btn-outline w-full mt-2">등원 취소</button>`;
+        }
       }
       actionsEl.innerHTML = html;
     }

@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct makeup_slots cancel_pass]
+  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct undo_attend makeup_slots cancel_pass]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -278,6 +278,43 @@ class SchedulesController < ApplicationController
     else
       tab_redirect(notice: "차감 취소되었습니다. 보강 또는 패스 전환이 가능합니다. (보강 기간: #{range.first} ~ #{range.last})")
     end
+  end
+
+  def undo_attend
+    unless @schedule.status.in?(%w[attended late])
+      return redirect_back fallback_location: schedules_path, alert: "출석/지각 상태인 수업만 취소 가능합니다."
+    end
+
+    enrollment = @schedule.enrollment
+
+    ActiveRecord::Base.transaction do
+      # 개근처리가 완료됐으면 함께 취소
+      if enrollment.last_attendance_event_at.present?
+        last_payment = enrollment.payments.where(fully_paid: true).order(:created_at).last
+        if last_payment
+          event_discount = last_payment.discounts.where(discount_type: "attendance_event").order(:created_at).last
+          if event_discount
+            # 개근처리로 추가된 수업 = 해당 결제의 가장 마지막 예정 수업
+            event_schedule = last_payment.schedules.where(status: "scheduled").order(lesson_date: :desc).first
+            event_schedule&.destroy
+            event_discount.destroy
+          end
+        end
+        enrollment.update!(last_attendance_event_at: nil, attendance_event_pending: false)
+      end
+
+      # 출석 기록 삭제 (하원 포함)
+      @schedule.attendance&.destroy
+
+      # 상태 되돌리기
+      @schedule.update!(status: "scheduled")
+
+      # 연속개근 12주 여부 재검사
+      count = enrollment.student.consecutive_weeks_for(enrollment)
+      enrollment.update!(attendance_event_pending: count >= 12)
+    end
+
+    tab_redirect(notice: "등원 취소되었습니다.")
   end
 
   private

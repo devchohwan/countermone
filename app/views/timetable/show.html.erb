@@ -40,7 +40,8 @@
     </thead>
     <tbody>
       <% start_hour = @week_days.include?(Date.today) && Date.today.monday? ? 14 : 13 %>
-      <% (start_hour..21).each do |hour| %>
+      <% end_hour = @teacher.max_lesson_hour || 21 %>
+      <% (start_hour..end_hour).each do |hour| %>
         <% is_break = (hour == 18) %>
         <%# 해당 시간대 전체 선생님 기준 차량 총합 (주차공간 공유) %>
         <% weekly_car_total = @week_days.sum do |wd|

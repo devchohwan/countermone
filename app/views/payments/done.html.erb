@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>결제완료</title></head>
+<body>
+<script>
+  (function() {
+    var eid = <%= @enrollment_id.to_i %>;
+    if (window.opener && window.opener.paymentDone) {
+      window.opener.paymentDone(eid);
+    }
+    window.close();
+  })();
+</script>
+<p style="font-family:sans-serif;text-align:center;margin-top:40px">결제 완료. 창을 닫는 중...</p>
+</body>
+</html>

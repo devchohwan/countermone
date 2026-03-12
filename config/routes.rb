@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   root "dashboard#index"
   get "slot_check", to: "slots#check"
+  get "payment_done", to: "payments#done", as: :payment_done
   get "dashboard/current_schedules", to: "dashboard#current_schedules"
   get "dashboard/today_arrivals",    to: "dashboard#today_arrivals"
 

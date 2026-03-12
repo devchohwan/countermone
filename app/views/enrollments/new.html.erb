@@ -62,7 +62,9 @@
   const lessonTimeSelect = document.getElementById('enrollment_lesson_time');
 
   const teachersBySubject = {};
+  const teacherMaxHour = {};
   <% @teachers.each do |teacher| %>
+    teacherMaxHour[<%= teacher.id %>] = <%= teacher.max_lesson_hour || 21 %>;
     <% teacher.teacher_subjects.each do |ts| %>
       if (!teachersBySubject['<%= ts.subject %>']) teachersBySubject['<%= ts.subject %>'] = [];
       teachersBySubject['<%= ts.subject %>'].push({id: <%= teacher.id %>, name: '<%= teacher.name %>'});
@@ -82,10 +84,13 @@
       option.textContent = t.name;
       teacherSelect.appendChild(option);
     });
+    updateTimeOptions();
   }
 
   function updateTimeOptions() {
     const day = lessonDaySelect.value;
+    const teacherId = parseInt(teacherSelect.value);
+    const maxHour = teacherMaxHour[teacherId] || 21;
     lessonTimeSelect.innerHTML = '<option value="">시간 선택</option>';
 
     if (!day) return;
@@ -94,7 +99,7 @@
     if (day === 'monday') {
       hours = [14, 15, 16, 17];
     } else {
-      hours = [13, 14, 15, 16, 17, 18, 19, 20, 21];
+      hours = Array.from({length: maxHour - 13 + 1}, (_, i) => 13 + i);
     }
 
     hours.forEach(h => {
@@ -108,6 +113,7 @@
 
   subjectSelect.addEventListener('change', updateTeacherOptions);
   lessonDaySelect.addEventListener('change', updateTimeOptions);
+  teacherSelect.addEventListener('change', updateTimeOptions);
 
   updateTeacherOptions();
   updateTimeOptions();

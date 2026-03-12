@@ -109,6 +109,11 @@ class PaymentsController < ApplicationController
     end
   end
 
+  def done
+    @enrollment_id = params[:enrollment_id]
+    render layout: false
+  end
+
   def create
     @payment = Payment.new(payment_params)
 
@@ -121,8 +126,7 @@ class PaymentsController < ApplicationController
 
     if @payment.save
       if params[:popup] == "1"
-        eid = @payment.enrollment_id
-        return render(inline: "<script>if(window.opener){window.opener.paymentDone(#{eid});}window.close();</script>")
+        return redirect_to payment_done_path(enrollment_id: @payment.enrollment_id)
       end
       redirect_to student_path(@payment.student, tab: @payment.enrollment_id), notice: "결제가 등록되었습니다."
     else

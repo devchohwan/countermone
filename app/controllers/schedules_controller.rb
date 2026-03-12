@@ -28,10 +28,13 @@ class SchedulesController < ApplicationController
     check_gift_voucher(@schedule)
     respond_to do |format|
       format.turbo_stream do
+        attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
         render turbo_stream: [
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
           turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
-                               locals: { schedules: today_arrival_schedules })
+                               locals: { schedules: today_arrival_schedules }),
+          turbo_stream.replace("attendance-events-panel", partial: "dashboard/attendance_events_panel",
+                               locals: { attendance_events: attendance_events })
         ]
       end
       format.html { tab_redirect(notice: "출석 처리되었습니다.") }

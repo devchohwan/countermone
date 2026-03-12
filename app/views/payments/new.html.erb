@@ -5,7 +5,11 @@
     <h2 class="text-lg font-bold">결제 등록</h2>
   </div>
 
-  <%= form_with model: @payment, class: "space-y-4", id: "payment-form" do |f| %>
+  <%= form_with model: @payment, class: "space-y-4", id: "payment-form",
+        data: { turbo: params[:popup] == "1" ? "false" : "true" } do |f| %>
+    <% if params[:popup] == "1" %>
+      <input type="hidden" name="popup" value="1">
+    <% end %>
     <% if @payment.errors.any? %>
       <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
         <% @payment.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>

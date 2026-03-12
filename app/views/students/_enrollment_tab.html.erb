@@ -44,7 +44,7 @@
         </div>
         <div>
           <label class="block text-xs text-base-content/60 mb-1">시간</label>
-          <%= f.select :lesson_time, (13..21).map { |h| ["#{h}:00", "#{h.to_s.rjust(2,'0')}:00:00"] },
+          <%= f.select :lesson_time, (13..22).map { |h| ["#{h}:00", "#{h.to_s.rjust(2,'0')}:00:00"] },
                 { selected: enrollment.lesson_time.strftime("%H:%M:%S") },
                 class: "select select-bordered select-sm text-sm" %>
         </div>
@@ -292,7 +292,7 @@
                     class="select select-sm select-bordered w-full"
                     onchange="clearReturnDate('<%= enrollment.id %>')">
               <% current_time_str = enrollment.lesson_time.strftime('%H:%M') %>
-              <% hours = enrollment.lesson_day == 'monday' ? (14..17) : (13..21) %>
+              <% hours = enrollment.lesson_day == 'monday' ? (14..17) : (13..22) %>
               <% hours.each do |h| %>
                 <% [0, 30].each do |min| %>
                   <% t = "#{h.to_s.rjust(2,'0')}:#{min.to_s.rjust(2,'0')}" %>
@@ -548,7 +548,7 @@
 
       // 운영시간 고정: 13:00 ~ 21:00, 30분 간격
       const times = [];
-      for (let m = 13 * 60; m <= 21 * 60; m += 30) {
+      for (let m = 13 * 60; m <= 22 * 60; m += 30) {
         const h   = String(Math.floor(m / 60)).padStart(2, '0');
         const min = String(m % 60).padStart(2, '0');
         times.push(`${h}:${min}`);
@@ -750,7 +750,7 @@
       const sel = document.getElementById('rs-time');
       if (!sel || !day) return;
       const ed  = (window._enrollmentData || {})[enrollmentId] || {};
-      let start = 13 * 60, end = 21 * 60;
+      let start = 13 * 60, end = 22 * 60;
       if (day === 'monday') { start = 14 * 60; end = 17 * 60; }
       const opts = [];
       for (let m = start; m <= end; m += 30) {
@@ -849,7 +849,7 @@
     const day = document.getElementById('return-day-' + eid)?.value;
     const sel = document.getElementById('return-time-' + eid);
     if (!sel || !day) return;
-    let start = 13 * 60, end = 21 * 60;
+    let start = 13 * 60, end = 22 * 60;
     if (day === 'monday') { start = 14 * 60; end = 17 * 60; }
     const opts = [];
     for (let m = start; m <= end; m += 30) {

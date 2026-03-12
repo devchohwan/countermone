@@ -63,7 +63,7 @@
 const currentTime = '<%= @enrollment.lesson_time.strftime("%H:%M") %>';
 
 function getTimeOptions(day) {
-  let start = 13 * 60, end = 21 * 60;
+  let start = 13 * 60, end = 22 * 60;
   if (day === 'monday') { start = 14 * 60; end = 17 * 60; }
   const opts = [];
   for (let m = start; m <= end; m += 30) {

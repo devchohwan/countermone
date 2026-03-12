@@ -74,7 +74,7 @@ class Enrollment < ApplicationRecord
     start_min  = t.respond_to?(:min)  ? t.min  : t.to_s.split(":").second.to_i
     minutes = start_hour * 60 + start_min
 
-    max_hour = teacher&.max_lesson_hour || 21
+    max_hour = teacher&.max_lesson_hour || 22
     valid = if lesson_day == "monday"
       minutes >= 14 * 60 && minutes <= 17 * 60
     else

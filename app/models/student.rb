@@ -38,7 +38,7 @@ class Student < ApplicationRecord
     since = candidates.compact.max
     enrollment.schedules
               .where("lesson_date >= ?", since)
-              .where("lesson_date <= ?", Date.today)
+              .where("lesson_date <= ? OR status IN (?)", Date.today, %w[attended late makeup_done])
               .order(lesson_date: :desc)
               .to_a
               .take_while { |s| %w[attended makeup_done].include?(s.status) }

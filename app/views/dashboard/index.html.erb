@@ -44,6 +44,7 @@
 
     <%= render "hourly_schedule_text",
           schedules: @today_schedules,
+          makeups: @today_makeups,
           enrollment_remaining: @enrollment_remaining %>
 
     <%= render "hourly_arrival_text", schedules: @today_schedules, readonly: !@is_today %>

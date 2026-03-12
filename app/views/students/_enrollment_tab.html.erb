@@ -13,6 +13,11 @@
       <% end %>
       <div class="ml-auto flex gap-2">
         <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
+        <% if enrollment.payments.empty? %>
+          <%= button_to "삭제", enrollment_path(enrollment), method: :delete,
+                class: "btn btn-xs btn-error btn-outline",
+                form: { onsubmit: "return confirm('클래스를 삭제하시겠습니까?')" } %>
+        <% end %>
         <% if enrollment.status == "active" %>
           <button type="button" onclick="document.getElementById('leave-dialog-<%= enrollment.id %>').showModal()" class="btn btn-xs btn-warning btn-outline">휴원</button>
         <% elsif enrollment.status == "leave" %>

@@ -300,18 +300,18 @@ class SchedulesController < ApplicationController
             event_discount.destroy
           end
         end
-        enrollment.update!(last_attendance_event_at: nil, attendance_event_pending: false)
+        enrollment.update_columns(last_attendance_event_at: nil, attendance_event_pending: false)
       end
 
       # 출석 기록 삭제 (하원 포함)
       @schedule.attendance&.destroy
 
       # 상태 되돌리기
-      @schedule.update!(status: "scheduled")
+      @schedule.update_column(:status, "scheduled")
 
       # 연속개근 12주 여부 재검사
       count = enrollment.student.consecutive_weeks_for(enrollment)
-      enrollment.update!(attendance_event_pending: count >= 12)
+      enrollment.update_column(:attendance_event_pending, count >= 12)
     end
 
     tab_redirect(notice: "등원 취소되었습니다.")

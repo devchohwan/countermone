@@ -340,7 +340,7 @@ class SchedulesController < ApplicationController
     enrollment = schedule.enrollment
     count      = enrollment.student.consecutive_weeks_for(enrollment)
     if count >= 12
-      enrollment.update!(attendance_event_pending: true)
+      enrollment.update_column(:attendance_event_pending, true)
     end
   end
 

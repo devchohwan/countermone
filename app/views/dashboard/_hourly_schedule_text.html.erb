@@ -1,23 +1,33 @@
 <%
-  # 정규 수업: {hour => {teacher_id => [schedule, ...]}}
   regular_by_hour = (schedules || []).group_by { |s| s.lesson_time.in_time_zone('Seoul').hour }
-
-  # 보강 수업: {hour => {makeup_teacher_id => [schedule, ...]}}
   makeup_by_hour  = (makeups || []).group_by { |s| s.makeup_time&.in_time_zone('Seoul')&.hour }.compact
-
   all_hours = (regular_by_hour.keys + makeup_by_hour.keys).uniq.sort
 
-  # 첫수업 판단: sequence==1인 수업 중 해당 enrollment의 첫 결제인 경우
+  # 첫수업 판단
   seq1_schedules = (schedules || []).select { |s| s.sequence == 1 }
   first_payment_ids = if seq1_schedules.any?
     enroll_ids = seq1_schedules.map(&:enrollment_id).uniq
-    Payment.where(enrollment_id: enroll_ids)
-           .group(:enrollment_id).minimum(:id)
-           .values.to_set
+    Payment.where(enrollment_id: enroll_ids).group(:enrollment_id).minimum(:id).values.to_set
   else
     Set.new
   end
   first_lesson_ids = seq1_schedules.select { |s| first_payment_ids.include?(s.payment_id) }.map(&:id).to_set
+
+  # 시간대별 선생님 그룹 빌드: teacher_name => { regulars: [], makeups: [] }
+  hour_groups = all_hours.index_with do |hour|
+    combined = {}
+    (regular_by_hour[hour] || []).each do |s|
+      key = s.teacher.name
+      combined[key] ||= { regulars: [], makeups: [] }
+      combined[key][:regulars] << s
+    end
+    (makeup_by_hour[hour] || []).each do |s|
+      key = s.makeup_teacher.name
+      combined[key] ||= { regulars: [], makeups: [] }
+      combined[key][:makeups] << s
+    end
+    combined
+  end
 %>
 <div class="card bg-base-100 shadow-sm">
   <div class="card-body p-4">
@@ -28,10 +38,9 @@
           copy_lines = []
           all_hours.each do |hour|
             copy_lines << "#{hour}시"
-            # 정규
-            (regular_by_hour[hour] || []).group_by(&:teacher_id).each_value do |ts|
-              copy_lines << "[#{ts.first.teacher.name}]"
-              ts.each do |s|
+            hour_groups[hour].each do |teacher_name, group|
+              copy_lines << "[#{teacher_name}]"
+              group[:regulars].each do |s|
                 remaining = enrollment_remaining[s.enrollment_id] || 0
                 tag = first_lesson_ids.include?(s.id) ? "(첫)" : ""
                 if s.status.in?(%w[attended late])
@@ -40,13 +49,14 @@
                   copy_lines << "#{s.student.name}#{tag} #{remaining}"
                 end
               end
-            end
-            # 보강
-            (makeup_by_hour[hour] || []).group_by(&:makeup_teacher_id).each_value do |ms|
-              copy_lines << "[#{ms.first.makeup_teacher.name}]"
-              ms.each do |s|
+              group[:makeups].each do |s|
                 remaining = enrollment_remaining[s.enrollment_id] || 0
-                copy_lines << "#{s.student.name}(보/#{s.makeup_teacher.name}) #{remaining}"
+                attended  = s.status == "makeup_done"
+                if attended
+                  copy_lines << "#{s.student.name}(보/#{s.teacher.name}) #{remaining + 1}-#{remaining}"
+                else
+                  copy_lines << "#{s.student.name}(보/#{s.teacher.name}) #{remaining}"
+                end
               end
             end
             copy_lines << ""
@@ -71,55 +81,43 @@
         <% all_hours.each do |hour| %>
           <div>
             <p class="text-xs font-bold text-base-content/50 mb-1"><%= hour %>시</p>
-            <%
-              reg_groups    = (regular_by_hour[hour] || []).group_by(&:teacher_id)
-              makeup_groups = (makeup_by_hour[hour]  || []).group_by(&:makeup_teacher_id)
-              first_group   = true
-            %>
-
-            <% reg_groups.each_value do |ts| %>
+            <% first_group = true %>
+            <% hour_groups[hour].each do |teacher_name, group| %>
               <% unless first_group %><div class="h-2"></div><% end %>
               <% first_group = false %>
-              <p class="text-xs text-base-content/40">[<%= ts.first.teacher.name %>]</p>
-              <% ts.each do |s| %>
+              <p class="text-xs text-base-content/40">[<%= teacher_name %>]</p>
+
+              <% group[:regulars].each do |s| %>
                 <%
-                  attended = s.status.in?(%w[attended late])
-                  remaining_scheduled = enrollment_remaining[s.enrollment_id] || 0
-                  before_count = attended ? remaining_scheduled + 1 : remaining_scheduled
-                  after_count  = remaining_scheduled
-                  is_first = first_lesson_ids.include?(s.id)
+                  attended  = s.status.in?(%w[attended late])
+                  remaining = enrollment_remaining[s.enrollment_id] || 0
+                  is_first  = first_lesson_ids.include?(s.id)
                 %>
                 <p>
                   <%= s.student.name %><% if is_first %><span class="text-success">(첫)</span><% end %>
                   <% if attended %>
-                    <span class="text-base-content/40"><%= before_count %>-<%= after_count %></span>
+                    <span class="text-base-content/40"><%= remaining + 1 %>-<%= remaining %></span>
                   <% else %>
-                    <span class="text-base-content/40"><%= before_count %></span>
+                    <span class="text-base-content/40"><%= remaining %></span>
                   <% end %>
                 </p>
               <% end %>
-            <% end %>
 
-            <% makeup_groups.each_value do |ms| %>
-              <% unless first_group %><div class="h-2"></div><% end %>
-              <% first_group = false %>
-              <p class="text-xs text-base-content/40">[<%= ms.first.makeup_teacher.name %>]</p>
-              <% ms.each do |s| %>
+              <% group[:makeups].each do |s| %>
                 <%
-                  remaining_scheduled = enrollment_remaining[s.enrollment_id] || 0
-                  attended = s.status == "makeup_done"
+                  remaining = enrollment_remaining[s.enrollment_id] || 0
+                  attended  = s.status == "makeup_done"
                 %>
                 <p>
-                  <%= s.student.name %><span class="text-purple-500">(보/<%= s.makeup_teacher.name %>)</span>
+                  <%= s.student.name %><span class="text-purple-500">(보/<%= s.teacher.name %>)</span>
                   <% if attended %>
-                    <span class="text-base-content/40"><%= remaining_scheduled + 1 %>-<%= remaining_scheduled %></span>
+                    <span class="text-base-content/40"><%= remaining + 1 %>-<%= remaining %></span>
                   <% else %>
-                    <span class="text-base-content/40"><%= remaining_scheduled %></span>
+                    <span class="text-base-content/40"><%= remaining %></span>
                   <% end %>
                 </p>
               <% end %>
             <% end %>
-
           </div>
         <% end %>
       </div>

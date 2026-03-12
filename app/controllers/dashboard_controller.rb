@@ -42,8 +42,8 @@ class DashboardController < ApplicationController
     # 현재 시간대 수업 중 (오늘만)
     @current_schedules = @is_today ? @today_schedules.select { |s| s.lesson_time.in_time_zone('Seoul').hour == @current_hour } : []
 
-    # 시간대별 수업 텍스트용: 수강권별 잔여 scheduled 횟수 (N+1 방지)
-    enrollment_ids = @today_schedules.map(&:enrollment_id).uniq
+    # 시간대별 수업 텍스트용: 수강권별 잔여 scheduled 횟수 (정규 + 보강 모두 포함)
+    enrollment_ids = (@today_schedules + @today_makeups).map(&:enrollment_id).uniq
     @enrollment_remaining = Schedule.where(enrollment_id: enrollment_ids, status: "scheduled")
                                     .group(:enrollment_id).count
 

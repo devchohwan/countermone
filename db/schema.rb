@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_11_102756) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_12_042217) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -71,6 +71,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_11_102756) do
     t.date "expires_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "used_at"
     t.index ["enrollment_id"], name: "index_gift_vouchers_on_enrollment_id"
     t.index ["student_id"], name: "index_gift_vouchers_on_student_id"
   end

@@ -58,6 +58,7 @@ class SchedulesController < ApplicationController
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "late")
     create_attendance_record(@schedule)
+    check_gift_voucher(@schedule)
     tab_redirect(notice: "지각 처리되었습니다.")
   end
 
@@ -207,6 +208,7 @@ class SchedulesController < ApplicationController
   def complete_makeup
     @schedule.update!(status: "makeup_done")
     create_attendance_record(@schedule)
+    check_gift_voucher(@schedule)
     redirect_back fallback_location: schedules_path, notice: "보강 완료 처리되었습니다."
   end
 
@@ -343,16 +345,17 @@ class SchedulesController < ApplicationController
   end
 
   def check_gift_voucher(schedule)
-    enrollment  = schedule.enrollment
-    total_weeks = enrollment.student.total_attended_weeks_for(enrollment)
-    if total_weeks > 0 && (total_weeks % 24).zero?
-      GiftVoucher.create!(
-        student:    schedule.student,
-        enrollment: enrollment,
-        issued_at:  Date.today,
-        expires_at: Date.today + 6.months
-      )
-      schedule.student.update!(gift_voucher_issued: true)
-    end
+    enrollment = schedule.enrollment
+    weeks      = schedule.student.gift_voucher_eligible_weeks_for(enrollment)
+    return unless weeks == 24
+    return if GiftVoucher.where(enrollment: enrollment).exists?
+
+    GiftVoucher.create!(
+      student:    schedule.student,
+      enrollment: enrollment,
+      issued_at:  Date.today,
+      expires_at: Date.today + 6.months
+    )
+    schedule.student.update!(gift_voucher_issued: true)
   end
 end

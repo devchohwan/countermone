@@ -42,6 +42,18 @@ class Student < ApplicationRecord
     enrollment.schedules.where(status: %w[attended makeup_done deducted]).count
   end
 
+  # 지류상품권 조건: 휴원 후 복귀일 기준 (없으면 첫 결제 시작일)로 카운트
+  # 패스 포함, 지각 포함, 보강 포함, 차감 포함
+  def gift_voucher_eligible_weeks_for(enrollment)
+    since_date = enrollment.return_at ||
+                 enrollment.payments.order(:created_at).first&.starts_at ||
+                 enrollment.created_at.to_date
+    enrollment.schedules
+              .where("lesson_date >= ?", since_date)
+              .where(status: %w[attended late makeup_done deducted pass])
+              .count
+  end
+
   def available_passes_for(enrollment)
     total_months = enrollment.payments.where(fully_paid: true).sum(:months)
     used_passes  = enrollment.schedules.where(status: "pass").count

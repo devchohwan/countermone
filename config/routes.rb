@@ -65,6 +65,12 @@ Rails.application.routes.draw do
 
   resources :attendances, only: %i[create update destroy]
 
+  resources :gift_vouchers, only: [:create] do
+    member do
+      patch :use
+    end
+  end
+
   get  "timetable",             to: "timetable#index"
   get  "timetable/:teacher_id", to: "timetable#show", as: :teacher_timetable
   get  "pass_sheet",            to: "timetable#pass_sheet"

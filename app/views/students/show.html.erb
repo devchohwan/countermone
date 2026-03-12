@@ -219,7 +219,7 @@
               <form action="<%= use_gift_voucher_path(v) %>" method="post"
                     onsubmit="return confirm('상품권을 사용 처리하시겠습니까?')">
                 <input type="hidden" name="_method" value="patch">
-                <input type="hidden" name="<%= request.forgery_protection_token_param %>" value="<%= form_authenticity_token %>">
+                <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
                 <select name="used_class" class="select select-bordered select-xs mr-1" required>
                   <option value="">과목 선택</option>
                   <% other_subjects.each do |subj| %>

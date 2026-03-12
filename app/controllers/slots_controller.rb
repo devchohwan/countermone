@@ -22,10 +22,11 @@ class SlotsController < ApplicationController
     reg_query = reg_query.where(lesson_time: parsed_lt) if parsed_lt
     regular_counts = reg_query.group(:lesson_date).count
 
-    makeup_counts = Schedule.where(makeup_teacher_id: teacher_id, subject: subject,
-                                   makeup_date: range_dates)
-                            .where(status: %w[makeup_scheduled makeup_done])
-                            .group(:makeup_date).count
+    mk_query = Schedule.where(makeup_teacher_id: teacher_id, subject: subject,
+                               makeup_date: range_dates)
+                       .where(status: %w[makeup_scheduled makeup_done])
+    mk_query = mk_query.where(makeup_time: parsed_lt) if parsed_lt
+    makeup_counts = mk_query.group(:makeup_date).count
 
     slot_counts = Hash.new(0)
     regular_counts.each { |date, cnt| slot_counts[date] += cnt }

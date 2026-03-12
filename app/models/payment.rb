@@ -97,7 +97,9 @@ class Payment < ApplicationRecord
   def apply_referral_discount_if_pending
     count = student.referral_discount_pending
     return unless count > 0
-    discounts.create!(discount_type: "referral", amount: 50_000 * count, memo: "지인 할인 자동 적용 (#{count}명)")
+    discount_amount = 50_000 * count
+    discounts.create!(discount_type: "referral", amount: discount_amount, memo: "지인 할인 자동 적용 (#{count}명)")
+    update_column(:amount, [ amount - discount_amount, 0 ].max)
     student.update!(referral_discount_pending: 0)
   end
 

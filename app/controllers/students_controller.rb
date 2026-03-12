@@ -120,8 +120,12 @@ class StudentsController < ApplicationController
 
   def search
     q = params[:q].to_s.strip
-    students = q.length >= 1 ? Student.where("name LIKE ?", "%#{q}%").order(:name).limit(20) : []
-    render json: students.map { |s| { id: s.id, name: s.name } }
+    students = q.length >= 1 ? Student.includes(enrollments: :teacher).where("name LIKE ?", "%#{q}%").order(:name).limit(20) : []
+    render json: students.map do |s|
+      teachers = s.enrollments.select { |e| e.status == "active" }.map { |e| e.teacher.name }.uniq
+      label = teachers.any? ? "#{s.name}(#{teachers.join(",")})" : s.name
+      { id: s.id, name: s.name, label: label }
+    end
   end
 
   def check_attendance_code

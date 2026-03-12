@@ -5,8 +5,10 @@
   <%# 기존 추천인 태그 %>
   <div id="referrer-tags" class="flex flex-wrap gap-2 min-h-6">
     <% (existing_referrers || []).each do |r| %>
+      <% r_teachers = r.enrollments.select { |e| e.status == "active" }.map { |e| e.teacher.name }.uniq %>
+      <% r_label = r_teachers.any? ? "#{r.name}(#{r_teachers.join(",")})" : r.name %>
       <span class="badge badge-outline gap-1" data-referrer-id="<%= r.id %>">
-        <%= r.name %>
+        <%= r_label %>
         <button type="button" onclick="removeReferrer(<%= r.id %>)" class="text-error hover:text-error/70">✕</button>
         <input type="hidden" name="referrer_ids[]" value="<%= r.id %>">
       </span>
@@ -42,7 +44,7 @@
             resultsEl.innerHTML = '<p class="text-xs text-base-content/50 px-3 py-2">검색 결과 없음</p>';
           } else {
             resultsEl.innerHTML = filtered.map(s =>
-              `<div class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm" onclick="addReferrer(${s.id}, '${s.name.replace(/'/g, "\\'")}')">${s.name}</div>`
+              `<div class="px-3 py-2 hover:bg-base-200 cursor-pointer text-sm" onclick="addReferrer(${s.id}, '${s.name.replace(/'/g, "\\'")}', '${(s.label || s.name).replace(/'/g, "\\'")}')">${s.label || s.name}</div>`
             ).join('');
           }
           resultsEl.classList.remove('hidden');
@@ -50,17 +52,18 @@
     }, 200);
   };
 
-  window.addReferrer = function(id, name) {
+  window.addReferrer = function(id, name, label) {
     const tagsEl = document.getElementById('referrer-tags');
     const tags = tagsEl.querySelectorAll('[data-referrer-id]');
     if (tags.length >= MAX_REFERRERS) {
       alert('추천인은 최대 7명까지 입력 가능합니다.');
       return;
     }
+    const displayLabel = label || name;
     const span = document.createElement('span');
     span.className = 'badge badge-outline gap-1';
     span.dataset.referrerId = id;
-    span.innerHTML = `${name} <button type="button" onclick="removeReferrer(${id})" class="text-error hover:text-error/70">✕</button><input type="hidden" name="referrer_ids[]" value="${id}">`;
+    span.innerHTML = `${displayLabel} <button type="button" onclick="removeReferrer(${id})" class="text-error hover:text-error/70">✕</button><input type="hidden" name="referrer_ids[]" value="${id}">`;
     tagsEl.appendChild(span);
     document.getElementById('referrer-search').value = '';
     document.getElementById('referrer-results').classList.add('hidden');

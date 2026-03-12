@@ -1,6 +1,6 @@
 class SessionsController < ApplicationController
   allow_unauthenticated_access only: %i[ new create ]
-  rate_limit to: 10, within: 3.minutes, only: :create, with: -> { redirect_to new_session_url, alert: "잠시 후 다시 시도해주세요." }
+  rate_limit to: 5, within: 1.hour, only: :create, with: -> { redirect_to new_session_url, alert: "로그인 시도 횟수를 초과했습니다. 1시간 후 다시 시도해주세요." }
 
   def new
   end

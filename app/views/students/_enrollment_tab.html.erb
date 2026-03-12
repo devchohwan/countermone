@@ -29,7 +29,7 @@
 
     <%# 인라인 클래스 수정 폼 %>
     <div id="edit-enrollment-<%= enrollment.id %>" class="hidden mb-3 p-3 bg-base-200/50 rounded-lg border border-base-300">
-      <%= form_with url: enrollment_path(enrollment), method: :patch, class: "flex flex-wrap gap-3 items-end" do |f| %>
+      <%= form_with url: enrollment_path(enrollment), method: :patch, scope: :enrollment, class: "flex flex-wrap gap-3 items-end" do |f| %>
         <div>
           <label class="block text-xs text-base-content/60 mb-1">선생님</label>
           <%= f.select :teacher_id, Teacher.by_position.map { |t| [t.name, t.id] },

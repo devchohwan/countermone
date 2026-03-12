@@ -61,7 +61,7 @@
             <% is_breaktime_open = @breaktime_openings.include?(d) %>
             <% regular = @schedule_data[:regular].select { |s| s.lesson_date == d && s.lesson_time.hour == hour } %>
             <% makeups = @schedule_data[:makeups].select { |s| s.makeup_date == d && s.makeup_time&.hour == hour } %>
-            <% slot_total = regular.count + makeups.count %>
+            <% slot_total = regular.count { |s| s.status != "makeup_scheduled" } + makeups.count %>
             <% is_full = slot_total >= 3 %>
             <td class="align-top py-3 text-center
               <%= d == Date.today ? 'bg-primary/5' : '' %>

@@ -153,7 +153,7 @@ class SchedulesController < ApplicationController
         alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{upper_str})"
     end
 
-    slot = Schedule.slot_count(teacher_id, @schedule.subject, makeup_date)
+    slot = Schedule.slot_count(teacher_id, @schedule.subject, makeup_date, makeup_time)
     if slot >= 3
       return redirect_back fallback_location: schedules_path, alert: "해당 슬롯이 이미 3명입니다."
     end

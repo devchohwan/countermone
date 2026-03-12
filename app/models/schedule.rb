@@ -46,14 +46,21 @@ class Schedule < ApplicationRecord
     lower..upper
   end
 
-  # 슬롯 인원 수 (정규 + 보강 합산, 같은 과목)
-  def self.slot_count(teacher_id, subject, date)
-    regular = where(teacher_id: teacher_id, subject: subject, lesson_date: date)
-                .where(status: %w[scheduled attended])
-                .count
-    makeup  = where(makeup_teacher_id: teacher_id, subject: subject, makeup_date: date)
-                .where(status: %w[makeup_scheduled makeup_done])
-                .count
-    regular + makeup
+  # 슬롯 인원 수 (정규 + 보강 합산, 같은 과목, 같은 시간대)
+  # time: "HH:MM" 문자열 또는 nil(시간 무시)
+  def self.slot_count(teacher_id, subject, date, time = nil)
+    hour = time ? time.to_s.split(":").first.to_i : nil
+
+    regular_scope = where(teacher_id: teacher_id, subject: subject, lesson_date: date)
+                      .where(status: %w[scheduled attended late])
+    regular_scope = regular_scope.select { |s| s.lesson_time&.hour == hour } if hour
+    regular_count = hour ? regular_scope.size : regular_scope.count
+
+    makeup_scope = where(makeup_teacher_id: teacher_id, subject: subject, makeup_date: date)
+                     .where(status: %w[makeup_scheduled makeup_done])
+    makeup_scope = makeup_scope.select { |s| s.makeup_time&.hour == hour } if hour
+    makeup_count = hour ? makeup_scope.size : makeup_scope.count
+
+    regular_count + makeup_count
   end
 end

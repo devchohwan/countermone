@@ -35,7 +35,7 @@ class DashboardController < ApplicationController
 
     # 보강 일정
     @today_makeups = Schedule
-      .includes(:student, :makeup_teacher, :enrollment)
+      .includes(:student, :teacher, :makeup_teacher, :enrollment)
       .where(makeup_date: @date)
       .where(status: %w[makeup_scheduled makeup_done])
 

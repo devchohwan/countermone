@@ -434,15 +434,16 @@
 
     dateEl.textContent = dateLabel;
 
-    // 공통 form submit 헬퍼
-    function patchForm(url, extra) {
+    // 공통 form submit 헬퍼 (window에 노출 — inline onclick에서 호출)
+    window._mkPatchForm = function(url, extra) {
       const f = document.createElement('form');
       f.method = 'POST'; f.action = url;
       f.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf}">
                      <input type="hidden" name="_method" value="patch">` + (extra || '');
       document.body.appendChild(f);
       f.submit();
-    }
+    };
+    function patchForm(url, extra) { window._mkPatchForm(url, extra); }
 
     // ── 날짜 유틸 ──────────────────────────────────────────
     function parseDate(str) {
@@ -650,7 +651,7 @@
           <div class="flex gap-2 pt-1">
             <button onclick="
               const t = document.getElementById('makeup-confirm-time-${scheduleId}').value;
-              patchForm('/schedules/${scheduleId}/makeup',
+              window._mkPatchForm('/schedules/${scheduleId}/makeup',
                 '<input type=\\'hidden\\' name=\\'makeup_date\\' value=\\'${date}\\'>' +
                 '<input type=\\'hidden\\' name=\\'makeup_time\\' value=\\'' + t + '\\'>' +
                 '<input type=\\'hidden\\' name=\\'makeup_teacher_id\\' value=\\'${teacherId}\\'>');

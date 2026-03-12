@@ -2,9 +2,18 @@ class StudentsController < ApplicationController
   before_action :set_student, only: %i[show edit update destroy leave return dropout complete_contact]
 
   def index
+    @teachers = Teacher.by_position
     @students = Student.includes(:enrollments, :teachers)
     @students = @students.where(status: params[:status]) if params[:status].present?
     @students = @students.where("name LIKE ? OR attendance_code LIKE ?", "%#{params[:q]}%", "%#{params[:q]}%") if params[:q].present?
+
+    if params[:teacher_id].present? || params[:lesson_day].present?
+      scope = Enrollment.where(status: "active")
+      scope = scope.where(teacher_id: params[:teacher_id]) if params[:teacher_id].present?
+      scope = scope.where(lesson_day: params[:lesson_day])  if params[:lesson_day].present?
+      @students = @students.where(id: scope.select(:student_id))
+    end
+
     @students = @students.order(:name)
 
     @total_count  = @students.count

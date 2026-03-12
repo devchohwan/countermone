@@ -6,18 +6,42 @@
 </div>
 
 <%# 필터 + 검색 %>
+<%
+  filter_params = { status: params[:status], q: params[:q], teacher_id: params[:teacher_id], lesson_day: params[:lesson_day] }
+  days_ko = { "monday" => "월", "tuesday" => "화", "wednesday" => "수", "thursday" => "목", "friday" => "금", "saturday" => "토", "sunday" => "일" }
+%>
 <div class="flex flex-wrap gap-2 mb-4">
+  <%# 재원상태 필터 %>
   <div class="join">
-    <%= link_to "전체", students_path(q: params[:q]),                              class: "join-item btn btn-sm #{params[:status].blank? ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "재원", students_path(status: "active",  q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'active'  ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "휴원", students_path(status: "leave",   q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'leave'   ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "퇴원", students_path(status: "dropout", q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'dropout' ? 'btn-neutral' : 'btn-ghost'}" %>
-    <%= link_to "대기", students_path(status: "pending", q: params[:q]),          class: "join-item btn btn-sm #{params[:status] == 'pending' ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "전체", students_path(filter_params.merge(status: nil, page: nil)),    class: "join-item btn btn-sm #{params[:status].blank? ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "재원", students_path(filter_params.merge(status: "active",  page: nil)), class: "join-item btn btn-sm #{params[:status] == 'active'  ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "휴원", students_path(filter_params.merge(status: "leave",   page: nil)), class: "join-item btn btn-sm #{params[:status] == 'leave'   ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "퇴원", students_path(filter_params.merge(status: "dropout", page: nil)), class: "join-item btn btn-sm #{params[:status] == 'dropout' ? 'btn-neutral' : 'btn-ghost'}" %>
+    <%= link_to "대기", students_path(filter_params.merge(status: "pending", page: nil)), class: "join-item btn btn-sm #{params[:status] == 'pending' ? 'btn-neutral' : 'btn-ghost'}" %>
   </div>
 
+  <%# 요일 필터 %>
+  <div class="join">
+    <%= link_to "요일전체", students_path(filter_params.merge(lesson_day: nil, page: nil)), class: "join-item btn btn-sm #{params[:lesson_day].blank? ? 'btn-neutral' : 'btn-ghost'}" %>
+    <% days_ko.each do |day_key, day_label| %>
+      <%= link_to day_label, students_path(filter_params.merge(lesson_day: day_key, page: nil)), class: "join-item btn btn-sm #{params[:lesson_day] == day_key ? 'btn-neutral' : 'btn-ghost'}" %>
+    <% end %>
+  </div>
+
+  <%# 선생님 필터 %>
+  <div class="join">
+    <%= link_to "선생님전체", students_path(filter_params.merge(teacher_id: nil, page: nil)), class: "join-item btn btn-sm #{params[:teacher_id].blank? ? 'btn-neutral' : 'btn-ghost'}" %>
+    <% @teachers.each do |t| %>
+      <%= link_to t.name, students_path(filter_params.merge(teacher_id: t.id, page: nil)), class: "join-item btn btn-sm #{params[:teacher_id].to_s == t.id.to_s ? 'btn-neutral' : 'btn-ghost'}" %>
+    <% end %>
+  </div>
+
+  <%# 검색 %>
   <%= form_with url: students_path, method: :get, class: "ml-auto flex gap-2" do |f| %>
-    <%= f.hidden_field :status, value: params[:status] %>
-    <%= f.text_field :q, value: params[:q], placeholder: "이름/코드 검색", class: "input input-sm input-bordered w-40" %>
+    <%= f.hidden_field :status,      value: params[:status] %>
+    <%= f.hidden_field :teacher_id,  value: params[:teacher_id] %>
+    <%= f.hidden_field :lesson_day,  value: params[:lesson_day] %>
+    <%= f.text_field  :q, value: params[:q], placeholder: "이름/코드 검색", class: "input input-sm input-bordered w-40" %>
     <%= f.submit "검색", class: "btn btn-sm btn-ghost" %>
   <% end %>
 </div>
@@ -69,16 +93,16 @@
   <% if @total_pages > 1 %>
     <div class="join">
       <% if @page > 1 %>
-        <%= link_to "«", students_path(page: 1,         status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
-        <%= link_to "‹", students_path(page: @page - 1, status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
+        <%= link_to "«", students_path(filter_params.merge(page: 1)),         class: "join-item btn btn-sm btn-ghost" %>
+        <%= link_to "‹", students_path(filter_params.merge(page: @page - 1)), class: "join-item btn btn-sm btn-ghost" %>
       <% end %>
       <% ([@page - 2, 1].max..[@page + 2, @total_pages].min).each do |p| %>
-        <%= link_to p, students_path(page: p, status: params[:status], q: params[:q]),
+        <%= link_to p, students_path(filter_params.merge(page: p)),
               class: "join-item btn btn-sm #{p == @page ? 'btn-neutral' : 'btn-ghost'}" %>
       <% end %>
       <% if @page < @total_pages %>
-        <%= link_to "›", students_path(page: @page + 1, status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
-        <%= link_to "»", students_path(page: @total_pages, status: params[:status], q: params[:q]), class: "join-item btn btn-sm btn-ghost" %>
+        <%= link_to "›", students_path(filter_params.merge(page: @page + 1)),        class: "join-item btn btn-sm btn-ghost" %>
+        <%= link_to "»", students_path(filter_params.merge(page: @total_pages)),     class: "join-item btn btn-sm btn-ghost" %>
       <% end %>
     </div>
   <% end %>

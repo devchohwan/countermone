@@ -561,11 +561,13 @@
       const teacher     = data.teachers.find(t => t.id === window._mkTeacherId);
       const teacherName = teacher?.name || '';
 
-      // 현재 주 + 선택 선생님 기준으로 시간대 계산 (없으면 원래 수업시간)
-      const weekDates = days.filter(d => d >= rangeMin && d <= rangeMax).map(toDateStr);
-      const timeSet   = new Set([data.lesson_time]);
-      weekDates.forEach(ds => Object.keys(tGrid[ds] || {}).forEach(t => timeSet.add(t)));
-      const times = Array.from(timeSet).sort();
+      // 운영시간 고정: 13:00 ~ 21:00, 30분 간격
+      const times = [];
+      for (let m = 13 * 60; m <= 21 * 60; m += 30) {
+        const h   = String(Math.floor(m / 60)).padStart(2, '0');
+        const min = String(m % 60).padStart(2, '0');
+        times.push(`${h}:${min}`);
+      }
 
       // 날짜 헤더 (열)
       const thCells = days.map(d => {

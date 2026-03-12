@@ -73,7 +73,7 @@
                 <div class="flex flex-col items-center gap-0.5">
                   <% regular.each do |s| %>
                     <% if s.status == "makeup_scheduled" %>
-                      <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center" style="color:rgb(147,51,234);border-color:rgb(147,51,234);opacity:0.75;">
+                      <div class="badge badge-sm badge-ghost badge-outline w-full h-auto py-0.5 whitespace-normal justify-center opacity-50">
                         <%= timetable_label(s) %>(→<%= s.makeup_teacher&.name %>)
                       </div>
                     <% else %>

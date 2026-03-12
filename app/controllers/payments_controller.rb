@@ -85,6 +85,7 @@ class PaymentsController < ApplicationController
     if @payment.update(refunded: true, refund_amount: params[:refund_amount] || @payment.refund_amount_calculated,
                        refund_reason: params[:refund_reason])
       @payment.schedules.where(status: "scheduled").destroy_all
+      cleanup_gift_vouchers(@payment)
       redirect_to @payment, notice: "환불 처리되었습니다."
     else
       redirect_to @payment, alert: "환불 처리 실패"
@@ -93,6 +94,7 @@ class PaymentsController < ApplicationController
 
   def destroy
     student = @payment.student
+    cleanup_gift_vouchers(@payment)
     @payment.schedules.destroy_all
     @payment.discounts.destroy_all
     @payment.destroy!
@@ -130,6 +132,13 @@ class PaymentsController < ApplicationController
   end
 
   private
+
+  def cleanup_gift_vouchers(payment)
+    enrollment = payment.enrollment
+    student    = payment.student
+    enrollment.gift_vouchers.where(used: false).destroy_all
+    student.update!(gift_voucher_issued: false) unless student.gift_vouchers.where(used: false).exists?
+  end
 
   def set_payment
     @payment = Payment.find(params[:id])

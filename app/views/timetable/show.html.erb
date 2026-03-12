@@ -62,7 +62,7 @@
             <% is_breaktime_open = @breaktime_openings.include?(d) %>
             <% regular = @schedule_data[:regular].select { |s| s.lesson_date == d && s.lesson_time.hour == hour } %>
             <% makeups = @schedule_data[:makeups].select { |s| s.makeup_date == d && s.makeup_time&.hour == hour } %>
-            <% slot_total = regular.count { |s| s.status != "makeup_scheduled" } + makeups.count %>
+            <% slot_total = regular.count { |s| s.status.in?(%w[scheduled attended late]) } + makeups.count %>
             <% is_full = slot_total >= 3 %>
             <td class="align-top py-3 text-center
               <%= d == Date.today ? 'bg-primary/5' : '' %>
@@ -73,18 +73,47 @@
               <% else %>
                 <div class="flex flex-col items-center gap-0.5">
                   <% regular.each do |s| %>
+                    <% is_pass = s.status.in?(%w[pass emergency_pass holiday]) %>
+                    <% badge_data = {
+                         "data-sid"           => s.id,
+                         "data-student"       => s.student.name,
+                         "data-teacher"       => s.teacher.name,
+                         "data-day"           => lesson_day_ko(s.enrollment.lesson_day),
+                         "data-time"          => s.lesson_time.strftime("%H:%M"),
+                         "data-status"        => s.status,
+                         "data-makeup-teacher"=> s.makeup_teacher&.name,
+                         "data-makeup-date"   => s.makeup_date&.strftime("%m/%d(%a)")&.gsub("Mon","월")&.gsub("Tue","화")&.gsub("Wed","수")&.gsub("Thu","목")&.gsub("Fri","금")&.gsub("Sat","토")&.gsub("Sun","일"),
+                         "data-makeup-time"   => s.makeup_time&.strftime("%H:%M"),
+                         "onclick"            => "showTimetablePopup(this)"
+                       } %>
                     <% if s.status == "makeup_scheduled" %>
-                      <div class="badge badge-sm badge-ghost badge-outline w-full h-auto py-0.5 whitespace-normal justify-center opacity-50">
+                      <div class="badge badge-sm badge-ghost badge-outline w-full h-auto py-0.5 whitespace-normal justify-center opacity-50 cursor-pointer" <%= badge_data.map { |k,v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
                         <%= timetable_label(s) %>(→<%= s.makeup_teacher&.name %>)
                       </div>
+                    <% elsif is_pass %>
+                      <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center cursor-pointer opacity-50" style="color:#9ca3af;border-color:#9ca3af;" <%= badge_data.map { |k,v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
+                        <%= timetable_label(s) %>
+                      </div>
                     <% else %>
-                      <div class="badge badge-sm badge-info badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">
+                      <div class="badge badge-sm badge-info badge-outline w-full h-auto py-0.5 whitespace-normal justify-center cursor-pointer" <%= badge_data.map { |k,v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
                         <%= timetable_label(s) %>
                       </div>
                     <% end %>
                   <% end %>
                   <% makeups.each do |s| %>
-                    <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center" style="color:rgb(147,51,234);border-color:rgb(147,51,234);">
+                    <% badge_data = {
+                         "data-sid"           => s.id,
+                         "data-student"       => s.student.name,
+                         "data-teacher"       => s.teacher.name,
+                         "data-day"           => lesson_day_ko(s.enrollment.lesson_day),
+                         "data-time"          => s.lesson_time.strftime("%H:%M"),
+                         "data-status"        => s.status,
+                         "data-makeup-teacher"=> s.makeup_teacher&.name,
+                         "data-makeup-date"   => s.makeup_date&.strftime("%m/%d(%a)")&.gsub("Mon","월")&.gsub("Tue","화")&.gsub("Wed","수")&.gsub("Thu","목")&.gsub("Fri","금")&.gsub("Sat","토")&.gsub("Sun","일"),
+                         "data-makeup-time"   => s.makeup_time&.strftime("%H:%M"),
+                         "onclick"            => "showTimetablePopup(this)"
+                       } %>
+                    <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center cursor-pointer" style="color:rgb(147,51,234);border-color:rgb(147,51,234);" <%= badge_data.map { |k,v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
                       <%= timetable_makeup_label(s, @teacher) %>
                     </div>
                   <% end %>
@@ -120,6 +149,18 @@
   <span>★ 차량 | (첫) 첫수업 | (복) 복귀 | (패) 패스 | (휴) 휴원 | (보) 보강 | (대기) 등록대기</span>
 </div>
 
+<%# 수업 정보 팝업 모달 %>
+<dialog id="timetable-popup" class="modal">
+  <div class="modal-box max-w-xs p-5">
+    <h3 class="font-bold text-base mb-3" id="tt-popup-student"></h3>
+    <div class="text-sm space-y-1" id="tt-popup-body"></div>
+    <div class="modal-action mt-4">
+      <form method="dialog"><button class="btn btn-sm btn-ghost">닫기</button></form>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
 <script>
   // 메모 localStorage 저장
   (function() {
@@ -130,5 +171,46 @@
   function saveMemo(teacherId, val) {
     localStorage.setItem('timetable-memo-' + teacherId, val);
   }
+
+  const STATUS_KO = {
+    scheduled: '예정', attended: '출석', late: '지각', deducted: '차감',
+    pass: '패스', emergency_pass: '긴급패스', holiday: '공휴일패스',
+    makeup_scheduled: '보강예정', makeup_done: '보강완료'
+  };
+
+  window.showTimetablePopup = function(el) {
+    const student      = el.dataset.student;
+    const teacher      = el.dataset.teacher;
+    const day          = el.dataset.day;
+    const time         = el.dataset.time;
+    const status       = el.dataset.status;
+    const mkTeacher    = el.dataset.makeupTeacher;
+    const mkDate       = el.dataset.makeupDate;
+    const mkTime       = el.dataset.makeupTime;
+
+    document.getElementById('tt-popup-student').textContent = student;
+
+    let html = '';
+    const statusLabel = STATUS_KO[status] || status;
+    html += `<div class="flex items-center gap-2">`;
+    html += `<span class="text-base-content/50 w-12 shrink-0">원수업</span>`;
+    html += `<span>${teacher} ${day}요일 ${time}</span>`;
+    html += `</div>`;
+
+    if (mkTeacher && mkDate) {
+      html += `<div class="flex items-center gap-2 mt-1">`;
+      html += `<span class="text-base-content/50 w-12 shrink-0">보강</span>`;
+      html += `<span class="text-purple-500">${mkTeacher} ${mkDate} ${mkTime || ''}</span>`;
+      html += `</div>`;
+    }
+
+    html += `<div class="flex items-center gap-2 mt-2">`;
+    html += `<span class="text-base-content/50 w-12 shrink-0">상태</span>`;
+    html += `<span class="badge badge-xs">${statusLabel}</span>`;
+    html += `</div>`;
+
+    document.getElementById('tt-popup-body').innerHTML = html;
+    document.getElementById('timetable-popup').showModal();
+  };
 </script>
 <% end %>

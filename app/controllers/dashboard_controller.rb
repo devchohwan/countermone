@@ -47,9 +47,10 @@ class DashboardController < ApplicationController
 
     # 해당일 마감 집계
     @daily_payments = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @date).includes(:student)
-    @daily_leaves   = Enrollment.where(leave_at: @date)
+    daily_leaves    = Enrollment.includes(:student, :schedules).where(leave_at: @date)
+    @daily_leaves_short = daily_leaves.select { |e| e.student.total_attended_weeks_for(e) <= 12 }
+    @daily_leaves_long  = daily_leaves.select { |e| e.student.total_attended_weeks_for(e) > 12 }
     @daily_returns  = Enrollment.where(return_at: @date).where(status: "active")
-    @daily_dropouts = Enrollment.where(status: "dropout").where("DATE(updated_at) = ?", @date)
 
     # 개근 달성자
     @attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)

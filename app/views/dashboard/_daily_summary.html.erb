@@ -2,8 +2,14 @@
   <tbody>
     <tr><td class="text-base-content/60">결제 건수</td><td class="font-bold"><%= @daily_payments.count %>건</td></tr>
     <tr><td class="text-base-content/60">결제 합계</td><td class="font-bold text-primary"><%= format_amount(@daily_payments.sum(&:amount)) %></td></tr>
-    <tr><td class="text-base-content/60">당일 휴원</td><td><%= @daily_leaves.count %>명</td></tr>
-    <tr><td class="text-base-content/60">당일 퇴원</td><td><%= @daily_dropouts.count %>명</td></tr>
+    <tr>
+      <td class="text-base-content/60">당일 3개월 이하 휴원</td>
+      <td><%= @daily_leaves_short.count %>명<% if @daily_leaves_short.any? %> <span class="text-xs text-base-content/40">(<%= @daily_leaves_short.map { |e| e.student.name }.join(', ') %>)</span><% end %></td>
+    </tr>
+    <tr>
+      <td class="text-base-content/60">당일 3개월 초과 휴원</td>
+      <td><%= @daily_leaves_long.count %>명<% if @daily_leaves_long.any? %> <span class="text-xs text-base-content/40">(<%= @daily_leaves_long.map { |e| e.student.name }.join(', ') %>)</span><% end %></td>
+    </tr>
     <tr><td class="text-base-content/60">당일 복귀</td><td><%= @daily_returns.count %>명</td></tr>
   </tbody>
 </table>

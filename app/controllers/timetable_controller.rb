@@ -10,8 +10,9 @@ class TimetableController < ApplicationController
     @date       = params[:date] ? Date.parse(params[:date]) : Date.today
     @week_start = @date.beginning_of_week(:monday)
     @week_days  = (0..6).map { |i| @week_start + i.days }
-    @schedule_data = weekly_schedules_for(@teacher, @week_days)
+    @schedule_data      = weekly_schedules_for(@teacher, @week_days)
     @breaktime_openings = BreaktimeOpening.where(teacher: @teacher, date: @week_days).pluck(:date)
+    @all_schedule_data  = weekly_schedules_for_all(@week_days)
   end
 
   def pass_sheet
@@ -29,6 +30,22 @@ class TimetableController < ApplicationController
   end
 
   private
+
+  def weekly_schedules_for_all(week_days)
+    regular = Schedule
+      .includes(:student)
+      .joins(:enrollment)
+      .where(lesson_date: week_days)
+      .where(status: %w[scheduled attended late pass emergency_pass holiday makeup_scheduled])
+      .where(enrollments: { status: "active" })
+
+    makeups = Schedule
+      .includes(:student)
+      .where(makeup_date: week_days)
+      .where(status: %w[makeup_scheduled makeup_done])
+
+    { regular: regular, makeups: makeups }
+  end
 
   def weekly_schedules_for(teacher, week_days)
     regular = Schedule

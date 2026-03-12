@@ -429,8 +429,10 @@
     function showMain() {
       titleEl.textContent = '출결 처리';
       let html = '';
-      if (['scheduled', 'pass', 'emergency_pass', 'holiday'].includes(status)) {
-        if (status !== 'scheduled') {
+      if (['scheduled', 'pass', 'emergency_pass', 'holiday', 'makeup_scheduled'].includes(status)) {
+        if (status === 'makeup_scheduled') {
+          html += `<p class="text-xs text-blue-600 mb-2">보강 예정 — 출석 처리 또는 전환 가능</p>`;
+        } else if (status !== 'scheduled') {
           const labelMap = { emergency_pass: '긴급패스', holiday: '공휴일패스', pass: '패스' };
           html += `<p class="text-xs text-secondary mb-2">${labelMap[status] || '패스'} 처리됨 — 변경 가능</p>`;
         }
@@ -446,6 +448,9 @@
         if (['pass', 'emergency_pass', 'holiday'].includes(status)) {
           html += `<button onclick="if(confirm('패스를 취소하고 예정 상태로 되돌리시겠습니까?')) submitPatch('/schedules/${scheduleId}/cancel_pass','${csrf}')"
                            class="btn btn-sm btn-ghost btn-outline w-full mt-1 text-secondary">패스 취소</button>`;
+        }
+        if (status === 'makeup_scheduled') {
+          html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-ghost btn-outline w-full mt-1">보강 상세 보기</a>`;
         }
       } else if (status === 'deducted') {
         html += `<p class="text-xs text-error mb-1">결석 차감 처리됨</p>`;

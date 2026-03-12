@@ -225,7 +225,7 @@
                   <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline <%= frozen_style %>"
                        data-filter="<%= filter_key %>"
                        title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %><%= enrollment.status == 'leave' && s.status == 'scheduled' ? ' (휴원 중 동결)' : '' %>"
-                       onclick="<%= enrollment.status == 'leave' && s.status == 'scheduled' ? '' : "openScheduleAction('#{s.id}', '#{s.lesson_date.strftime('%m/%d')}', '#{s.status}', '#{s.lesson_date.to_s}', '#{enrollment.subject}', '#{s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', '#{s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M')}')" %>">
+                       onclick="<%= enrollment.status == 'leave' && s.status == 'scheduled' ? '' : "openScheduleAction('#{s.id}', '#{s.lesson_date.strftime('%m/%d')}', '#{s.status}', '#{s.lesson_date.to_s}', '#{enrollment.subject}', '#{s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', '#{s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', #{s.teacher_id})" %>">
                     <%= s.lesson_date.strftime("%-m/%-d") %>
                     <span class="<%= case s.status
                       when 'attended' then 'text-success'
@@ -421,7 +421,7 @@
   };
 
   // 수업 처리 모달
-  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr, subject, checkedIn, checkedOut) {
+  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr, subject, checkedIn, checkedOut, teacherId) {
     const el = document.querySelector(`[onclick*="openScheduleAction('${scheduleId}'"]`);
     if (!el) return;
     const classMatch = el.className.match(/schedule-item-(\d+)/);
@@ -525,7 +525,7 @@
           }
           window._mkData = data;
           window._mkWeekStart = getMonday(parseDate(lessonDateStr));
-          window._mkTeacherId = data.teachers[0]?.id ?? null;
+          window._mkTeacherId = (teacherId && data.teachers.find(t => t.id === teacherId)) ? teacherId : (data.teachers[0]?.id ?? null);
           window._mkRender();
         });
     }

@@ -82,7 +82,7 @@ class PaymentsController < ApplicationController
   end
 
   def refund
-    if @payment.update(refunded: true, refund_amount: params[:refund_amount] || @payment.refund_amount_calculated,
+    if @payment.update(refunded: true, fully_paid: false, refund_amount: params[:refund_amount] || @payment.refund_amount_calculated,
                        refund_reason: params[:refund_reason])
       @payment.schedules.where(status: "scheduled").destroy_all
       cleanup_gift_vouchers(@payment)

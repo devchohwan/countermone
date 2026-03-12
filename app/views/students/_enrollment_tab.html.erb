@@ -63,29 +63,46 @@
             <div class="stat-title text-xs">총출석</div>
             <div class="stat-value text-lg"><%= student.total_attended_weeks_for(enrollment) %><span class="text-sm font-normal">회</span></div>
           </div>
-          <div class="stat py-2 px-3">
+          <div class="stat py-2 px-3 cursor-pointer"
+               data-stat="gift_voucher_eligible"
+               data-enrollment-id="<%= enrollment.id %>"
+               data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
+               title="더블클릭하여 수정"
+               ondblclick="openStatEdit(this)">
             <div class="stat-title text-xs">지류출석</div>
             <div class="stat-value text-lg <%= GiftVoucher.where(enrollment: enrollment).exists? ? 'text-success' : '' %>">
-              <%= student.gift_voucher_eligible_weeks_for(enrollment) %><span class="text-sm font-normal">주</span>
+              <span class="stat-display"><%= student.gift_voucher_eligible_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></span>
             </div>
           </div>
-          <div class="stat py-2 px-3">
+          <div class="stat py-2 px-3 cursor-pointer"
+               data-stat="consecutive_weeks"
+               data-enrollment-id="<%= enrollment.id %>"
+               data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
+               title="더블클릭하여 수정"
+               ondblclick="openStatEdit(this)">
             <div class="stat-title text-xs flex items-center gap-1">
               연속개근
               <% if enrollment.last_attendance_event_at %>
                 <span class="badge badge-xs badge-success"><%= enrollment.last_attendance_event_at.strftime("%-m/%-d") %></span>
               <% end %>
             </div>
-            <div class="stat-value text-lg"><%= student.consecutive_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></div>
+            <div class="stat-value text-lg">
+              <span class="stat-display"><%= student.consecutive_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></span>
+            </div>
           </div>
           <div class="stat py-2 px-3">
             <div class="stat-title text-xs">잔여수업</div>
             <div class="stat-value text-lg"><%= student.remaining_lessons_for(enrollment) %><span class="text-sm font-normal">회</span></div>
           </div>
-          <div class="stat py-2 px-3">
+          <div class="stat py-2 px-3 cursor-pointer"
+               data-stat="pass"
+               data-enrollment-id="<%= enrollment.id %>"
+               data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
+               title="더블클릭하여 수정"
+               ondblclick="openStatEdit(this)">
             <div class="stat-title text-xs">잔여패스</div>
             <div class="stat-value text-lg <%= student.available_passes_for(enrollment) <= 0 ? 'text-error' : '' %>">
-              <%= student.available_passes_for(enrollment) %><span class="text-sm font-normal">회</span>
+              <span class="stat-display"><%= student.available_passes_for(enrollment) %><span class="text-sm font-normal">회</span></span>
             </div>
           </div>
         </div>
@@ -981,4 +998,85 @@
     }
   };
   } // end _returnPickerDefined guard
+
+  // 통계 더블클릭 편집
+  if (!window._statEditDefined) {
+    window._statEditDefined = true;
+    window.openStatEdit = function(statEl) {
+      const url    = statEl.dataset.updateUrl;
+      const stat   = statEl.dataset.stat;
+      const csrf   = document.querySelector('meta[name="csrf-token"]').content;
+      const unitMap = { gift_voucher_eligible: '주', consecutive_weeks: '주', pass: '회' };
+      const unit   = unitMap[stat] || '';
+
+      const displayEl = statEl.querySelector('.stat-display');
+      if (!displayEl) return;
+      const currentText = displayEl.textContent.replace(unit, '').trim();
+      const current = parseInt(currentText, 10) || 0;
+
+      // 이미 편집 중이면 무시
+      if (statEl.querySelector('input[data-stat-input]')) return;
+
+      displayEl.style.display = 'none';
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex items-center gap-1 mt-1';
+      wrapper.innerHTML = `
+        <input data-stat-input type="number" value="${current}" min="0" max="99"
+               class="input input-xs input-bordered w-16 text-center font-bold text-lg"
+               style="height:2rem">
+        <span class="text-sm">${unit}</span>
+        <button class="btn btn-xs btn-primary" onclick="confirmStatEdit(event,'${url}','${stat}','${csrf}',this)">저장</button>
+        <button class="btn btn-xs btn-ghost" onclick="cancelStatEdit(this)">✕</button>
+      `;
+      statEl.querySelector('.stat-value').appendChild(wrapper);
+      wrapper.querySelector('input').focus();
+      wrapper.querySelector('input').select();
+    };
+
+    window.confirmStatEdit = function(e, url, stat, csrf, btn) {
+      e.stopPropagation();
+      const wrapper = btn.closest('div');
+      const input = wrapper.querySelector('input[data-stat-input]');
+      const value = parseInt(input.value, 10);
+      if (isNaN(value) || value < 0) { input.focus(); return; }
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        body: JSON.stringify({ stat, value })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          const statEl = wrapper.closest('[data-stat]');
+          const displayEl = statEl.querySelector('.stat-display');
+          const unitMap = { gift_voucher_eligible: '주', consecutive_weeks: '주', pass: '회' };
+          const unit = unitMap[stat] || '';
+          displayEl.innerHTML = `${value}<span class="text-sm font-normal">${unit}</span>`;
+          displayEl.style.display = '';
+          wrapper.remove();
+        } else {
+          alert('저장 실패: ' + (data.error || '오류'));
+          btn.disabled = false;
+          btn.textContent = '저장';
+        }
+      })
+      .catch(() => {
+        alert('네트워크 오류');
+        btn.disabled = false;
+        btn.textContent = '저장';
+      });
+    };
+
+    window.cancelStatEdit = function(btn) {
+      const wrapper = btn.closest('div');
+      const statEl = wrapper.closest('[data-stat]');
+      const displayEl = statEl.querySelector('.stat-display');
+      displayEl.style.display = '';
+      wrapper.remove();
+    };
+  }
 </script>

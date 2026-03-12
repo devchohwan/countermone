@@ -398,7 +398,7 @@ class SchedulesController < ApplicationController
   def available_passes(enrollment)
     total_months = enrollment.payments.where(fully_paid: true).sum(:months)
     used_passes  = enrollment.schedules.where(status: "pass").count
-    total_months - used_passes
+    [total_months - used_passes + (enrollment.pass_offset || 0), 0].max
   end
 
   def check_consecutive_weeks(schedule)

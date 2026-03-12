@@ -1,5 +1,5 @@
 class EnrollmentsController < ApplicationController
-  before_action :set_enrollment, only: %i[show edit update destroy leave return dropout reschedule_form reschedule dismiss_attendance_event add_lesson]
+  before_action :set_enrollment, only: %i[show edit update destroy leave return dropout reschedule_form reschedule dismiss_attendance_event add_lesson update_stat]
   before_action :set_student,    only: %i[new create]
 
   def show
@@ -184,6 +184,34 @@ class EnrollmentsController < ApplicationController
 
     redirect_to student_path(@enrollment.student, tab: @enrollment.id),
                 notice: "수업 일정이 변경되었습니다. (#{schedules_to_change.size}회)"
+  end
+
+  def update_stat
+    stat = params[:stat]
+    value = params[:value].to_i
+
+    allowed = %w[consecutive_weeks gift_voucher_eligible pass]
+    return render json: { error: "invalid stat" }, status: :unprocessable_entity unless allowed.include?(stat)
+
+    student = @enrollment.student
+
+    case stat
+    when "consecutive_weeks"
+      computed = student.consecutive_weeks_for_raw(@enrollment)
+      cols = { consecutive_weeks_offset: value - computed }
+      cols[:attendance_event_pending] = true if value >= 12
+      @enrollment.update_columns(cols)
+    when "gift_voucher_eligible"
+      computed = student.gift_voucher_eligible_weeks_for_raw(@enrollment)
+      @enrollment.update_columns(gift_voucher_eligible_offset: value - computed)
+    when "pass"
+      total_months = @enrollment.payments.where(fully_paid: true).sum(:months)
+      used_passes  = @enrollment.schedules.where(status: "pass").count
+      computed_passes = total_months - used_passes
+      @enrollment.update_columns(pass_offset: value - computed_passes)
+    end
+
+    render json: { ok: true, value: value }
   end
 
   private

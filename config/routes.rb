@@ -35,6 +35,7 @@ Rails.application.routes.draw do
         patch :add_lesson
         get   :reschedule_form
         patch :reschedule
+        patch :update_stat
       end
     end
   end

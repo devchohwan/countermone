@@ -29,11 +29,10 @@ class Student < ApplicationRecord
     enrollment.schedules.where(status: %w[scheduled makeup_scheduled]).count
   end
 
-  def consecutive_weeks_for(enrollment)
+  def consecutive_weeks_for_raw(enrollment)
     return 0 if enrollment.status == "leave"
 
     candidates = [Date.new(2025, 10, 28), enrollment.last_attendance_event_at]
-    # 휴원 후 복귀한 경우: 복귀일부터만 카운트 (휴원 전 출석 제외)
     candidates << enrollment.return_at if enrollment.leave_at && enrollment.return_at
     since = candidates.compact.max
     enrollment.schedules
@@ -45,13 +44,20 @@ class Student < ApplicationRecord
               .count
   end
 
+  def consecutive_weeks_for(enrollment)
+    return 0 if enrollment.status == "leave"
+
+    computed = consecutive_weeks_for_raw(enrollment)
+    [computed + (enrollment.consecutive_weeks_offset || 0), 0].max
+  end
+
   def total_attended_weeks_for(enrollment)
     enrollment.schedules.where(status: %w[attended makeup_done deducted]).count
   end
 
   # 지류상품권 조건: 휴원 후 복귀일 기준 (없으면 첫 결제 시작일)로 카운트
   # 패스 포함, 지각 포함, 보강 포함, 차감 포함
-  def gift_voucher_eligible_weeks_for(enrollment)
+  def gift_voucher_eligible_weeks_for_raw(enrollment)
     return 0 if enrollment.status == "leave"
 
     since_date = enrollment.return_at ||
@@ -63,10 +69,17 @@ class Student < ApplicationRecord
               .count
   end
 
+  def gift_voucher_eligible_weeks_for(enrollment)
+    return 0 if enrollment.status == "leave"
+
+    computed = gift_voucher_eligible_weeks_for_raw(enrollment)
+    [computed + (enrollment.gift_voucher_eligible_offset || 0), 0].max
+  end
+
   def available_passes_for(enrollment)
     total_months = enrollment.payments.where(fully_paid: true).sum(:months)
     used_passes  = enrollment.schedules.where(status: "pass").count
-    total_months - used_passes
+    [total_months - used_passes + (enrollment.pass_offset || 0), 0].max
   end
 
   private

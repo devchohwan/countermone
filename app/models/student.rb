@@ -32,7 +32,10 @@ class Student < ApplicationRecord
   def consecutive_weeks_for(enrollment)
     return 0 if enrollment.status == "leave"
 
-    since = [Date.new(2025, 10, 28), enrollment.last_attendance_event_at].compact.max
+    candidates = [Date.new(2025, 10, 28), enrollment.last_attendance_event_at]
+    # 휴원 후 복귀한 경우: 휴원일 다음날부터만 카운트 (휴원 전 출석 제외)
+    candidates << (enrollment.leave_at + 1.day) if enrollment.leave_at && enrollment.return_at
+    since = candidates.compact.max
     enrollment.schedules
               .where("lesson_date >= ?", since)
               .where("lesson_date <= ?", Date.today)

@@ -74,10 +74,11 @@ class Enrollment < ApplicationRecord
     start_min  = t.respond_to?(:min)  ? t.min  : t.to_s.split(":").second.to_i
     minutes = start_hour * 60 + start_min
 
+    max_hour = teacher&.max_lesson_hour || 21
     valid = if lesson_day == "monday"
       minutes >= 14 * 60 && minutes <= 17 * 60
     else
-      minutes >= 13 * 60 && minutes <= 21 * 60
+      minutes >= 13 * 60 && minutes <= max_hour * 60
     end
     errors.add(:lesson_time, "해당 요일의 운영 시간 외입니다") unless valid
   end

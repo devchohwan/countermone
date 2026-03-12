@@ -180,7 +180,9 @@
                             <% if item[:type] == :deposit_first_lesson %>
                               <button type="button" onclick="document.getElementById('cpd-<%= item[:payment].id %>').showModal()" class="btn btn-xs btn-error btn-outline">완납</button>
                             <% elsif item[:type] == :next_payment_due %>
-                              <button type="button" onclick="window.open('<%= new_payment_path(enrollment_id: item[:enrollment].id) %>','_blank','width=900,height=700')" class="btn btn-xs btn-primary btn-outline">결제</button>
+                              <button id="pay-btn-<%= item[:enrollment].id %>" type="button"
+                                onclick="window.open('<%= new_payment_path(enrollment_id: item[:enrollment].id, popup: 1) %>','_blank','width=900,height=700')"
+                                class="btn btn-xs btn-primary btn-outline">결제</button>
                             <% end %>
                           </p>
                         <% end %>
@@ -199,7 +201,9 @@
                           <% if item[:type] == :deposit_first_lesson %>
                             <button type="button" onclick="document.getElementById('cpd-<%= item[:payment].id %>').showModal()" class="btn btn-xs btn-error btn-outline">완납</button>
                           <% elsif item[:type] == :next_payment_due %>
-                            <button type="button" onclick="window.open('<%= new_payment_path(enrollment_id: item[:enrollment].id) %>','_blank','width=900,height=700')" class="btn btn-xs btn-primary btn-outline">결제</button>
+                            <button id="pay-btn-<%= item[:enrollment].id %>" type="button"
+                              onclick="window.open('<%= new_payment_path(enrollment_id: item[:enrollment].id, popup: 1) %>','_blank','width=900,height=700')"
+                              class="btn btn-xs btn-primary btn-outline">결제</button>
                           <% end %>
                         </p>
                       <% end %>
@@ -372,5 +376,15 @@
   }
   updateTime();
   setInterval(updateTime, 1000);
+
+  window.paymentDone = function(enrollmentId) {
+    const btn = document.getElementById('pay-btn-' + enrollmentId);
+    if (btn) {
+      btn.textContent = '✓ 결제완료';
+      btn.disabled = true;
+      btn.classList.remove('btn-primary', 'btn-outline');
+      btn.classList.add('btn-success');
+    }
+  };
 </script>
 <% end %>

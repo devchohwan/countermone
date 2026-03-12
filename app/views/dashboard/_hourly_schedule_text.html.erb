@@ -13,6 +13,9 @@
   end
   first_lesson_ids = seq1_schedules.select { |s| first_payment_ids.include?(s.payment_id) }.map(&:id).to_set
 
+  # 선생님 정렬 순서 (teachers 페이지 카드 순서)
+  teacher_order = Teacher.by_position.pluck(:name).each_with_index.to_h
+
   # 시간대별 선생님 그룹 빌드: teacher_name => { regulars: [], makeups: [] }
   hour_groups = all_hours.index_with do |hour|
     combined = {}
@@ -26,7 +29,7 @@
       combined[key] ||= { regulars: [], makeups: [] }
       combined[key][:makeups] << s
     end
-    combined
+    combined.sort_by { |name, _| teacher_order.fetch(name, 999) }.to_h
   end
 %>
 <div class="card bg-base-100 shadow-sm">

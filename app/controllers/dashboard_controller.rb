@@ -90,9 +90,11 @@ class DashboardController < ApplicationController
     Enrollment.where(status: "active").includes(:student, :payments).each do |e|
       last_payment = e.payments.where(fully_paid: true).order(:created_at).last
       next unless last_payment
-      last_scheduled = last_payment.schedules.where(status: "scheduled").order(:lesson_date).first
-      next unless last_scheduled&.lesson_date == date
-      next unless last_payment.schedules.where(status: "scheduled").count == 1
+      remaining = last_payment.schedules.where(status: %w[scheduled makeup_scheduled])
+      next unless remaining.count == 1
+      last_remaining = remaining.first
+      relevant_date = last_remaining.status == "makeup_scheduled" ? last_remaining.makeup_date : last_remaining.lesson_date
+      next unless relevant_date == date
       results << { student: e.student, enrollment: e, type: :next_payment_due, payment: last_payment }
     end
 

@@ -13,6 +13,7 @@
       <% end %>
       <div class="ml-auto flex gap-2">
         <%= link_to "상세", enrollment_path(enrollment), class: "btn btn-xs btn-ghost" %>
+        <button type="button" onclick="document.getElementById('edit-enrollment-<%= enrollment.id %>').classList.toggle('hidden')" class="btn btn-xs btn-ghost">수정</button>
         <% if enrollment.payments.empty? %>
           <%= button_to "삭제", enrollment_path(enrollment), method: :delete,
                 class: "btn btn-xs btn-error btn-outline",
@@ -24,6 +25,32 @@
           <button type="button" onclick="document.getElementById('return-dialog-<%= enrollment.id %>').showModal()" class="btn btn-xs btn-success btn-outline">복귀</button>
         <% end %>
       </div>
+    </div>
+
+    <%# 인라인 클래스 수정 폼 %>
+    <div id="edit-enrollment-<%= enrollment.id %>" class="hidden mb-3 p-3 bg-base-200/50 rounded-lg border border-base-300">
+      <%= form_with url: enrollment_path(enrollment), method: :patch, class: "flex flex-wrap gap-3 items-end" do |f| %>
+        <div>
+          <label class="block text-xs text-base-content/60 mb-1">선생님</label>
+          <%= f.select :teacher_id, Teacher.by_position.map { |t| [t.name, t.id] },
+                { selected: enrollment.teacher_id },
+                class: "select select-bordered select-sm text-sm" %>
+        </div>
+        <div>
+          <label class="block text-xs text-base-content/60 mb-1">요일</label>
+          <%= f.select :lesson_day, Enrollment::LESSON_DAYS.map { |d| [ApplicationHelper::LESSON_DAY_KO[d] + "요일", d] },
+                { selected: enrollment.lesson_day },
+                class: "select select-bordered select-sm text-sm" %>
+        </div>
+        <div>
+          <label class="block text-xs text-base-content/60 mb-1">시간</label>
+          <%= f.select :lesson_time, (13..21).map { |h| ["#{h}:00", "#{h.to_s.rjust(2,'0')}:00:00"] },
+                { selected: enrollment.lesson_time.strftime("%H:%M:%S") },
+                class: "select select-bordered select-sm text-sm" %>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">저장</button>
+        <button type="button" onclick="document.getElementById('edit-enrollment-<%= enrollment.id %>').classList.add('hidden')" class="btn btn-sm btn-ghost">취소</button>
+      <% end %>
     </div>
 
     <div class="grid grid-cols-2 gap-6">

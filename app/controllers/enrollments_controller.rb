@@ -33,8 +33,15 @@ class EnrollmentsController < ApplicationController
   end
 
   def update
+    old_teacher_id = @enrollment.teacher_id
     if @enrollment.update(enrollment_params)
-      redirect_to enrollment_path(@enrollment), notice: "클래스 정보가 수정되었습니다."
+      # 선생님이 바뀌었으면 예정 수업 일괄 업데이트
+      if @enrollment.teacher_id != old_teacher_id
+        @enrollment.schedules.where(status: "scheduled", teacher_id: old_teacher_id)
+                   .update_all(teacher_id: @enrollment.teacher_id)
+      end
+      redirect_to student_path(@enrollment.student, anchor: "enrollment-#{@enrollment.id}"),
+                  notice: "클래스 정보가 수정되었습니다."
     else
       @teachers = Teacher.includes(:teacher_subjects).all
       render :edit, status: :unprocessable_entity

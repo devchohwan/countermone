@@ -206,7 +206,9 @@
             <div id="chunk-body-<%= chunk_id %>" class="<%= is_last ? '' : 'hidden' %> px-3 pb-2">
               <div class="flex flex-wrap gap-1 pt-1">
                 <% schedules.each do |s| %>
-                  <% if leave_at && !leave_badge_shown && s.lesson_date >= leave_at %>
+                  <%# 휴원배지: 당일 출석했으면 출석 뒤에, 아니면 앞에 %>
+                  <% attended_on_leave = leave_at && s.lesson_date == leave_at && s.status.in?(%w[attended late makeup_done]) %>
+                  <% if leave_at && !leave_badge_shown && s.lesson_date >= leave_at && !attended_on_leave %>
                     <% leave_badge_shown = true %>
                     <div class="badge badge-sm badge-warning">휴원 <%= leave_at.strftime("%-m/%-d") %></div>
                   <% end %>
@@ -231,6 +233,11 @@
                       else 'text-base-content/40'
                       end %>">●</span>
                   </div>
+                  <%# 당일 출석 후 휴원한 경우: 수업 뒤에 배지 %>
+                  <% if attended_on_leave && !leave_badge_shown %>
+                    <% leave_badge_shown = true %>
+                    <div class="badge badge-sm badge-warning">휴원 <%= leave_at.strftime("%-m/%-d") %></div>
+                  <% end %>
                 <% end %>
               </div>
             </div>

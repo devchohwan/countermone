@@ -58,54 +58,7 @@
       <%# 왼쪽: 현황 + 결제 내역 %>
       <div>
         <%# 현황 통계 %>
-        <div class="stats stats-horizontal shadow-none border border-base-200 rounded-lg mb-4 w-full">
-          <div class="stat py-2 px-3">
-            <div class="stat-title text-xs">총출석</div>
-            <div class="stat-value text-lg"><%= student.total_attended_weeks_for(enrollment) %><span class="text-sm font-normal">회</span></div>
-          </div>
-          <div class="stat py-2 px-3 cursor-pointer"
-               data-stat="gift_voucher_eligible"
-               data-enrollment-id="<%= enrollment.id %>"
-               data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
-               title="더블클릭하여 수정"
-               ondblclick="openStatEdit(this)">
-            <div class="stat-title text-xs">지류출석</div>
-            <div class="stat-value text-lg <%= GiftVoucher.where(enrollment: enrollment).exists? ? 'text-success' : '' %>">
-              <span class="stat-display"><%= student.gift_voucher_eligible_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></span>
-            </div>
-          </div>
-          <div class="stat py-2 px-3 cursor-pointer"
-               data-stat="consecutive_weeks"
-               data-enrollment-id="<%= enrollment.id %>"
-               data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
-               title="더블클릭하여 수정"
-               ondblclick="openStatEdit(this)">
-            <div class="stat-title text-xs flex items-center gap-1">
-              연속개근
-              <% if enrollment.last_attendance_event_at %>
-                <span class="badge badge-xs badge-success"><%= enrollment.last_attendance_event_at.strftime("%-m/%-d") %></span>
-              <% end %>
-            </div>
-            <div class="stat-value text-lg">
-              <span class="stat-display"><%= student.consecutive_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></span>
-            </div>
-          </div>
-          <div class="stat py-2 px-3">
-            <div class="stat-title text-xs">잔여수업</div>
-            <div class="stat-value text-lg"><%= student.remaining_lessons_for(enrollment) %><span class="text-sm font-normal">회</span></div>
-          </div>
-          <div class="stat py-2 px-3 cursor-pointer"
-               data-stat="pass"
-               data-enrollment-id="<%= enrollment.id %>"
-               data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
-               title="더블클릭하여 수정"
-               ondblclick="openStatEdit(this)">
-            <div class="stat-title text-xs">잔여패스</div>
-            <div class="stat-value text-lg <%= student.available_passes_for(enrollment) <= 0 ? 'text-error' : '' %>">
-              <span class="stat-display"><%= student.available_passes_for(enrollment) %><span class="text-sm font-normal">회</span></span>
-            </div>
-          </div>
-        </div>
+        <%= render "students/enrollment_stats", student: student, enrollment: enrollment %>
 
         <%# 결제 내역 (최근 1건 기본, 접기/펼치기) %>
         <div class="flex items-center justify-between mb-2">
@@ -258,33 +211,7 @@
                     <% leave_badge_shown = true %>
                     <div class="badge badge-sm badge-warning">휴원 <%= leave_at.strftime("%-m/%-d") %></div>
                   <% end %>
-                  <% filter_key = case s.status
-                     when "attended", "late" then "attended"
-                     when "makeup_scheduled", "makeup_done" then "makeup"
-                     when "pass", "emergency_pass", "holiday" then "pass"
-                     when "scheduled" then "scheduled"
-                     else "other"
-                     end %>
-                  <% frozen_style = (enrollment.status == "leave" && s.status == "scheduled") ? "opacity-40 grayscale cursor-not-allowed" : "cursor-pointer hover:badge-primary" %>
-                  <div class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline <%= frozen_style %>"
-                       data-filter="<%= filter_key %>"
-                       title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %><%= enrollment.status == 'leave' && s.status == 'scheduled' ? ' (휴원 중 동결)' : '' %>"
-                       onclick="<%= enrollment.status == 'leave' && s.status == 'scheduled' ? '' : "openScheduleAction('#{s.id}', '#{s.lesson_date.strftime('%m/%d')}', '#{s.status}', '#{s.lesson_date.to_s}', '#{enrollment.subject}', '#{s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', '#{s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', #{s.teacher_id})" %>">
-                    <% if s.status.in?(%w[makeup_scheduled makeup_done]) && s.makeup_date %>
-                      <span class="text-base-content/50"><%= s.lesson_date.strftime("%-m/%-d") %></span><span class="text-purple-400 mx-0.5">→</span><%= s.makeup_date.strftime("%-m/%-d") %>
-                    <% else %>
-                      <%= s.lesson_date.strftime("%-m/%-d") %>
-                    <% end %>
-                    <span class="<%= case s.status
-                      when 'attended' then 'text-success'
-                      when 'makeup_done' then 'text-purple-500'
-                      when 'makeup_scheduled' then 'text-purple-400'
-                      when 'scheduled' then 'text-info'
-                      when 'deducted' then 'text-error'
-                      when 'pass', 'emergency_pass', 'holiday' then 'text-secondary'
-                      else 'text-base-content/40'
-                      end %>">●</span>
-                  </div>
+                  <%= render "students/schedule_badge", s: s, enrollment: enrollment %>
                   <%# 당일 출석 후 휴원한 경우: 수업 뒤에 배지 %>
                   <% if attended_on_leave && !leave_badge_shown %>
                     <% leave_badge_shown = true %>
@@ -521,17 +448,17 @@
           const labelMap = { emergency_pass: '긴급패스', holiday: '공휴일패스', pass: '패스' };
           html += `<p class="text-xs text-secondary mb-2">${labelMap[status] || '패스'} 처리됨 — 변경 가능</p>`;
         }
-        html += `<button onclick="submitPatch('/schedules/${scheduleId}/attend','${csrf}')" class="btn btn-sm btn-success w-full">출석</button>`;
-        html += `<button onclick="submitPatch('/schedules/${scheduleId}/late','${csrf}')"   class="btn btn-sm btn-warning w-full">지각</button>`;
+        html += `<button onclick="submitPatch('/schedules/${scheduleId}/attend','${csrf}','${enrollmentId}')" class="btn btn-sm btn-success w-full">출석</button>`;
+        html += `<button onclick="submitPatch('/schedules/${scheduleId}/late','${csrf}','${enrollmentId}')"   class="btn btn-sm btn-warning w-full">지각</button>`;
         html += `<button onclick="showMakeup()" class="btn btn-sm btn-info btn-outline w-full">보강</button>`;
         if (status === 'scheduled' && !(subject || '').includes('믹싱')) {
           html += `<button onclick="showPass()" class="btn btn-sm btn-secondary btn-outline w-full">패스</button>`;
         }
-        html += `<button onclick="if(confirm('결석 차감 처리하시겠습니까?')) submitPatch('/schedules/${scheduleId}/deduct','${csrf}')"
+        html += `<button onclick="if(confirm('결석 차감 처리하시겠습니까?')) submitPatch('/schedules/${scheduleId}/deduct','${csrf}','${enrollmentId}')"
                          class="btn btn-sm btn-error btn-outline w-full">결석 차감</button>`;
         html += `<button onclick="showReschedule()" class="btn btn-sm btn-outline w-full mt-1">수업 일자 변경</button>`;
         if (['pass', 'emergency_pass', 'holiday'].includes(status)) {
-          html += `<button onclick="if(confirm('패스를 취소하고 예정 상태로 되돌리시겠습니까?')) submitPatch('/schedules/${scheduleId}/cancel_pass','${csrf}')"
+          html += `<button onclick="if(confirm('패스를 취소하고 예정 상태로 되돌리시겠습니까?')) submitPatch('/schedules/${scheduleId}/cancel_pass','${csrf}','${enrollmentId}')"
                            class="btn btn-sm btn-ghost btn-outline w-full mt-1 text-secondary">패스 취소</button>`;
         }
         if (status === 'makeup_scheduled') {
@@ -539,7 +466,7 @@
         }
       } else if (status === 'deducted') {
         html += `<p class="text-xs text-error mb-1">결석 차감 처리됨</p>`;
-        html += `<button onclick="submitPatch('/schedules/${scheduleId}/undo_deduct','${csrf}')" class="btn btn-sm btn-warning btn-outline w-full">차감 취소</button>`;
+        html += `<button onclick="submitPatch('/schedules/${scheduleId}/undo_deduct','${csrf}','${enrollmentId}')" class="btn btn-sm btn-warning btn-outline w-full">차감 취소</button>`;
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-ghost w-full mt-1">수업 상세 보기</a>`;
       } else if (status === 'makeup_scheduled') {
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">수업 상세 / 전환</a>`;
@@ -553,7 +480,7 @@
         const undoMsg   = status === 'makeup_done'
           ? '보강 출석을 취소하시겠습니까?\\n출석 기록이 삭제되고 보강예정 상태로 돌아갑니다.'
           : '등원 취소하시겠습니까?\\n출석 기록이 삭제되고 예정 상태로 돌아갑니다.';
-        html += `<button onclick="if(confirm('${undoMsg}')) submitPatch('/schedules/${scheduleId}/undo_attend','${csrf}')"
+        html += `<button onclick="if(confirm('${undoMsg}')) submitPatch('/schedules/${scheduleId}/undo_attend','${csrf}','${enrollmentId}')"
                          class="btn btn-sm btn-warning btn-outline w-full mt-2">${undoLabel}</button>`;
       }
       actionsEl.innerHTML = html;
@@ -882,13 +809,28 @@
     modal.showModal();
   };
 
-  window.submitPatch = function(url, csrf) {
-    const form = document.createElement('form');
-    form.method = 'POST'; form.action = url;
-    form.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf}">
-                      <input type="hidden" name="_method" value="patch">`;
-    document.body.appendChild(form);
-    form.submit();
+  window.submitPatch = function(url, csrf, enrollmentId) {
+    const body = new URLSearchParams({ authenticity_token: csrf, _method: 'patch' });
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Accept': 'text/vnd.turbo-stream.html, text/html', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    }).then(res => {
+      if (res.ok) {
+        res.text().then(html => {
+          if (typeof Turbo !== 'undefined') {
+            Turbo.renderStreamMessage(html);
+          }
+          if (enrollmentId) {
+            const modal = document.getElementById('schedule-modal-' + enrollmentId);
+            if (modal) modal.close();
+          }
+        });
+      } else {
+        // 실패 시 fallback: 페이지 리로드
+        location.reload();
+      }
+    });
   };
 })();
 

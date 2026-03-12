@@ -1,0 +1,48 @@
+<div id="enrollment-stats-<%= enrollment.id %>" class="stats stats-horizontal shadow-none border border-base-200 rounded-lg mb-4 w-full">
+  <div class="stat py-2 px-3">
+    <div class="stat-title text-xs">총출석</div>
+    <div class="stat-value text-lg"><%= student.total_attended_weeks_for(enrollment) %><span class="text-sm font-normal">회</span></div>
+  </div>
+  <div class="stat py-2 px-3 cursor-pointer"
+       data-stat="gift_voucher_eligible"
+       data-enrollment-id="<%= enrollment.id %>"
+       data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
+       title="더블클릭하여 수정"
+       ondblclick="openStatEdit(this)">
+    <div class="stat-title text-xs">지류출석</div>
+    <div class="stat-value text-lg <%= GiftVoucher.where(enrollment: enrollment).exists? ? 'text-success' : '' %>">
+      <span class="stat-display"><%= student.gift_voucher_eligible_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></span>
+    </div>
+  </div>
+  <div class="stat py-2 px-3 cursor-pointer"
+       data-stat="consecutive_weeks"
+       data-enrollment-id="<%= enrollment.id %>"
+       data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
+       title="더블클릭하여 수정"
+       ondblclick="openStatEdit(this)">
+    <div class="stat-title text-xs flex items-center gap-1">
+      연속개근
+      <% if enrollment.last_attendance_event_at %>
+        <span class="badge badge-xs badge-success"><%= enrollment.last_attendance_event_at.strftime("%-m/%-d") %></span>
+      <% end %>
+    </div>
+    <div class="stat-value text-lg">
+      <span class="stat-display"><%= student.consecutive_weeks_for(enrollment) %><span class="text-sm font-normal">주</span></span>
+    </div>
+  </div>
+  <div class="stat py-2 px-3">
+    <div class="stat-title text-xs">잔여수업</div>
+    <div class="stat-value text-lg"><%= student.remaining_lessons_for(enrollment) %><span class="text-sm font-normal">회</span></div>
+  </div>
+  <div class="stat py-2 px-3 cursor-pointer"
+       data-stat="pass"
+       data-enrollment-id="<%= enrollment.id %>"
+       data-update-url="<%= update_stat_enrollment_path(enrollment) %>"
+       title="더블클릭하여 수정"
+       ondblclick="openStatEdit(this)">
+    <div class="stat-title text-xs">잔여패스</div>
+    <div class="stat-value text-lg <%= student.available_passes_for(enrollment) <= 0 ? 'text-error' : '' %>">
+      <span class="stat-display"><%= student.available_passes_for(enrollment) %><span class="text-sm font-normal">회</span></span>
+    </div>
+  </div>
+</div>

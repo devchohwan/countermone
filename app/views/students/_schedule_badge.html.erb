@@ -1,0 +1,27 @@
+<% filter_key = case s.status
+               when "attended", "late" then "attended"
+               when "makeup_scheduled", "makeup_done" then "makeup"
+               when "pass", "emergency_pass", "holiday" then "pass"
+               when "scheduled" then "scheduled"
+               else "other"
+               end %>
+<% frozen_style = (enrollment.status == "leave" && s.status == "scheduled") ? "opacity-40 grayscale cursor-not-allowed" : "cursor-pointer hover:badge-primary" %>
+<div id="schedule-badge-<%= s.id %>" class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline <%= frozen_style %>"
+     data-filter="<%= filter_key %>"
+     title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %><%= enrollment.status == 'leave' && s.status == 'scheduled' ? ' (휴원 중 동결)' : '' %>"
+     onclick="<%= enrollment.status == 'leave' && s.status == 'scheduled' ? '' : "openScheduleAction('#{s.id}', '#{s.lesson_date.strftime('%m/%d')}', '#{s.status}', '#{s.lesson_date.to_s}', '#{enrollment.subject}', '#{s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', '#{s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', #{s.teacher_id})" %>">
+  <% if s.status.in?(%w[makeup_scheduled makeup_done]) && s.makeup_date %>
+    <span class="text-base-content/50"><%= s.lesson_date.strftime("%-m/%-d") %></span><span class="text-purple-400 mx-0.5">→</span><%= s.makeup_date.strftime("%-m/%-d") %>
+  <% else %>
+    <%= s.lesson_date.strftime("%-m/%-d") %>
+  <% end %>
+  <span class="<%= case s.status
+    when 'attended' then 'text-success'
+    when 'makeup_done' then 'text-purple-500'
+    when 'makeup_scheduled' then 'text-purple-400'
+    when 'scheduled' then 'text-info'
+    when 'deducted' then 'text-error'
+    when 'pass', 'emergency_pass', 'holiday' then 'text-secondary'
+    else 'text-base-content/40'
+    end %>">●</span>
+</div>

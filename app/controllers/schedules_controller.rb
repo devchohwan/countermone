@@ -32,7 +32,10 @@ class SchedulesController < ApplicationController
         count = attendance_events.count
         badge_html = count > 0 ? "<div class=\"badge badge-accent gap-1\">🔥 개근달성 #{count}명</div>" : ""
         tab_label  = "🎯 개근 (#{count})"
+        enrollment = @schedule.enrollment
+        student    = enrollment.student
         streams = [
+          # 대시보드 타깃
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
           turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
                                locals: { schedules: today_arrival_schedules }),
@@ -40,7 +43,12 @@ class SchedulesController < ApplicationController
                                locals: { attendance_events: attendance_events }),
           turbo_stream.update("keungeun-alert-badge", html: badge_html),
           turbo_stream.replace("keungeun-tab-radio",
-            html: "<input type='radio' name='todo-tabs' role='tab' class='tab' id='keungeun-tab-radio' aria-label='#{tab_label}' #{count > 0 ? 'checked' : ''} onchange=\"switchTodoCopy('keungeun')\">")
+            html: "<input type='radio' name='todo-tabs' role='tab' class='tab' id='keungeun-tab-radio' aria-label='#{tab_label}' #{count > 0 ? 'checked' : ''} onchange=\"switchTodoCopy('keungeun')\">"),
+          # 학생 페이지 타깃
+          turbo_stream.replace("schedule-badge-#{@schedule.id}",
+            partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
+          turbo_stream.replace("enrollment-stats-#{enrollment.id}",
+            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment })
         ]
         render turbo_stream: streams
       end

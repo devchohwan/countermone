@@ -24,6 +24,7 @@ Rails.application.routes.draw do
       patch :return
       patch :dropout
       patch :complete_contact
+      patch :update_memo
     end
     resources :enrollments, shallow: true do
       member do

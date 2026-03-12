@@ -238,6 +238,43 @@
   </div>
 <% end %>
 
+<%# 메모 %>
+<div class="card bg-base-100 shadow-sm p-4 mt-4">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="font-semibold text-sm">메모</h3>
+    <button type="button" onclick="toggleMemoEdit()" id="memo-edit-btn" class="btn btn-xs btn-ghost">수정</button>
+  </div>
+
+  <div id="memo-view">
+    <% if @student.memo.present? %>
+      <p class="text-sm whitespace-pre-wrap"><%= @student.memo %></p>
+    <% else %>
+      <p class="text-sm text-base-content/30">메모 없음</p>
+    <% end %>
+  </div>
+
+  <%= form_with url: update_memo_student_path(@student), method: :patch, id: "memo-form", class: "hidden" do |f| %>
+    <%= f.text_area :memo, value: @student.memo, rows: 5,
+          class: "textarea textarea-bordered w-full text-sm",
+          placeholder: "메모를 입력하세요..." %>
+    <div class="flex gap-2 mt-2">
+      <%= f.submit "저장", class: "btn btn-sm btn-primary" %>
+      <button type="button" onclick="toggleMemoEdit()" class="btn btn-sm btn-ghost">취소</button>
+    </div>
+  <% end %>
+</div>
+
+<script>
+function toggleMemoEdit() {
+  const view = document.getElementById('memo-view');
+  const form = document.getElementById('memo-form');
+  const btn  = document.getElementById('memo-edit-btn');
+  const editing = form.classList.toggle('hidden');
+  view.classList.toggle('hidden');
+  btn.textContent = editing ? '수정' : '';
+}
+</script>
+
 <%# 오버플로우 탭 전환 스크립트 %>
 <script>
 function showEnrollmentPanel(id) {

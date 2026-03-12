@@ -80,6 +80,11 @@ class StudentsController < ApplicationController
     end
   end
 
+  def update_memo
+    @student.update!(memo: params[:student][:memo])
+    redirect_to student_path(@student), notice: "메모가 저장되었습니다."
+  end
+
   def destroy
     @student.destroy
     redirect_to students_path, notice: "수강생이 삭제되었습니다."

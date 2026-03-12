@@ -75,11 +75,11 @@
 
         <%# 보강 수업 %>
         <% makeups.each do |s| %>
-          <tr class="bg-secondary/5">
+          <tr class="bg-base-200">
             <td class="font-mono text-xs text-base-content/50"><%= s.makeup_time&.strftime("%H:%M") %>(보)</td>
             <td class="font-medium"><%= s.student.name %></td>
             <td><%= s.subject %></td>
-            <td><%= s.makeup_teacher&.name %></td>
+            <td><%= s.teacher.name %> → <%= s.makeup_teacher&.name %></td>
             <td><%= schedule_status_badge(s.status) %></td>
             <td>
               <% if s.status == "makeup_scheduled" %>

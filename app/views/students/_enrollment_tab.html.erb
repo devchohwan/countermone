@@ -763,27 +763,39 @@
       ).join('');
 
       actionsEl.innerHTML = `
-        <div class="space-y-2 text-sm">
-          <p class="text-xs text-base-content/50">이 날짜 이후 예정된 수업이 모두 변경됩니다.</p>
-          <div>
-            <p class="text-xs font-medium mb-1">변경 기준 날짜</p>
-            <input type="date" id="rs-date" value="${lessonDateStr}" class="input input-sm input-bordered w-full">
+        <div class="space-y-3 text-sm">
+          <div class="space-y-2">
+            <p class="text-xs font-semibold">이 수업만 날짜 변경</p>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-mono">${lessonDateStr}</span>
+              <span class="text-base-content/50">→</span>
+              <input type="date" id="rs-single-date" value="${lessonDateStr}" class="input input-sm input-bordered flex-1">
+            </div>
+            <button onclick="submitMoveDate()" class="btn btn-sm btn-primary w-full">이 수업만 변경</button>
           </div>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="divider my-1 text-xs text-base-content/40">또는 이후 수업 전체 변경</div>
+          <div class="space-y-2">
+            <p class="text-xs text-base-content/50">이 날짜 이후 예정된 수업이 모두 변경됩니다.</p>
             <div>
-              <p class="text-xs font-medium mb-1">새 요일</p>
-              <select id="rs-day" class="select select-sm select-bordered w-full" onchange="updateRescheduleTimes()">${dayOptions}</select>
+              <p class="text-xs font-medium mb-1">변경 기준 날짜</p>
+              <input type="date" id="rs-date" value="${lessonDateStr}" class="input input-sm input-bordered w-full">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <p class="text-xs font-medium mb-1">새 요일</p>
+                <select id="rs-day" class="select select-sm select-bordered w-full" onchange="updateRescheduleTimes()">${dayOptions}</select>
+              </div>
+              <div>
+                <p class="text-xs font-medium mb-1">새 시간</p>
+                <select id="rs-time" class="select select-sm select-bordered w-full"></select>
+              </div>
             </div>
             <div>
-              <p class="text-xs font-medium mb-1">새 시간</p>
-              <select id="rs-time" class="select select-sm select-bordered w-full"></select>
+              <p class="text-xs font-medium mb-1">선생님</p>
+              <select id="rs-teacher" class="select select-sm select-bordered w-full">${teacherOptions}</select>
             </div>
+            <button onclick="submitReschedule()" class="btn btn-sm btn-outline btn-primary w-full">전체 변경 적용</button>
           </div>
-          <div>
-            <p class="text-xs font-medium mb-1">선생님</p>
-            <select id="rs-teacher" class="select select-sm select-bordered w-full">${teacherOptions}</select>
-          </div>
-          <button onclick="submitReschedule()" class="btn btn-sm btn-primary w-full">변경 적용</button>
           <button onclick="showMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>
         </div>`;
       updateRescheduleTimes();
@@ -804,6 +816,19 @@
         opts.push(`<option value="${t}" ${t === ed.lessonTime ? 'selected' : ''}>${t}</option>`);
       }
       sel.innerHTML = opts.join('');
+    }
+
+    function submitMoveDate() {
+      const newDate = document.getElementById('rs-single-date')?.value;
+      if (!newDate) { alert('변경할 날짜를 선택해주세요.'); return; }
+      if (!confirm(`${lessonDateStr} 수업을 ${newDate}로 변경합니다. 계속하시겠습니까?`)) return;
+      const f = document.createElement('form');
+      f.method = 'POST'; f.action = `/schedules/${scheduleId}/move_date`;
+      f.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf}">
+                     <input type="hidden" name="_method" value="patch">
+                     <input type="hidden" name="new_date" value="${newDate}">`;
+      document.body.appendChild(f);
+      f.submit();
     }
 
     function submitReschedule() {
@@ -833,6 +858,7 @@
     window.submitPass            = submitPass;
     window.showReschedule        = showReschedule;
     window.updateRescheduleTimes = updateRescheduleTimes;
+    window.submitMoveDate        = submitMoveDate;
     window.submitReschedule      = submitReschedule;
 
     showMain();

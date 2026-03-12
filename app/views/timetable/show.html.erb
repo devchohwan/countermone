@@ -74,7 +74,7 @@
                   <% regular.each do |s| %>
                     <% if s.status == "makeup_scheduled" %>
                       <div class="badge badge-sm badge-ghost badge-outline w-full h-auto py-0.5 whitespace-normal justify-center opacity-60">
-                        <%= timetable_label(s) %>(이동)
+                        <%= timetable_label(s) %>(→<%= s.makeup_teacher&.name %>)
                       </div>
                     <% else %>
                       <div class="badge badge-sm badge-info badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">

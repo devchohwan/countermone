@@ -707,16 +707,18 @@
     };
 
     if (pastEntries.length > 0) {
-      html += `<p class="text-xs text-base-content/40 mt-2 mb-1">▾ 과거 날짜</p>
-               <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto mb-3">`;
+      html += `<details class="mb-2">
+        <summary class="cursor-pointer text-xs text-base-content/50 py-1 select-none">과거 날짜 (${pastEntries.length}개)</summary>
+        <div class="grid grid-cols-2 gap-2 mt-2">`;
       pastEntries.forEach(e => { html += renderDateCard(e); });
-      html += '</div>';
+      html += '</div></details>';
     }
     if (futureEntries.length > 0) {
-      html += `<p class="text-xs text-base-content/40 mb-1">▾ 오늘 이후</p>
-               <div class="grid grid-cols-2 gap-2">`;
+      html += `<details open>
+        <summary class="cursor-pointer text-xs text-base-content/50 py-1 select-none">오늘 이후 (${futureEntries.length}개)</summary>
+        <div class="grid grid-cols-2 gap-2 mt-2">`;
       futureEntries.forEach(e => { html += renderDateCard(e); });
-      html += '</div>';
+      html += '</div></details>';
     }
     body.innerHTML = html;
   }

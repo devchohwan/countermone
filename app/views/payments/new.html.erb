@@ -5,7 +5,8 @@
     <h2 class="text-lg font-bold">결제 등록</h2>
   </div>
 
-  <%= form_with model: @payment, class: "space-y-4" do |f| %>
+  <%= form_with model: @payment, class: "space-y-4",
+        data: { turbo_confirm: "결제를 등록하시겠습니까?" } do |f| %>
     <% if @payment.errors.any? %>
       <div class="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
         <% @payment.errors.full_messages.each do |msg| %><p><%= msg %></p><% end %>

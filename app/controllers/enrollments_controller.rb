@@ -1,5 +1,5 @@
 class EnrollmentsController < ApplicationController
-  before_action :set_enrollment, only: %i[show edit update destroy leave return dropout reschedule_form reschedule dismiss_attendance_event]
+  before_action :set_enrollment, only: %i[show edit update destroy leave return dropout reschedule_form reschedule dismiss_attendance_event add_lesson]
   before_action :set_student,    only: %i[new create]
 
   def show

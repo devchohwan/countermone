@@ -24,7 +24,6 @@ class SchedulesController < ApplicationController
     @schedule.update!(status: "attended")
     create_attendance_record(@schedule)
     check_consecutive_weeks(@schedule)
-    check_gift_voucher(@schedule)
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: [
@@ -58,7 +57,6 @@ class SchedulesController < ApplicationController
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "late")
     create_attendance_record(@schedule)
-    check_gift_voucher(@schedule)
     tab_redirect(notice: "지각 처리되었습니다.")
   end
 
@@ -208,7 +206,6 @@ class SchedulesController < ApplicationController
   def complete_makeup
     @schedule.update!(status: "makeup_done")
     create_attendance_record(@schedule)
-    check_gift_voucher(@schedule)
     redirect_back fallback_location: schedules_path, notice: "보강 완료 처리되었습니다."
   end
 

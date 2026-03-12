@@ -30,6 +30,8 @@ class Student < ApplicationRecord
   end
 
   def consecutive_weeks_for(enrollment)
+    return 0 if enrollment.status == "leave"
+
     since = [Date.new(2025, 10, 28), enrollment.last_attendance_event_at].compact.max
     enrollment.schedules
               .where("lesson_date >= ?", since)
@@ -47,6 +49,8 @@ class Student < ApplicationRecord
   # 지류상품권 조건: 휴원 후 복귀일 기준 (없으면 첫 결제 시작일)로 카운트
   # 패스 포함, 지각 포함, 보강 포함, 차감 포함
   def gift_voucher_eligible_weeks_for(enrollment)
+    return 0 if enrollment.status == "leave"
+
     since_date = enrollment.return_at ||
                  enrollment.payments.order(:created_at).first&.starts_at ||
                  enrollment.created_at.to_date

@@ -533,7 +533,8 @@
       const data     = window._mkData;
       const ws       = window._mkWeekStart;
       const rangeMin = parseDate(data.range_min);
-      const rangeMax = parseDate(data.range_max);
+      const rangeMax = data.range_max ? parseDate(data.range_max) : null; // null = 상한 없음
+      const inRangeFn = d => d >= rangeMin && (rangeMax === null || d <= rangeMax);
       const DAY_KO   = ['일','월','화','수','목','금','토'];
 
       // 월~토 6일
@@ -545,8 +546,8 @@
       const nextWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7);
       const prevDays = Array.from({length:6}, (_,i) => new Date(prevWs.getFullYear(), prevWs.getMonth(), prevWs.getDate()+i));
       const nextDays = Array.from({length:6}, (_,i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate()+i));
-      const prevOk   = prevDays.some(d => d >= rangeMin && d <= rangeMax);
-      const nextOk   = nextDays.some(d => d >= rangeMin && d <= rangeMax);
+      const prevOk   = prevDays.some(d => inRangeFn(d));
+      const nextOk   = rangeMax === null || nextDays.some(d => inRangeFn(d));
 
       const weekEnd   = days[5];
       const weekLabel = `${ws.getMonth()+1}/${ws.getDate()} ~ ${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
@@ -575,7 +576,7 @@
 
       // 날짜 헤더 (열)
       const thCells = days.map(d => {
-        const inRange = d >= rangeMin && d <= rangeMax;
+        const inRange = inRangeFn(d);
         return `<th class="text-xs font-normal text-center px-1 py-1 ${inRange ? '' : 'opacity-25'}">
           ${d.getMonth()+1}/${d.getDate()}<br>
           <span class="text-base-content/60">${DAY_KO[d.getDay()]}</span>
@@ -585,7 +586,7 @@
       // 시간대 행 (행)
       const rows = times.map(time => {
         const tds = days.map(d => {
-          const inRange = d >= rangeMin && d <= rangeMax;
+          const inRange = inRangeFn(d);
           const ds      = toDateStr(d);
           if (!inRange) return `<td class="text-center opacity-20 text-xs select-none px-1 py-1">—</td>`;
 
@@ -615,7 +616,7 @@
       }).join('');
 
       actionsEl.innerHTML = `
-        <div class="text-xs text-base-content/50 mb-2">보강 가능: ${data.range_min} ~ ${data.range_max}</div>
+        <div class="text-xs text-base-content/50 mb-2">보강 가능: ${data.range_min} ~ ${data.range_max || '상한 없음'}</div>
         <div class="flex flex-wrap gap-1 mb-3">${teacherTabs}</div>
         <div class="flex items-center justify-between mb-2">
           <button onclick="window._mkNav(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>

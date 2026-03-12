@@ -91,7 +91,7 @@
       <h3 class="font-semibold text-sm mb-3">보강 등록</h3>
       <% range = @schedule.makeup_available_range %>
       <% if range %>
-        <p class="text-xs text-base-content/70 mb-3">보강 가능 기간: <%= range.first.strftime("%m/%d") %> ~ <%= range.last.strftime("%m/%d") %></p>
+        <p class="text-xs text-base-content/70 mb-3">보강 가능 기간: <%= range.first.strftime("%m/%d") %> ~ <%= range.end ? range.end.strftime("%m/%d") : "상한 없음" %></p>
         <% if @schedule.status.in?(%w[pass emergency_pass holiday]) %>
           <div class="bg-purple-50 border border-purple-200 rounded p-2 mb-3 text-xs text-purple-700">
             패스/공휴일 → 보강 전환 시 추가 생성된 Schedule이 삭제됩니다.
@@ -100,7 +100,7 @@
         <%= form_with url: makeup_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
           <div>
             <label class="block text-xs font-medium text-base-content mb-1">보강 날짜</label>
-            <%= f.date_field :makeup_date, min: range.first, max: range.last, class: "input input-bordered w-full text-sm" %>
+            <%= f.date_field :makeup_date, min: range.first, max: range.end.presence, class: "input input-bordered w-full text-sm" %>
           </div>
           <div>
             <label class="block text-xs font-medium text-base-content mb-1">보강 시간</label>

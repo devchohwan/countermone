@@ -148,8 +148,9 @@ class SchedulesController < ApplicationController
 
     range = @schedule.makeup_available_range
     if range && !range.cover?(makeup_date)
+      upper_str = range.end ? range.end.to_s : "상한 없음"
       return redirect_back fallback_location: schedules_path,
-        alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{range.last})"
+        alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{upper_str})"
     end
 
     slot = Schedule.slot_count(teacher_id, @schedule.subject, makeup_date)
@@ -213,29 +214,31 @@ class SchedulesController < ApplicationController
     range = @schedule.makeup_available_range
     result = {
       range_min:   range&.first&.to_s,
-      range_max:   range&.last&.to_s,
+      range_max:   range&.end&.to_s,  # nil이면 상한 없음
       lesson_time: @schedule.lesson_time.strftime("%H:%M")
     }
 
     if range
       subject     = @schedule.subject
-      range_dates = range.to_a
+      # 상한이 nil(무제한)이면 시간표 표시용으로 90일로 cap
+      display_upper = range.end || (range.first + 90.days)
+      display_range = range.first..display_upper
       teachers    = Teacher.by_position.joins(:teacher_subjects)
                            .where(teacher_subjects: { subject: subject })
       teacher_ids = teachers.map(&:id)
 
       # 정규 수업: (teacher_id, date, time) → count
       regulars = Schedule.where(
-        teacher_id: teacher_ids, subject: subject, lesson_date: range_dates
+        teacher_id: teacher_ids, subject: subject, lesson_date: display_range
       ).where(status: %w[scheduled attended]).pluck(:teacher_id, :lesson_date, :lesson_time)
 
       # 보강 수업: (makeup_teacher_id, makeup_date, makeup_time) → count
       makeups = Schedule.where(
-        makeup_teacher_id: teacher_ids, subject: subject, makeup_date: range_dates
+        makeup_teacher_id: teacher_ids, subject: subject, makeup_date: display_range
       ).where(status: %w[makeup_scheduled makeup_done]).pluck(:makeup_teacher_id, :makeup_date, :makeup_time)
 
       # grid[teacher_id][date][time] = count
-      grid     = {}
+      grid      = {}
       all_times = [ @schedule.lesson_time.strftime("%H:%M") ]
 
       regulars.each do |tid, date, time|
@@ -254,8 +257,9 @@ class SchedulesController < ApplicationController
         all_times << ts
       end
 
+      range_dates = (display_range.first..display_range.end).map(&:to_s)
       result[:teachers] = teachers.map { |t| { id: t.id, name: t.name } }
-      result[:dates]    = range_dates.map(&:to_s)
+      result[:dates]    = range_dates
       result[:times]    = all_times.uniq.sort
       result[:grid]     = grid
     end
@@ -271,12 +275,13 @@ class SchedulesController < ApplicationController
     @schedule.update!(status: "scheduled")
 
     range = @schedule.makeup_available_range
-    period_expired = range.nil? || range.last < Date.today
+    period_expired = range.nil? || (range.end.present? && range.end < Date.today)
 
     if period_expired
       tab_redirect(notice: "차감 취소되었습니다. ⚠️ 보강 가능 기간이 만료되어 보강/패스 전환이 불가합니다.")
     else
-      tab_redirect(notice: "차감 취소되었습니다. 보강 또는 패스 전환이 가능합니다. (보강 기간: #{range.first} ~ #{range.last})")
+      upper_str = range.end ? range.end.to_s : "상한 없음"
+      tab_redirect(notice: "차감 취소되었습니다. 보강 또는 패스 전환이 가능합니다. (보강 기간: #{range.first} ~ #{upper_str})")
     end
   end
 

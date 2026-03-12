@@ -3,8 +3,10 @@
 <div class="flex items-center gap-3 mb-6">
   <%= link_to "← #{@student.name}", student_path(@student), class: "text-sm text-base-content/70 hover:underline" %>
   <h2 class="text-lg font-bold">결제 내역</h2>
-  <%= link_to "수정", edit_payment_path(@payment), class: "btn btn-xs btn-outline ml-auto" %>
+  <%= link_to "전체 수정", edit_payment_path(@payment), class: "btn btn-xs btn-outline ml-auto" %>
 </div>
+
+<p class="text-xs text-base-content/40 mb-2">셀을 클릭하면 수정할 수 있습니다. Enter로 저장, Esc로 취소.</p>
 
 <!-- 결제 상세 테이블 -->
 <div class="bg-base-100 rounded-lg border shadow-sm p-4 mb-6 overflow-x-auto">
@@ -33,8 +35,19 @@
         <tr>
           <td><%= payment.payment_type == "deposit" ? "예약금" : "신규" %></td>
           <td><%= payment.subject %></td>
-          <td><%= payment.months %>개월</td>
-          <td><%= payment.total_lessons %>회</td>
+
+          <%# 기간 — 수정 가능 %>
+          <td class="editable-cell" data-payment-id="<%= payment.id %>" data-field="months"
+              data-raw="<%= payment.months %>" data-input-type="number">
+            <%= payment.months %>개월
+          </td>
+
+          <%# 횟수 — 수정 가능 %>
+          <td class="editable-cell" data-payment-id="<%= payment.id %>" data-field="total_lessons"
+              data-raw="<%= payment.total_lessons %>" data-input-type="number">
+            <%= payment.total_lessons %>회
+          </td>
+
           <td class="text-purple-600">
             <% payment.discounts.each do |d| %>
               <div><%= d.memo.presence || d.discount_type %> -<%= format_amount(d.amount) %></div>
@@ -45,25 +58,58 @@
               <div><%= d.created_at.strftime("%Y.%m.%d") %></div>
             <% end %>
           </td>
-          <td class="font-medium"><%= format_amount(payment.amount) %></td>
-          <td><%= ({ "card" => "카드", "transfer" => "계좌이체", "cash" => "현금" }[payment.payment_method] || payment.payment_method) %></td>
-          <td>
+
+          <%# 금액 — 수정 가능 %>
+          <td class="editable-cell font-medium" data-payment-id="<%= payment.id %>" data-field="amount"
+              data-raw="<%= payment.amount %>" data-input-type="number">
+            <%= format_amount(payment.amount) %>
+          </td>
+
+          <%# 수단 — 수정 가능 (select) %>
+          <td class="editable-cell" data-payment-id="<%= payment.id %>" data-field="payment_method"
+              data-raw="<%= payment.payment_method %>"
+              data-options='[["카드","card"],["계좌이체","transfer"],["현금","cash"]]'>
+            <%= ({ "card" => "카드", "transfer" => "계좌이체", "cash" => "현금" }[payment.payment_method] || payment.payment_method) %>
+          </td>
+
+          <%# 결제일 (new 타입) — 수정 가능 %>
+          <td<% unless payment.payment_type == "deposit" %> class="editable-cell"
+              data-payment-id="<%= payment.id %>" data-field="deposit_paid_at"
+              data-raw="<%= payment.deposit_paid_at&.to_date %>" data-input-type="date"<% end %>>
             <% unless payment.payment_type == "deposit" %>
               <%= payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
             <% end %>
           </td>
-          <td><%= payment.payment_type == "deposit" && payment.deposit_amount > 0 ? format_amount(payment.deposit_amount) : "" %></td>
-          <td>
+
+          <%# 예약금 — 수정 가능 %>
+          <td<% if payment.payment_type == "deposit" && payment.deposit_amount > 0 %> class="editable-cell"
+              data-payment-id="<%= payment.id %>" data-field="deposit_amount"
+              data-raw="<%= payment.deposit_amount %>" data-input-type="number"<% end %>>
+            <%= payment.payment_type == "deposit" && payment.deposit_amount > 0 ? format_amount(payment.deposit_amount) : "" %>
+          </td>
+
+          <%# 예약금 납부일 — 수정 가능 %>
+          <td<% if payment.payment_type == "deposit" %> class="editable-cell"
+              data-payment-id="<%= payment.id %>" data-field="deposit_paid_at"
+              data-raw="<%= payment.deposit_paid_at&.to_date %>" data-input-type="date"<% end %>>
             <% if payment.payment_type == "deposit" %>
               <%= payment.deposit_paid_at&.strftime("%Y.%m.%d") %>
             <% end %>
           </td>
-          <td>
+
+          <%# 잔금 — 수정 가능 %>
+          <td<% if payment.payment_type == "deposit" && payment.balance_amount > 0 %> class="editable-cell"
+              data-payment-id="<%= payment.id %>" data-field="balance_amount"
+              data-raw="<%= payment.balance_amount %>" data-input-type="number"<% end %>>
             <% if payment.payment_type == "deposit" && payment.balance_amount > 0 %>
               <%= format_amount(payment.balance_amount) %>
             <% end %>
           </td>
-          <td>
+
+          <%# 잔금 납부일 — 수정 가능 %>
+          <td<% if payment.payment_type == "deposit" %> class="editable-cell"
+              data-payment-id="<%= payment.id %>" data-field="balance_paid_at"
+              data-raw="<%= payment.balance_paid_at&.to_date %>" data-input-type="date"<% end %>>
             <% if payment.payment_type == "deposit" %>
               <% if payment.balance_paid_at %>
                 <%= payment.balance_paid_at.strftime("%Y.%m.%d") %>
@@ -72,6 +118,7 @@
               <% end %>
             <% end %>
           </td>
+
           <td>
             <% if payment.refunded? %>
               <span class="badge badge-xs badge-ghost">환불완료</span>
@@ -173,3 +220,85 @@
     <% end %>
   </div>
 <% end %>
+
+<style>
+  .editable-cell {
+    cursor: pointer;
+    border-bottom: 1px dashed oklch(var(--bc) / 0.3);
+    transition: background 0.1s;
+  }
+  .editable-cell:hover { background: oklch(var(--b2)); }
+  .editable-cell input, .editable-cell select {
+    min-width: 70px; max-width: 140px;
+  }
+</style>
+
+<script>
+document.querySelectorAll('.editable-cell').forEach(cell => {
+  cell.addEventListener('click', function () {
+    if (cell.querySelector('input, select')) return;
+
+    const field     = cell.dataset.field;
+    const raw       = cell.dataset.raw || '';
+    const paymentId = cell.dataset.paymentId;
+    const inputType = cell.dataset.inputType || 'text';
+    const optionsJson = cell.dataset.options;
+    const original  = cell.innerHTML;
+
+    let ctrl;
+    if (optionsJson) {
+      ctrl = document.createElement('select');
+      ctrl.className = 'select select-bordered select-xs';
+      JSON.parse(optionsJson).forEach(([label, val]) => {
+        const o = document.createElement('option');
+        o.value = val; o.textContent = label;
+        if (String(val) === String(raw)) o.selected = true;
+        ctrl.appendChild(o);
+      });
+    } else {
+      ctrl = document.createElement('input');
+      ctrl.type = inputType;
+      ctrl.value = raw;
+      ctrl.className = 'input input-bordered input-xs';
+      ctrl.style.width = inputType === 'date' ? '130px' : '80px';
+    }
+
+    cell.innerHTML = '';
+    cell.appendChild(ctrl);
+    ctrl.focus();
+    if (ctrl.tagName === 'INPUT' && ctrl.type !== 'date') ctrl.select();
+
+    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    const save = async () => {
+      const val = ctrl.value;
+      if (val === raw) { cell.innerHTML = original; return; }
+      try {
+        const res = await fetch(`/payments/${paymentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Accept': 'application/json' },
+          body: JSON.stringify({ payment: { [field]: val } })
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || '수정에 실패했습니다.');
+          cell.innerHTML = original;
+        }
+      } catch {
+        cell.innerHTML = original;
+      }
+    };
+
+    ctrl.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  { e.preventDefault(); save(); }
+      if (e.key === 'Escape') { cell.innerHTML = original; }
+    });
+    ctrl.addEventListener('change', () => { if (ctrl.tagName === 'SELECT') save(); });
+    ctrl.addEventListener('blur', () => setTimeout(() => {
+      if (cell.contains(ctrl)) save();
+    }, 150));
+  });
+});
+</script>

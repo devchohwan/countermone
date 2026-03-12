@@ -71,15 +71,19 @@ class PaymentsController < ApplicationController
       @payment.save!
     end
 
-    redirect_to payment_path(@payment), notice: "결제 정보가 수정되었습니다."
-  rescue ActiveRecord::RecordInvalid => e
-    @enrollment = @payment.enrollment
-    flash.now[:alert] = e.message
-    render :edit, status: :unprocessable_entity
-  rescue RuntimeError => e
-    @enrollment = @payment.enrollment
-    flash.now[:alert] = e.message
-    render :edit, status: :unprocessable_entity
+    respond_to do |format|
+      format.html { redirect_to payment_path(@payment), notice: "결제 정보가 수정되었습니다." }
+      format.json { render json: { ok: true } }
+    end
+  rescue ActiveRecord::RecordInvalid, RuntimeError => e
+    respond_to do |format|
+      format.html do
+        @enrollment = @payment.enrollment
+        flash.now[:alert] = e.message
+        render :edit, status: :unprocessable_entity
+      end
+      format.json { render json: { error: e.message }, status: :unprocessable_entity }
+    end
   end
 
   def new

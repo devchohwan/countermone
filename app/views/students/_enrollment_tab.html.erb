@@ -123,7 +123,12 @@
             </button>
           <% end %>
           <% if enrollment.status == "active" %>
-            <%= link_to "+ 연장 결제", new_payment_path(enrollment_id: enrollment.id), class: "btn btn-xs btn-outline btn-primary mt-1" %>
+            <div class="flex gap-1 mt-1">
+              <%= link_to "+ 연장 결제", new_payment_path(enrollment_id: enrollment.id), class: "btn btn-xs btn-outline btn-primary" %>
+              <%= button_to "+ 1회 추가", add_lesson_enrollment_path(enrollment), method: :patch,
+                    class: "btn btn-xs btn-outline btn-secondary",
+                    form: { onsubmit: "return confirm('수업 1회를 추가하시겠습니까?')" } %>
+            </div>
           <% end %>
         <% else %>
           <p class="text-sm text-base-content/40">결제 내역 없음</p>

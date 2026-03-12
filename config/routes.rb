@@ -32,6 +32,7 @@ Rails.application.routes.draw do
         patch :return
         patch :dropout
         patch :dismiss_attendance_event
+        patch :add_lesson
         get   :reschedule_form
         patch :reschedule
       end

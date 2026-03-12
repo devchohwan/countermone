@@ -112,6 +112,36 @@ class EnrollmentsController < ApplicationController
     redirect_to root_path(todo_tab: "keungeun"), notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
   end
 
+  def add_lesson
+    payment = @enrollment.payments.where(fully_paid: true).order(:created_at).last
+    unless payment
+      return redirect_to student_path(@enrollment.student, tab: @enrollment.id),
+             alert: "완납 결제 내역이 없어 수업을 추가할 수 없습니다."
+    end
+
+    last_schedule = payment.schedules.order(lesson_date: :desc).first
+    unless last_schedule
+      return redirect_to student_path(@enrollment.student, tab: @enrollment.id),
+             alert: "스케줄이 없어 수업을 추가할 수 없습니다."
+    end
+
+    new_date = last_schedule.lesson_date + 7.days
+    payment.schedules.create!(
+      student:     @enrollment.student,
+      enrollment:  @enrollment,
+      teacher:     last_schedule.teacher,
+      lesson_date: new_date,
+      lesson_time: last_schedule.lesson_time,
+      subject:     @enrollment.subject,
+      status:      "scheduled",
+      sequence:    payment.schedules.maximum(:sequence).to_i + 1,
+      from_pass:   false
+    )
+
+    redirect_to student_path(@enrollment.student, tab: @enrollment.id),
+                notice: "수업 1회 추가되었습니다. (#{new_date.strftime('%m/%d')})"
+  end
+
   def reschedule_form
     @teachers = Teacher.includes(:teacher_subjects)
                        .joins(:teacher_subjects)

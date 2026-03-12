@@ -33,8 +33,8 @@ class Student < ApplicationRecord
     return 0 if enrollment.status == "leave"
 
     candidates = [Date.new(2025, 10, 28), enrollment.last_attendance_event_at]
-    # 휴원 후 복귀한 경우: 휴원일 다음날부터만 카운트 (휴원 전 출석 제외)
-    candidates << (enrollment.leave_at + 1.day) if enrollment.leave_at && enrollment.return_at
+    # 휴원 후 복귀한 경우: 복귀일부터만 카운트 (휴원 전 출석 제외)
+    candidates << enrollment.return_at if enrollment.leave_at && enrollment.return_at
     since = candidates.compact.max
     enrollment.schedules
               .where("lesson_date >= ?", since)

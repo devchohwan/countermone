@@ -369,6 +369,9 @@ class SchedulesController < ApplicationController
     if request.referer&.match?(%r{/students/\d+})
       redirect_to student_path(@schedule.student, tab: @schedule.enrollment_id),
                   notice: notice, alert: alert
+    elsif params[:from_student_id].present?
+      redirect_to student_path(params[:from_student_id], tab: params[:from_enrollment_id]),
+                  notice: notice, alert: alert
     else
       redirect_back fallback_location: schedules_path, notice: notice, alert: alert
     end

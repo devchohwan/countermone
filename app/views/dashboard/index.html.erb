@@ -25,9 +25,7 @@
       <% end %>
     </div>
     <div class="flex gap-2 items-center">
-      <% if @attendance_events&.any? %>
-        <div class="badge badge-accent gap-1">🔥 개근달성 <%= @attendance_events.count %>명</div>
-      <% end %>
+      <span id="keungeun-alert-badge"><% if @attendance_events&.any? %><div class="badge badge-accent gap-1">🔥 개근달성 <%= @attendance_events.count %>명</div><% end %></span>
       <% if @is_today %>
         <% if @payment_due_today.count > 0 %>
           <div class="indicator"><span class="indicator-item badge badge-error badge-xs"><%= @payment_due_today.count %></span><span class="btn btn-ghost btn-sm">💳</span></div>
@@ -293,6 +291,7 @@
             </div>
 
             <input type="radio" name="todo-tabs" role="tab" class="tab"
+                   id="keungeun-tab-radio"
                    aria-label="🎯 개근 (<%= @attendance_events.count %>)"
                    <%= params[:todo_tab] == 'keungeun' ? 'checked' : '' %>
                    onchange="switchTodoCopy('keungeun')" />

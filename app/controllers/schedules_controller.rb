@@ -29,13 +29,20 @@ class SchedulesController < ApplicationController
     respond_to do |format|
       format.turbo_stream do
         attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
-        render turbo_stream: [
+        count = attendance_events.count
+        badge_html = count > 0 ? "<div class=\"badge badge-accent gap-1\">🔥 개근달성 #{count}명</div>" : ""
+        tab_label  = "🎯 개근 (#{count})"
+        streams = [
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
           turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
                                locals: { schedules: today_arrival_schedules }),
           turbo_stream.replace("attendance-events-panel", partial: "dashboard/attendance_events_panel",
-                               locals: { attendance_events: attendance_events })
+                               locals: { attendance_events: attendance_events }),
+          turbo_stream.update("keungeun-alert-badge", html: badge_html),
+          turbo_stream.replace("keungeun-tab-radio",
+            html: "<input type='radio' name='todo-tabs' role='tab' class='tab' id='keungeun-tab-radio' aria-label='#{tab_label}' #{count > 0 ? 'checked' : ''} onchange=\"switchTodoCopy('keungeun')\">")
         ]
+        render turbo_stream: streams
       end
       format.html { tab_redirect(notice: "출석 처리되었습니다.") }
     end

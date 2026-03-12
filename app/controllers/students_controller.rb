@@ -1,5 +1,5 @@
 class StudentsController < ApplicationController
-  before_action :set_student, only: %i[show edit update destroy leave return dropout complete_contact]
+  before_action :set_student, only: %i[show edit update destroy leave return dropout complete_contact update_memo]
 
   def index
     @teachers = Teacher.by_position

@@ -18,7 +18,7 @@ class SlotsController < ApplicationController
 
     reg_query = Schedule.where(teacher_id: teacher_id, subject: subject,
                                lesson_date: range_dates)
-                        .where(status: %w[scheduled attended late deducted pass emergency_pass holiday])
+                        .where(status: %w[scheduled attended late])
     reg_query = reg_query.where(lesson_time: parsed_lt) if parsed_lt
     regular_counts = reg_query.group(:lesson_date).count
 

@@ -120,14 +120,13 @@ module ApplicationHelper
     label
   end
 
-  # 보강 셀 표기: 홍길동(5.20보) or 홍길동(5.20보/범) — 원래 선생님과 다를 때 초성 표시
+  # 보강 셀 표기: 홍길동(보) or 홍길동(보/상우) — 원래 선생님과 다를 때 풀네임 표시
   def timetable_makeup_label(schedule, current_teacher)
     s = schedule.student
     if schedule.makeup_teacher_id == schedule.teacher_id
       "#{s.name}(보)"
     else
-      initial = schedule.teacher&.name&.first || "?"
-      "#{s.name}(보/#{initial})"
+      "#{s.name}(보/#{schedule.teacher&.name || "?"})"
     end
   end
 

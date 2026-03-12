@@ -92,11 +92,6 @@
       <% range = @schedule.makeup_available_range %>
       <% if range %>
         <p class="text-xs text-base-content/70 mb-3">보강 가능 기간: <%= range.first.strftime("%m/%d") %> ~ <%= range.last.strftime("%m/%d") %></p>
-        <% if @schedule.lesson_date == Date.today %>
-          <div class="bg-yellow-50 border border-yellow-200 rounded p-2 mb-3 text-xs text-yellow-700">
-            ⚠️ 당일 취소 보강입니다. 상담원 확인 후 진행하세요.
-          </div>
-        <% end %>
         <% if @schedule.status.in?(%w[pass emergency_pass holiday]) %>
           <div class="bg-purple-50 border border-purple-200 rounded p-2 mb-3 text-xs text-purple-700">
             패스/공휴일 → 보강 전환 시 추가 생성된 Schedule이 삭제됩니다.

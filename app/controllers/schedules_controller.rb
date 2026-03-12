@@ -147,9 +147,6 @@ class SchedulesController < ApplicationController
     makeup_time = params[:makeup_time]
     teacher_id  = params[:makeup_teacher_id].to_i
 
-    # 당일 수업 보강: 경고 후 허용 (막지 않음)
-    today_warning = @schedule.lesson_date == Date.today
-
     range = @schedule.makeup_available_range
     if range && !range.cover?(makeup_date)
       return redirect_back fallback_location: schedules_path,
@@ -194,7 +191,7 @@ class SchedulesController < ApplicationController
       makeup_approved:   approved
     )
 
-    notice = today_warning ? "⚠️ 당일 취소 보강 처리 (상담원 확인 필요). " : "보강 일정이 등록되었습니다. "
+    notice = "보강 일정이 등록되었습니다. "
     if needs_approval && !approved
       rank = @schedule.enrollment.student.rank
       notice += "믹싱 #{rank == 'second' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."

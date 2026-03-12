@@ -26,7 +26,7 @@ class Student < ApplicationRecord
   validate    :attendance_code_unique_among_active
 
   def remaining_lessons_for(enrollment)
-    enrollment.schedules.where(status: "scheduled").count
+    enrollment.schedules.where(status: %w[scheduled makeup_scheduled]).count
   end
 
   def consecutive_weeks_for(enrollment)

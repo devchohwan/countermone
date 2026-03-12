@@ -63,16 +63,16 @@
 
       <%# 금액 자동 조회용 데이터 %>
       <script>
-        const PRICE_TABLE = {
-          <% @price_plans.each do |pp| %>
-            "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
-          <% end %>
-        };
-        const ENROLLMENT_SUBJECT   = "<%= @enrollment&.subject %>";
-        const MULTI_CLASS_DISCOUNT = <%= @multi_class_discount.to_i %>;
-        const REFERRAL_DISCOUNT    = <%= (@enrollment&.student&.referral_discount_pending || 0) * 50_000 %>;
-
         document.addEventListener("DOMContentLoaded", function() {
+          const PRICE_TABLE = {
+            <% @price_plans.each do |pp| %>
+              "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
+            <% end %>
+          };
+          const ENROLLMENT_SUBJECT   = "<%= @enrollment&.subject %>";
+          const MULTI_CLASS_DISCOUNT = <%= @multi_class_discount.to_i %>;
+          const REFERRAL_DISCOUNT    = <%= (@enrollment&.student&.referral_discount_pending || 0) * 50_000 %>;
+
           const monthsEl        = document.getElementById("payment_months");
           const amountEl        = document.getElementById("payment_amount");
           const lessonsEl       = document.getElementById("payment_total_lessons");

@@ -56,10 +56,12 @@
 <% end %>
 
 <script>
-  const subjectSelect = document.getElementById('enrollment_subject');
-  const teacherSelect = document.getElementById('enrollment_teacher');
+(function() {
+  const subjectSelect  = document.getElementById('enrollment_subject');
+  const teacherSelect  = document.getElementById('enrollment_teacher');
   const lessonDaySelect = document.getElementById('enrollment_lesson_day');
   const lessonTimeSelect = document.getElementById('enrollment_lesson_time');
+  if (!subjectSelect) return;
 
   const teachersBySubject = {};
   const teacherMaxHour = {};
@@ -74,9 +76,7 @@
   function updateTeacherOptions() {
     const subject = subjectSelect.value;
     teacherSelect.innerHTML = '<option value="">선생님 선택</option>';
-
     if (!subject) return;
-
     const teachers = teachersBySubject[subject] || [];
     teachers.forEach(t => {
       const option = document.createElement('option');
@@ -92,20 +92,12 @@
     const teacherId = parseInt(teacherSelect.value);
     const maxHour = teacherMaxHour[teacherId] || 21;
     lessonTimeSelect.innerHTML = '<option value="">시간 선택</option>';
-
     if (!day) return;
-
-    let hours = [];
-    if (day === 'monday') {
-      hours = [14, 15, 16, 17];
-    } else {
-      hours = Array.from({length: maxHour - 13 + 1}, (_, i) => 13 + i);
-    }
-
+    const hours = day === 'monday' ? [14, 15, 16, 17]
+                                   : Array.from({length: maxHour - 13 + 1}, (_, i) => 13 + i);
     hours.forEach(h => {
       const option = document.createElement('option');
-      const timeStr = `${h.toString().padStart(2, '0')}:00`;
-      option.value = timeStr;
+      option.value = `${String(h).padStart(2,'0')}:00`;
       option.textContent = `${h}:00`;
       lessonTimeSelect.appendChild(option);
     });
@@ -117,4 +109,5 @@
 
   updateTeacherOptions();
   updateTimeOptions();
+})();
 </script>

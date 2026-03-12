@@ -371,6 +371,7 @@
   }
 
   <%# ── 출결코드 중복 체크 ── %>
+  (function() {
   const attendanceCodeInput = document.getElementById('student_attendance_code');
   const attendanceCodeFeedback = document.getElementById('attendance-code-feedback');
   let checkTimeout = null;
@@ -403,6 +404,7 @@
     clearTimeout(checkTimeout);
     checkTimeout = setTimeout(checkAttendanceCode, 100);
   });
+  })();
 
   <% if student.new_record? %>
   <%# ── 선생님/금액 데이터 ── %>
@@ -517,10 +519,10 @@
   }
 
   <%# ── 과목 추가 버튼 ── %>
-  const addBtn      = document.getElementById('add-enrollment-btn');
-  const container   = document.getElementById('enrollments-container');
-  const tmpl        = document.getElementById('enrollment-template');
-  let enrollmentIdx = document.querySelectorAll('#enrollments-container .enrollment-section').length;
+  var addBtn      = document.getElementById('add-enrollment-btn');
+  var container   = document.getElementById('enrollments-container');
+  var tmpl        = document.getElementById('enrollment-template');
+  var enrollmentIdx = document.querySelectorAll('#enrollments-container .enrollment-section').length;
 
   addBtn.addEventListener('click', () => {
     const html = tmpl.innerHTML.replace(/NEW_RECORD/g, enrollmentIdx);
@@ -611,9 +613,9 @@
   updateReceipt();
 
   // ── 수업 시작일 슬롯 픽커 ──────────────────────────────────
-  const SLOT_DAY_NUM = { monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6, sunday:0 };
-  const SLOT_DAY_KO  = { monday:'월', tuesday:'화', wednesday:'수', thursday:'목', friday:'금', saturday:'토', sunday:'일' };
-  let _slotPickerSection = null;
+  var SLOT_DAY_NUM = { monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6, sunday:0 };
+  var SLOT_DAY_KO  = { monday:'월', tuesday:'화', wednesday:'수', thursday:'목', friday:'금', saturday:'토', sunday:'일' };
+  var _slotPickerSection = null;
 
   function openSlotPicker(section) {
     const teacherId  = section.querySelector('[data-role="teacher"]')?.value;

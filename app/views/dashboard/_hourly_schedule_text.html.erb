@@ -6,6 +6,18 @@
   makeup_by_hour  = (makeups || []).group_by { |s| s.makeup_time&.in_time_zone('Seoul')&.hour }.compact
 
   all_hours = (regular_by_hour.keys + makeup_by_hour.keys).uniq.sort
+
+  # 첫수업 판단: sequence==1인 수업 중 해당 enrollment의 첫 결제인 경우
+  seq1_schedules = (schedules || []).select { |s| s.sequence == 1 }
+  first_payment_ids = if seq1_schedules.any?
+    enroll_ids = seq1_schedules.map(&:enrollment_id).uniq
+    Payment.where(enrollment_id: enroll_ids)
+           .group(:enrollment_id).minimum(:id)
+           .values.to_set
+  else
+    Set.new
+  end
+  first_lesson_ids = seq1_schedules.select { |s| first_payment_ids.include?(s.payment_id) }.map(&:id).to_set
 %>
 <div class="card bg-base-100 shadow-sm">
   <div class="card-body p-4">
@@ -21,10 +33,11 @@
               copy_lines << "[#{ts.first.teacher.name}]"
               ts.each do |s|
                 remaining = enrollment_remaining[s.enrollment_id] || 0
+                tag = first_lesson_ids.include?(s.id) ? "(첫)" : ""
                 if s.status.in?(%w[attended late])
-                  copy_lines << "#{s.student.name} #{remaining + 1}-#{remaining}"
+                  copy_lines << "#{s.student.name}#{tag} #{remaining + 1}-#{remaining}"
                 else
-                  copy_lines << "#{s.student.name} #{remaining}"
+                  copy_lines << "#{s.student.name}#{tag} #{remaining}"
                 end
               end
             end
@@ -74,9 +87,10 @@
                   remaining_scheduled = enrollment_remaining[s.enrollment_id] || 0
                   before_count = attended ? remaining_scheduled + 1 : remaining_scheduled
                   after_count  = remaining_scheduled
+                  is_first = first_lesson_ids.include?(s.id)
                 %>
                 <p>
-                  <%= s.student.name %>
+                  <%= s.student.name %><% if is_first %><span class="text-success">(첫)</span><% end %>
                   <% if attended %>
                     <span class="text-base-content/40"><%= before_count %>-<%= after_count %></span>
                   <% else %>

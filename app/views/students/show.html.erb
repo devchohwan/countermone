@@ -111,56 +111,35 @@
           <tr><td class="text-base-content/50">2차전직서</td><td><%= @student.second_transfer_form? ? "✓" : "-" %></td></tr>
           <tr><td class="text-base-content/50">후기 할인</td><td><%= @student.review_discount_applied? ? "적용" : "-" %></td></tr>
           <tr><td class="text-base-content/50">인터뷰</td><td><%= @student.interview_completed? ? "완료" : "-" %></td></tr>
-          <tr><td class="text-base-content/50">상품권</td><td><%= @student.gift_vouchers.any? ? "#{@student.gift_vouchers.count}장" : "-" %></td></tr>
+          <tr>
+            <td class="text-base-content/50">상품권</td>
+            <td>
+              <% vouchers = @student.gift_vouchers.order(:issued_at) %>
+              <% if vouchers.any? %>
+                <div class="space-y-0.5">
+                  <% vouchers.each do |v| %>
+                    <div class="text-xs">
+                      상품권 <%= v.enrollment.subject %>
+                      <% if v.used? %>
+                        <span class="text-base-content/40">(사용됨)</span>
+                      <% elsif v.expires_at < Date.today %>
+                        <span class="text-error">(만료)</span>
+                      <% else %>
+                        <span class="text-success">(사용가능)</span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <span class="text-base-content/30">-</span>
+              <% end %>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
-
-<%# 지류상품권 목록 %>
-<% if @student.gift_vouchers.any? %>
-  <div class="card bg-base-100 shadow-sm p-4 mb-4">
-    <h3 class="font-semibold text-sm mb-3">지류상품권</h3>
-    <div class="space-y-2">
-      <% @student.gift_vouchers.order(:issued_at).each do |v| %>
-        <div class="flex items-center gap-3 text-sm border rounded p-2 <%= v.used? ? 'opacity-50' : '' %>">
-          <div class="flex-1 space-y-0.5">
-            <div class="font-medium"><%= v.enrollment.subject %> 과목 발급</div>
-            <div class="text-xs text-base-content/60">
-              발급일: <%= v.issued_at.strftime("%Y.%m.%d") %> /
-              만료일: <%= v.expires_at.strftime("%Y.%m.%d") %>
-              <% if v.used? %>
-                / <span class="text-success">사용완료 <%= v.used_at&.strftime("%Y.%m.%d") %> (<%= v.used_class %>)</span>
-              <% elsif v.expires_at < Date.today %>
-                / <span class="text-error">만료</span>
-              <% end %>
-            </div>
-          </div>
-          <% if !v.used? && v.expires_at >= Date.today %>
-            <% other_subjects = @student.enrollments.where(status: "active").pluck(:subject).uniq - [v.enrollment.subject] %>
-            <% if other_subjects.any? %>
-              <form action="<%= use_gift_voucher_path(v) %>" method="post"
-                    onsubmit="return confirm('상품권을 사용 처리하시겠습니까?')">
-                <input type="hidden" name="_method" value="patch">
-                <input type="hidden" name="<%= request.forgery_protection_token_param %>" value="<%= form_authenticity_token %>">
-                <select name="used_class" class="select select-bordered select-xs mr-1" required>
-                  <option value="">과목 선택</option>
-                  <% other_subjects.each do |subj| %>
-                    <option value="<%= subj %>"><%= subj %></option>
-                  <% end %>
-                </select>
-                <button type="submit" class="btn btn-xs btn-success">사용처리</button>
-              </form>
-            <% else %>
-              <span class="text-xs text-base-content/40">사용 가능 과목 없음</span>
-            <% end %>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-  </div>
-<% end %>
 
 <%# 클래스 탭 — 3개 이하: 탭, 4개 이상: 탭+드롭다운 %>
 <div class="flex items-center justify-between mb-3">
@@ -213,6 +192,50 @@
       <%= render "enrollment_tab", enrollment: enrollment, student: @student %>
     </div>
   <% end %>
+<% end %>
+
+<%# 지류상품권 목록 %>
+<% if @student.gift_vouchers.any? %>
+  <div class="card bg-base-100 shadow-sm p-4 mt-4">
+    <h3 class="font-semibold text-sm mb-3">지류상품권</h3>
+    <div class="space-y-2">
+      <% @student.gift_vouchers.order(:issued_at).each do |v| %>
+        <div class="flex items-center gap-3 text-sm border rounded p-2 <%= v.used? ? 'opacity-50' : '' %>">
+          <div class="flex-1 space-y-0.5">
+            <div class="font-medium"><%= v.enrollment.subject %> 과목 발급</div>
+            <div class="text-xs text-base-content/60">
+              발급일: <%= v.issued_at.strftime("%Y.%m.%d") %> /
+              만료일: <%= v.expires_at.strftime("%Y.%m.%d") %>
+              <% if v.used? %>
+                / <span class="text-success">사용완료 <%= v.used_at&.strftime("%Y.%m.%d") %> (<%= v.used_class %>)</span>
+              <% elsif v.expires_at < Date.today %>
+                / <span class="text-error">만료</span>
+              <% end %>
+            </div>
+          </div>
+          <% if !v.used? && v.expires_at >= Date.today %>
+            <% other_subjects = TeacherSubject::SUBJECTS - [v.enrollment.subject] %>
+            <% if other_subjects.any? %>
+              <form action="<%= use_gift_voucher_path(v) %>" method="post"
+                    onsubmit="return confirm('상품권을 사용 처리하시겠습니까?')">
+                <input type="hidden" name="_method" value="patch">
+                <input type="hidden" name="<%= request.forgery_protection_token_param %>" value="<%= form_authenticity_token %>">
+                <select name="used_class" class="select select-bordered select-xs mr-1" required>
+                  <option value="">과목 선택</option>
+                  <% other_subjects.each do |subj| %>
+                    <option value="<%= subj %>"><%= subj %></option>
+                  <% end %>
+                </select>
+                <button type="submit" class="btn btn-xs btn-success">사용처리</button>
+              </form>
+            <% else %>
+              <span class="text-xs text-base-content/40">사용 가능 과목 없음</span>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
 <% end %>
 
 <%# 오버플로우 탭 전환 스크립트 %>

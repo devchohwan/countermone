@@ -73,7 +73,7 @@
                 <div class="flex flex-col items-center gap-0.5">
                   <% regular.each do |s| %>
                     <% if s.status == "makeup_scheduled" %>
-                      <div class="badge badge-sm badge-ghost badge-outline w-full h-auto py-0.5 whitespace-normal justify-center opacity-60">
+                      <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center" style="color:rgb(147,51,234);border-color:rgb(147,51,234);opacity:0.75;">
                         <%= timetable_label(s) %>(→<%= s.makeup_teacher&.name %>)
                       </div>
                     <% else %>
@@ -83,7 +83,7 @@
                     <% end %>
                   <% end %>
                   <% makeups.each do |s| %>
-                    <div class="badge badge-sm badge-secondary badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">
+                    <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center" style="color:rgb(147,51,234);border-color:rgb(147,51,234);">
                       <%= timetable_makeup_label(s, @teacher) %>
                     </div>
                   <% end %>
@@ -114,7 +114,7 @@
 <div class="flex flex-wrap gap-2 mt-3 text-xs text-base-content/60">
   <span class="badge badge-sm badge-info badge-outline">정규</span>
   <span class="badge badge-sm badge-success badge-outline">FULL(3명)</span>
-  <span class="badge badge-sm badge-secondary badge-outline">보강</span>
+  <span class="badge badge-sm badge-outline" style="color:rgb(147,51,234);border-color:rgb(147,51,234);">보강</span>
   <span class="badge badge-sm badge-success/20 border border-success/30">■ 3명 만석</span>
   <span>★ 차량 | (첫) 첫수업 | (복) 복귀 | (패) 패스 | (휴) 휴원 | (보) 보강 | (대기) 등록대기</span>
 </div>

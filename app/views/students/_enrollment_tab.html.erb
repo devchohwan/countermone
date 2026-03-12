@@ -496,15 +496,17 @@
       } else if (status === 'makeup_scheduled') {
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">수업 상세 / 전환</a>`;
       } else if (['attended', 'late', 'makeup_done'].includes(status)) {
-        titleEl.textContent = status === 'late' ? '지각' : '출석 완료';
+        titleEl.textContent = status === 'late' ? '지각' : status === 'makeup_done' ? '보강 출석 완료' : '출석 완료';
         html += `<div class="space-y-2 text-sm py-1">`;
         html += `<div class="flex justify-between"><span class="text-base-content/50">등원</span><span class="font-medium text-success">${checkedIn || '미기록'}</span></div>`;
         html += `<div class="flex justify-between"><span class="text-base-content/50">하원</span><span class="font-medium text-info">${checkedOut || '미기록'}</span></div>`;
         html += `</div>`;
-        if (['attended', 'late'].includes(status)) {
-          html += `<button onclick="if(confirm('등원 취소하시겠습니까?\\n출석 기록이 삭제되고 예정 상태로 돌아갑니다.')) submitPatch('/schedules/${scheduleId}/undo_attend','${csrf}')"
-                           class="btn btn-sm btn-warning btn-outline w-full mt-2">등원 취소</button>`;
-        }
+        const undoLabel = status === 'makeup_done' ? '보강 출석 취소' : '등원 취소';
+        const undoMsg   = status === 'makeup_done'
+          ? '보강 출석을 취소하시겠습니까?\\n출석 기록이 삭제되고 보강예정 상태로 돌아갑니다.'
+          : '등원 취소하시겠습니까?\\n출석 기록이 삭제되고 예정 상태로 돌아갑니다.';
+        html += `<button onclick="if(confirm('${undoMsg}')) submitPatch('/schedules/${scheduleId}/undo_attend','${csrf}')"
+                         class="btn btn-sm btn-warning btn-outline w-full mt-2">${undoLabel}</button>`;
       }
       actionsEl.innerHTML = html;
     }

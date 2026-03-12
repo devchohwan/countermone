@@ -21,9 +21,10 @@ class SchedulesController < ApplicationController
     end
 
     remove_pass_schedule_if_needed(@schedule)
-    @schedule.update!(status: "attended")
+    new_status = @schedule.status == "makeup_scheduled" ? "makeup_done" : "attended"
+    @schedule.update!(status: new_status)
     create_attendance_record(@schedule)
-    check_consecutive_weeks(@schedule)
+    check_consecutive_weeks(@schedule) unless new_status == "makeup_done"
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: [
@@ -286,37 +287,41 @@ class SchedulesController < ApplicationController
   end
 
   def undo_attend
-    unless @schedule.status.in?(%w[attended late])
-      return redirect_back fallback_location: schedules_path, alert: "출석/지각 상태인 수업만 취소 가능합니다."
+    is_makeup = @schedule.status == "makeup_done"
+    unless @schedule.status.in?(%w[attended late makeup_done])
+      return redirect_back fallback_location: schedules_path, alert: "출석/지각/보강완료 상태인 수업만 취소 가능합니다."
     end
 
     enrollment = @schedule.enrollment
 
     ActiveRecord::Base.transaction do
-      # 개근처리가 완료됐으면 함께 취소
-      if enrollment.last_attendance_event_at.present?
-        last_payment = enrollment.payments.where(fully_paid: true).order(:created_at).last
-        if last_payment
-          event_discount = last_payment.discounts.where(discount_type: "attendance_event").order(:created_at).last
-          if event_discount
-            # 개근처리로 추가된 수업 = 해당 결제의 가장 마지막 예정 수업
-            event_schedule = last_payment.schedules.where(status: "scheduled").order(lesson_date: :desc).first
-            event_schedule&.destroy
-            event_discount.destroy
+      unless is_makeup
+        # 개근처리가 완료됐으면 함께 취소 (정규 수업만)
+        if enrollment.last_attendance_event_at.present?
+          last_payment = enrollment.payments.where(fully_paid: true).order(:created_at).last
+          if last_payment
+            event_discount = last_payment.discounts.where(discount_type: "attendance_event").order(:created_at).last
+            if event_discount
+              event_schedule = last_payment.schedules.where(status: "scheduled").order(lesson_date: :desc).first
+              event_schedule&.destroy
+              event_discount.destroy
+            end
           end
+          enrollment.update_columns(last_attendance_event_at: nil, attendance_event_pending: false)
         end
-        enrollment.update_columns(last_attendance_event_at: nil, attendance_event_pending: false)
       end
 
-      # 출석 기록 삭제 (하원 포함)
+      # 출석 기록 삭제
       @schedule.attendance&.destroy
 
-      # 상태 되돌리기
-      @schedule.update_column(:status, "scheduled")
+      # 상태 되돌리기 (보강완료 → 보강예정, 정규 → 예정)
+      revert_status = is_makeup ? "makeup_scheduled" : "scheduled"
+      @schedule.update_column(:status, revert_status)
 
-      # 연속개근 12주 여부 재검사
-      count = enrollment.student.consecutive_weeks_for(enrollment)
-      enrollment.update_column(:attendance_event_pending, count >= 12)
+      unless is_makeup
+        count = enrollment.student.consecutive_weeks_for(enrollment)
+        enrollment.update_column(:attendance_event_pending, count >= 12)
+      end
     end
 
     tab_redirect(notice: "등원 취소되었습니다.")

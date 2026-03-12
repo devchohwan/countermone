@@ -13,7 +13,7 @@ class SlotsController < ApplicationController
     enrollment_count = eq.count
 
     # ── 2. 날짜별 슬롯 (정규 + 보강 합산, lesson_time 필터 적용) ─
-    range_dates = (Date.today...(Date.today + 56))
+    range_dates = ((Date.today - 180)...(Date.today + 56))
                     .select { |d| d.strftime('%A').downcase == lesson_day }
 
     reg_query = Schedule.where(teacher_id: teacher_id, subject: subject,

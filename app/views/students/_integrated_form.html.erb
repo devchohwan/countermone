@@ -678,21 +678,24 @@
 
     // 날짜별 슬롯 (정규 + 보강 합산)
     html += `<p class="text-xs text-base-content/50 mb-2">${dayLabel}요일 수업 시작일 선택 <span class="opacity-60">(정규+보강 합산)</span></p>`;
-    html += '<div class="grid grid-cols-2 gap-2">';
-    Object.entries(data.date_slots).forEach(([ds, taken]) => {
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const pastEntries   = Object.entries(data.date_slots).filter(([ds]) => new Date(ds + 'T00:00:00') < today);
+    const futureEntries = Object.entries(data.date_slots).filter(([ds]) => new Date(ds + 'T00:00:00') >= today);
+
+    const renderDateCard = ([ds, taken]) => {
       const d = new Date(ds + 'T00:00:00');
       const label = `${d.getMonth()+1}/${d.getDate()} (${dayLabel})`;
-      const remaining = max - taken;
       const filled = '●'.repeat(taken);
-      const empty  = '○'.repeat(Math.max(0, remaining));
+      const empty  = '○'.repeat(Math.max(0, max - taken));
       if (taken >= max) {
-        html += `<div class="rounded border border-error/30 bg-error/10 px-3 py-2 text-center select-none opacity-60">
+        return `<div class="rounded border border-error/30 bg-error/10 px-3 py-2 text-center select-none opacity-60">
           <div class="text-sm font-medium text-error">${label}</div>
           <div class="font-mono text-xs mt-0.5 text-error">${filled} 마감</div>
         </div>`;
       } else {
         const colorCls = taken === 0 ? 'border-success/40 bg-success/10 hover:bg-success/20' : 'border-warning/40 bg-warning/10 hover:bg-warning/20';
-        html += `<div class="rounded border ${colorCls} px-3 py-2 text-center cursor-pointer"
+        return `<div class="rounded border ${colorCls} px-3 py-2 text-center cursor-pointer"
                       onclick="selectStartDate('${ds}')">
           <div class="text-sm font-medium">${label}</div>
           <div class="font-mono text-xs mt-0.5">
@@ -701,8 +704,20 @@
           </div>
         </div>`;
       }
-    });
-    html += '</div>';
+    };
+
+    if (pastEntries.length > 0) {
+      html += `<p class="text-xs text-base-content/40 mt-2 mb-1">▾ 과거 날짜</p>
+               <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto mb-3">`;
+      pastEntries.forEach(e => { html += renderDateCard(e); });
+      html += '</div>';
+    }
+    if (futureEntries.length > 0) {
+      html += `<p class="text-xs text-base-content/40 mb-1">▾ 오늘 이후</p>
+               <div class="grid grid-cols-2 gap-2">`;
+      futureEntries.forEach(e => { html += renderDateCard(e); });
+      html += '</div>';
+    }
     body.innerHTML = html;
   }
 

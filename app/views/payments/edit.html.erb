@@ -1,0 +1,100 @@
+<% content_for :title, "결제 수정" %>
+
+<div class="flex items-center gap-3 mb-6">
+  <%= link_to "← 결제 상세", payment_path(@payment), class: "text-sm text-base-content/70 hover:underline" %>
+  <h2 class="text-lg font-bold">결제 수정</h2>
+</div>
+
+<% if flash[:alert] %>
+  <div class="alert alert-error mb-4 text-sm"><%= flash[:alert] %></div>
+<% end %>
+
+<div class="bg-base-100 rounded-lg border shadow-sm p-6 max-w-lg">
+  <%= form_with model: @payment, url: payment_path(@payment), method: :patch do |f| %>
+    <div class="space-y-4">
+
+      <%# 기간 %>
+      <div class="form-control">
+        <%= f.label :months, "기간 (개월)", class: "label label-text font-medium" %>
+        <%= f.number_field :months, min: 1, class: "input input-bordered w-full" %>
+      </div>
+
+      <%# 횟수 %>
+      <div class="form-control">
+        <%= f.label :total_lessons, "총 수업 횟수", class: "label label-text font-medium" %>
+        <div class="flex items-center gap-2">
+          <%= f.number_field :total_lessons, min: 1, class: "input input-bordered flex-1" %>
+          <span class="text-sm text-base-content/50">
+            현재 출석 <%= @payment.schedules.where.not(status: "scheduled").count %>회 /
+            예정 <%= @payment.schedules.where(status: "scheduled").count %>회
+          </span>
+        </div>
+        <p class="text-xs text-base-content/50 mt-1">줄이면 뒤 예정 수업부터 삭제됩니다. 출석된 수업 미만으로는 줄일 수 없습니다.</p>
+      </div>
+
+      <%# 금액 %>
+      <div class="form-control">
+        <%= f.label :amount, "결제 금액 (원)", class: "label label-text font-medium" %>
+        <%= f.number_field :amount, min: 0, class: "input input-bordered w-full" %>
+      </div>
+
+      <%# 결제수단 %>
+      <div class="form-control">
+        <%= f.label :payment_method, "결제 수단", class: "label label-text font-medium" %>
+        <%= f.select :payment_method,
+              [["카드", "card"], ["계좌이체", "transfer"], ["현금", "cash"]],
+              {}, class: "select select-bordered w-full" %>
+      </div>
+
+      <%# 수업시작일 %>
+      <div class="form-control">
+        <%= f.label :starts_at, "수업 시작일", class: "label label-text font-medium" %>
+        <%= f.date_field :starts_at, class: "input input-bordered w-full" %>
+        <p class="text-xs text-base-content/50 mt-1">변경 시 예정 수업 날짜가 모두 재계산됩니다.</p>
+      </div>
+
+      <% if @payment.payment_type == "deposit" %>
+        <div class="divider text-xs text-base-content/50">예약금 결제 전용</div>
+
+        <%# 예약금 %>
+        <div class="form-control">
+          <%= f.label :deposit_amount, "예약금 (원)", class: "label label-text font-medium" %>
+          <%= f.number_field :deposit_amount, min: 0, class: "input input-bordered w-full" %>
+        </div>
+
+        <%# 예약금 납부일 %>
+        <div class="form-control">
+          <%= f.label :deposit_paid_at, "예약금 납부일", class: "label label-text font-medium" %>
+          <%= f.date_field :deposit_paid_at, value: @payment.deposit_paid_at&.to_date, class: "input input-bordered w-full" %>
+        </div>
+
+        <%# 잔금 %>
+        <div class="form-control">
+          <%= f.label :balance_amount, "잔금 (원)", class: "label label-text font-medium" %>
+          <%= f.number_field :balance_amount, min: 0, class: "input input-bordered w-full" %>
+        </div>
+
+        <%# 잔금 납부일 %>
+        <div class="form-control">
+          <%= f.label :balance_paid_at, "잔금 납부일", class: "label label-text font-medium" %>
+          <%= f.date_field :balance_paid_at, value: @payment.balance_paid_at&.to_date, class: "input input-bordered w-full" %>
+          <p class="text-xs text-base-content/50 mt-1">설정 시 자동으로 완납 처리됩니다.</p>
+        </div>
+      <% end %>
+
+      <%# 완납 여부 %>
+      <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-3">
+          <%= f.check_box :fully_paid, class: "checkbox checkbox-success" %>
+          <span class="label-text font-medium">완납</span>
+        </label>
+      </div>
+
+    </div>
+
+    <div class="flex gap-2 mt-6">
+      <%= f.submit "저장", class: "btn btn-primary flex-1" %>
+      <%= link_to "취소", payment_path(@payment), class: "btn btn-ghost flex-1" %>
+    </div>
+  <% end %>
+</div>

@@ -1,5 +1,5 @@
 class PaymentsController < ApplicationController
-  before_action :set_payment, only: %i[show refund pay_balance complete_deposit destroy]
+  before_action :set_payment, only: %i[show edit update refund pay_balance complete_deposit destroy]
 
   def index
     scope = Payment.includes(:student, :enrollment, :discounts)
@@ -37,6 +37,49 @@ class PaymentsController < ApplicationController
         total_pages: (total.to_f / per_page).ceil
       }
     end.reject { |g| g[:total].zero? }
+  end
+
+  def edit
+    @enrollment = @payment.enrollment
+  end
+
+  def update
+    old_total     = @payment.total_lessons
+    old_starts_at = @payment.starts_at
+
+    ActiveRecord::Base.transaction do
+      @payment.assign_attributes(payment_update_params)
+
+      new_total     = @payment.total_lessons
+      new_starts_at = @payment.starts_at
+
+      # starts_at 변경 → scheduled 수업 날짜 재계산 (sequence 기반)
+      if old_starts_at != new_starts_at
+        reschedule_by_sequence(@payment, new_starts_at)
+      end
+
+      # total_lessons 변경
+      if new_total != old_total
+        adjust_lesson_count(@payment, old_total, new_total)
+      end
+
+      # deposit 타입: balance_paid_at 설정 시 fully_paid = true
+      if @payment.payment_type == "deposit" && @payment.balance_paid_at.present?
+        @payment.fully_paid = true
+      end
+
+      @payment.save!
+    end
+
+    redirect_to payment_path(@payment), notice: "결제 정보가 수정되었습니다."
+  rescue ActiveRecord::RecordInvalid => e
+    @enrollment = @payment.enrollment
+    flash.now[:alert] = e.message
+    render :edit, status: :unprocessable_entity
+  rescue RuntimeError => e
+    @enrollment = @payment.enrollment
+    flash.now[:alert] = e.message
+    render :edit, status: :unprocessable_entity
   end
 
   def new
@@ -142,6 +185,53 @@ class PaymentsController < ApplicationController
 
   def set_payment
     @payment = Payment.find(params[:id])
+  end
+
+  def payment_update_params
+    params.require(:payment).permit(
+      :months, :total_lessons, :amount, :payment_method, :starts_at,
+      :deposit_amount, :deposit_paid_at, :balance_amount, :balance_paid_at, :fully_paid
+    )
+  end
+
+  # starts_at 변경 시 scheduled 수업 날짜를 sequence 기반으로 재계산
+  def reschedule_by_sequence(payment, new_starts_at)
+    enrollment = payment.enrollment
+    payment.schedules.where(status: "scheduled").order(:sequence).each do |s|
+      new_date = calculate_nth_lesson_date(new_starts_at, enrollment.lesson_day, s.sequence - 1)
+      s.update_column(:lesson_date, new_date)
+    end
+  end
+
+  # total_lessons 변경 시 수업 추가/삭제
+  def adjust_lesson_count(payment, old_total, new_total)
+    diff = new_total - old_total
+    enrollment = payment.enrollment
+
+    if diff > 0
+      last_s    = payment.schedules.order(:lesson_date).last
+      last_date = last_s&.lesson_date || payment.starts_at
+      last_seq  = payment.schedules.maximum(:sequence).to_i
+      diff.times do |i|
+        payment.schedules.create!(
+          student:     payment.student,
+          enrollment:  enrollment,
+          teacher:     enrollment.teacher,
+          lesson_date: last_date + ((i + 1) * 7).days,
+          lesson_time: enrollment.lesson_time,
+          subject:     enrollment.subject,
+          status:      "scheduled",
+          sequence:    last_seq + i + 1
+        )
+      end
+    else
+      to_remove = payment.schedules.where(status: "scheduled").order(lesson_date: :desc).limit(-diff)
+      if to_remove.count < -diff
+        attended = payment.schedules.where.not(status: "scheduled").count
+        raise "출석 처리된 수업이 #{attended}회 있어 #{attended}회 미만으로 줄일 수 없습니다."
+      end
+      to_remove.destroy_all
+    end
   end
 
   def payment_params

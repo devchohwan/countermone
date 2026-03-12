@@ -72,9 +72,15 @@
               <% else %>
                 <div class="flex flex-col items-center gap-0.5">
                   <% regular.each do |s| %>
-                    <div class="badge badge-sm badge-info badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">
-                      <%= timetable_label(s) %>
-                    </div>
+                    <% if s.status == "makeup_scheduled" %>
+                      <div class="badge badge-sm badge-ghost badge-outline w-full h-auto py-0.5 whitespace-normal justify-center opacity-60">
+                        <%= timetable_label(s) %>(이동)
+                      </div>
+                    <% else %>
+                      <div class="badge badge-sm badge-info badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">
+                        <%= timetable_label(s) %>
+                      </div>
+                    <% end %>
                   <% end %>
                   <% makeups.each do |s| %>
                     <div class="badge badge-sm badge-secondary badge-outline w-full h-auto py-0.5 whitespace-normal justify-center">

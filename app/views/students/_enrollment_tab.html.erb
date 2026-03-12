@@ -516,27 +516,20 @@
               <button onclick="showMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>`;
             return;
           }
-
           window._mkData = data;
-
-          const rangeMin    = parseDate(data.range_min);
-          const rangeMax    = parseDate(data.range_max);
-          const lessonDate  = parseDate(lessonDateStr);
-
-          // 클릭한 수업 날짜의 주를 기준으로 표시
-          window._mkWeekStart = getMonday(lessonDate);
-
+          window._mkWeekStart = getMonday(parseDate(lessonDateStr));
+          window._mkTeacherId = data.teachers[0]?.id ?? null;
           renderMakeupWeek();
         });
     }
 
     // ── 주간 시간표 렌더 ────────────────────────────────────
+    // 가로: 요일(월~토), 세로: 시간대, 탭: 선생님
     function renderMakeupWeek() {
       const data     = window._mkData;
       const ws       = window._mkWeekStart;
       const rangeMin = parseDate(data.range_min);
       const rangeMax = parseDate(data.range_max);
-      const lt       = data.lesson_time;
       const DAY_KO   = ['일','월','화','수','목','금','토'];
 
       // 월~토 6일
@@ -548,58 +541,71 @@
       const nextWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7);
       const prevDays = Array.from({length:6}, (_,i) => new Date(prevWs.getFullYear(), prevWs.getMonth(), prevWs.getDate()+i));
       const nextDays = Array.from({length:6}, (_,i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate()+i));
+      const prevOk   = prevDays.some(d => d >= rangeMin && d <= rangeMax);
+      const nextOk   = nextDays.some(d => d >= rangeMin && d <= rangeMax);
 
-      const prevOk = prevDays.some(d => d >= rangeMin && d <= rangeMax);
-      const nextOk = nextDays.some(d => d >= rangeMin && d <= rangeMax);
-
-      const weekEnd  = days[5];
+      const weekEnd   = days[5];
       const weekLabel = `${ws.getMonth()+1}/${ws.getDate()} ~ ${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
 
-      // 테이블 헤더
+      // 선생님 탭
+      const teacherTabs = data.teachers.map(t => {
+        const active = window._mkTeacherId === t.id;
+        return `<button onclick="window._mkTeacherId=${t.id};renderMakeupWeek();"
+                        class="btn btn-xs ${active ? 'btn-primary' : 'btn-ghost'}">${t.name}</button>`;
+      }).join('');
+
+      // 현재 선생님 그리드 (grid[tid][date][time] = count)
+      const tid   = String(window._mkTeacherId);
+      const tGrid = (data.grid || {})[tid] || {};
+      const times = data.times || [data.lesson_time];
+
+      const teacher = data.teachers.find(t => t.id === window._mkTeacherId);
+      const teacherName = teacher?.name || '';
+
+      // 날짜 헤더 (열)
       const thCells = days.map(d => {
         const inRange = d >= rangeMin && d <= rangeMax;
-        return `<th class="text-xs font-normal text-center px-1 ${inRange ? '' : 'opacity-25'}">
+        return `<th class="text-xs font-normal text-center px-1 py-1 ${inRange ? '' : 'opacity-25'}">
           ${d.getMonth()+1}/${d.getDate()}<br>
           <span class="text-base-content/60">${DAY_KO[d.getDay()]}</span>
         </th>`;
       }).join('');
 
-      // 선생님 행
-      const rows = data.teachers.map(t => {
+      // 시간대 행 (행)
+      const rows = times.map(time => {
         const tds = days.map(d => {
           const inRange = d >= rangeMin && d <= rangeMax;
-          if (!inRange) return `<td class="text-center opacity-20 text-xs select-none">—</td>`;
+          const ds      = toDateStr(d);
+          if (!inRange) return `<td class="text-center opacity-20 text-xs select-none px-1 py-1">—</td>`;
 
-          const ds    = toDateStr(d);
-          const slots = (data.grid[ds] || {})[String(t.id)] ?? 0;
-
+          const slots = ((tGrid[ds] || {})[time]) || 0;
           if (slots >= 3) {
-            return `<td class="text-center text-xs select-none rounded" style="background:rgba(239,68,68,0.12); color:rgba(239,68,68,0.5);" title="마감 (3/3)">✕</td>`;
+            return `<td class="text-center text-xs select-none px-1 py-1 rounded"
+                        style="background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.5);"
+                        title="마감 (3/3)">✕</td>`;
           }
-
           const filled   = '●'.repeat(slots);
           const empty    = '○'.repeat(3 - slots);
           const colorCls = slots === 0 ? 'text-success' : 'text-warning';
-
-          return `<td class="text-center cursor-pointer rounded" style="background:rgba(34,197,94,0.12);"
+          return `<td class="text-center cursor-pointer rounded px-1 py-1"
+                      style="background:rgba(34,197,94,0.12);"
                       onmouseover="this.style.background='rgba(34,197,94,0.25)'"
                       onmouseout="this.style.background='rgba(34,197,94,0.12)'"
-                      onclick="confirmMakeup('${ds}',${t.id},'${lt}','${t.name}')"
-                      title="${t.name} — ${slots}/3명">
-            <span class="font-mono text-xs ${colorCls}">${filled}</span><span class="font-mono text-xs opacity-30">${empty}</span>
-          </td>`;
+                      onclick="confirmMakeup('${ds}',${window._mkTeacherId},'${time}','${teacherName}')"
+                      title="${teacherName} — ${slots}/3명">
+                    <span class="font-mono text-xs ${colorCls}">${filled}</span><span class="font-mono text-xs opacity-30">${empty}</span>
+                  </td>`;
         }).join('');
 
         return `<tr>
-          <td class="text-xs font-medium pr-2 whitespace-nowrap">${t.name}</td>
+          <td class="text-xs text-base-content/50 text-right pr-2 py-1 whitespace-nowrap font-mono w-12">${time}</td>
           ${tds}
         </tr>`;
       }).join('');
 
       actionsEl.innerHTML = `
-        <div class="text-xs text-base-content/50 mb-1">
-          보강 가능: ${data.range_min} ~ ${data.range_max} &nbsp;/&nbsp; ${lt}
-        </div>
+        <div class="text-xs text-base-content/50 mb-2">보강 가능: ${data.range_min} ~ ${data.range_max}</div>
+        <div class="flex flex-wrap gap-1 mb-3">${teacherTabs}</div>
         <div class="flex items-center justify-between mb-2">
           <button onclick="navigateMakeupWeek(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>
           <span class="text-sm font-medium">${weekLabel}</span>
@@ -607,7 +613,7 @@
         </div>
         <div class="overflow-x-auto">
           <table class="table table-xs w-full">
-            <thead><tr><th></th>${thCells}</tr></thead>
+            <thead><tr><th class="w-12"></th>${thCells}</tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
@@ -621,8 +627,6 @@
     }
 
     function confirmMakeup(date, teacherId, time, teacherName) {
-      // 시간 선택 UI로 교체
-      const existingHtml = actionsEl.innerHTML;
       actionsEl.innerHTML = `
         <div class="border rounded-lg p-4 space-y-3">
           <div class="text-sm font-semibold">${date} · ${teacherName} 선생님</div>

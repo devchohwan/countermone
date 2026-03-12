@@ -224,29 +224,40 @@ class SchedulesController < ApplicationController
                            .where(teacher_subjects: { subject: subject })
       teacher_ids = teachers.map(&:id)
 
-      # 배치 쿼리: 정규 수업 슬롯
-      regular_counts = Schedule.where(
+      # 정규 수업: (teacher_id, date, time) → count
+      regulars = Schedule.where(
         teacher_id: teacher_ids, subject: subject, lesson_date: range_dates
-      ).where(status: %w[scheduled attended]).group(:teacher_id, :lesson_date).count
+      ).where(status: %w[scheduled attended]).pluck(:teacher_id, :lesson_date, :lesson_time)
 
-      # 배치 쿼리: 보강 슬롯
-      makeup_counts = Schedule.where(
+      # 보강 수업: (makeup_teacher_id, makeup_date, makeup_time) → count
+      makeups = Schedule.where(
         makeup_teacher_id: teacher_ids, subject: subject, makeup_date: range_dates
-      ).where(status: %w[makeup_scheduled makeup_done]).group(:makeup_teacher_id, :makeup_date).count
+      ).where(status: %w[makeup_scheduled makeup_done]).pluck(:makeup_teacher_id, :makeup_date, :makeup_time)
 
-      slot_counts = Hash.new(0)
-      regular_counts.each { |(tid, date), cnt| slot_counts[[tid, date]] += cnt }
-      makeup_counts.each  { |(tid, date), cnt| slot_counts[[tid, date]] += cnt }
+      # grid[teacher_id][date][time] = count
+      grid     = {}
+      all_times = [ @schedule.lesson_time.strftime("%H:%M") ]
+
+      regulars.each do |tid, date, time|
+        next unless time
+        ts = time.strftime("%H:%M"); ds = date.to_s; key = tid.to_s
+        grid[key] ||= {}; grid[key][ds] ||= {}
+        grid[key][ds][ts] = (grid[key][ds][ts] || 0) + 1
+        all_times << ts
+      end
+
+      makeups.each do |tid, date, time|
+        next unless time
+        ts = time.strftime("%H:%M"); ds = date.to_s; key = tid.to_s
+        grid[key] ||= {}; grid[key][ds] ||= {}
+        grid[key][ds][ts] = (grid[key][ds][ts] || 0) + 1
+        all_times << ts
+      end
 
       result[:teachers] = teachers.map { |t| { id: t.id, name: t.name } }
       result[:dates]    = range_dates.map(&:to_s)
-      result[:grid]     = {}
-      range_dates.each do |date|
-        result[:grid][date.to_s] = {}
-        teacher_ids.each do |tid|
-          result[:grid][date.to_s][tid.to_s] = slot_counts[[tid, date]]
-        end
-      end
+      result[:times]    = all_times.uniq.sort
+      result[:grid]     = grid
     end
 
     render json: result

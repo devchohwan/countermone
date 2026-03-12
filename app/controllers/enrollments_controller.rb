@@ -108,7 +108,7 @@ class EnrollmentsController < ApplicationController
       memo: "12주 개근 1회 무료"
     )
 
-    @enrollment.update!(attendance_event_pending: false)
+    @enrollment.update!(attendance_event_pending: false, last_attendance_event_at: Date.today)
     redirect_to root_path(todo_tab: "keungeun"), notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
   end
 

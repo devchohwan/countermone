@@ -30,8 +30,9 @@ class Student < ApplicationRecord
   end
 
   def consecutive_weeks_for(enrollment)
+    since = [Date.new(2025, 10, 28), enrollment.last_attendance_event_at].compact.max
     enrollment.schedules
-              .where("lesson_date >= ?", Date.new(2025, 10, 28))
+              .where("lesson_date >= ?", since)
               .where("lesson_date <= ?", Date.today)
               .order(lesson_date: :desc)
               .to_a

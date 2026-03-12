@@ -63,7 +63,7 @@
 
       <%# 금액 자동 조회용 데이터 %>
       <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        (function initPaymentForm() {
           const PRICE_TABLE = {
             <% @price_plans.each do |pp| %>
               "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
@@ -194,7 +194,7 @@
           depositEl?.addEventListener("input", updateReceipt);
           document.getElementById("payment_payment_type")?.addEventListener("change", updateReceipt);
           updateReceipt();
-        });
+        })();
       </script>
 
       <div class="border-t pt-3 space-y-3">

@@ -15,9 +15,14 @@
           <%= @date.strftime("%Y.%m.%d (%a)") %>
         </span>
         <%= link_to "→", root_path(date: (@date + 1).to_s),
-              class: "join-item btn btn-sm btn-ghost #{@date >= Date.today ? 'btn-disabled opacity-30' : ''}" %>
+              class: "join-item btn btn-sm btn-ghost #{@date >= @effective_today ? 'btn-disabled opacity-30' : ''}" %>
       </div>
-      <% unless @is_today %>
+      <% if @dual_date_mode %>
+        <%= link_to "#{Date.today.strftime('%-m/%-d')} 오늘", root_path(date: Date.today.to_s),
+              class: "btn btn-xs #{@date == Date.today ? 'btn-primary' : 'btn-outline'}" %>
+        <%= link_to "#{Date.tomorrow.strftime('%-m/%-d')} 내일", root_path(date: Date.tomorrow.to_s),
+              class: "btn btn-xs #{@date == Date.tomorrow ? 'btn-primary' : 'btn-outline'}" %>
+      <% elsif !@is_today %>
         <%= link_to "오늘", root_path, class: "btn btn-xs btn-primary" %>
       <% end %>
       <% if @is_today %>

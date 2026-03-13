@@ -15,10 +15,12 @@ class DashboardController < ApplicationController
   end
 
   def index
-    effective_today = Time.current.hour >= 21 ? Date.tomorrow : Date.today
-    @date        = params[:date].present? ? Date.parse(params[:date]) : effective_today
-    @is_today    = @date == effective_today
-    @current_hour = @date == Date.today ? Time.current.hour : nil
+    effective_today  = Time.current.hour >= 21 ? Date.tomorrow : Date.today
+    @date            = params[:date].present? ? Date.parse(params[:date]) : effective_today
+    @is_today        = @date == effective_today
+    @effective_today = effective_today
+    @dual_date_mode  = Time.current.hour.in?(21..22)  # 21:00~22:59: 오늘·내일 동시 처리 구간
+    @current_hour    = @date == Date.today ? Time.current.hour : nil
 
     # 시간표 (당일 보강 포함)
     @today_schedules = arrival_schedules_for(@date)

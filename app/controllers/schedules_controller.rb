@@ -34,6 +34,7 @@ class SchedulesController < ApplicationController
         tab_label  = "🎯 개근 (#{count})"
         enrollment = @schedule.enrollment
         student    = enrollment.student
+        payment    = @schedule.payment
         streams = [
           # 대시보드 타깃
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
@@ -48,7 +49,9 @@ class SchedulesController < ApplicationController
           turbo_stream.replace("schedule-badge-#{@schedule.id}",
             partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
           turbo_stream.replace("enrollment-stats-#{enrollment.id}",
-            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment })
+            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment }),
+          turbo_stream.replace("payment-chunk-header-#{payment.id}",
+            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
         ]
         render turbo_stream: streams
       end
@@ -366,14 +369,32 @@ class SchedulesController < ApplicationController
 
   # 수강생 상세 페이지에서 온 경우 해당 클래스 탭을 유지해서 리다이렉트
   def tab_redirect(notice: nil, alert: nil)
-    if request.referer&.match?(%r{/students/\d+})
-      redirect_to student_path(@schedule.student, tab: @schedule.enrollment_id),
-                  notice: notice, alert: alert
-    elsif params[:from_student_id].present?
-      redirect_to student_path(params[:from_student_id], tab: params[:from_enrollment_id]),
-                  notice: notice, alert: alert
-    else
-      redirect_back fallback_location: schedules_path, notice: notice, alert: alert
+    respond_to do |format|
+      format.turbo_stream do
+        enrollment = @schedule.enrollment
+        student    = enrollment.student
+        payment    = @schedule.payment
+        streams = [
+          turbo_stream.replace("schedule-badge-#{@schedule.id}",
+            partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
+          turbo_stream.replace("enrollment-stats-#{enrollment.id}",
+            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment }),
+          turbo_stream.replace("payment-chunk-header-#{payment.id}",
+            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
+        ]
+        render turbo_stream: streams
+      end
+      format.html do
+        if request.referer&.match?(%r{/students/\d+})
+          redirect_to student_path(@schedule.student, tab: @schedule.enrollment_id),
+                      notice: notice, alert: alert
+        elsif params[:from_student_id].present?
+          redirect_to student_path(params[:from_student_id], tab: params[:from_enrollment_id]),
+                      notice: notice, alert: alert
+        else
+          redirect_back fallback_location: schedules_path, notice: notice, alert: alert
+        end
+      end
     end
   end
 

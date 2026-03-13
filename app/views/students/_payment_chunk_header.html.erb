@@ -1,0 +1,18 @@
+<% schedules = payment.schedules.includes(:attendance).order(:lesson_date).to_a %>
+<% cnt_attended  = schedules.count { |s| s.status.in?(%w[attended late makeup_done]) } %>
+<% cnt_pass      = schedules.count { |s| s.status.in?(%w[pass emergency_pass holiday]) } %>
+<% cnt_deducted  = schedules.count { |s| s.status == "deducted" } %>
+<% cnt_remaining = schedules.count { |s| s.status.in?(%w[scheduled makeup_scheduled]) } %>
+<button id="payment-chunk-header-<%= payment.id %>" onclick="toggleChunk('<%= payment.id %>')"
+        class="w-full flex items-center justify-between px-3 py-2 hover:bg-base-200 text-left">
+  <span class="text-xs font-medium text-base-content/70">
+    <%= payment.starts_at&.strftime("%Y.%m") %> — <%= payment.months %>개월 (<%= schedules.size %>회)
+  </span>
+  <span class="flex items-center gap-2 text-xs text-base-content/50">
+    <% if cnt_attended > 0 %><span class="text-success">출석 <%= cnt_attended %></span><% end %>
+    <% if cnt_pass     > 0 %><span class="text-secondary">패스 <%= cnt_pass %></span><% end %>
+    <% if cnt_deducted > 0 %><span class="text-error">차감 <%= cnt_deducted %></span><% end %>
+    <% if cnt_remaining> 0 %><span class="text-info">예정 <%= cnt_remaining %></span><% end %>
+    <span id="chunk-arrow-<%= payment.id %>"><%= defined?(is_open) && is_open ? '∧' : '∨' %></span>
+  </span>
+</button>

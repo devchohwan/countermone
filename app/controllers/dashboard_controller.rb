@@ -82,7 +82,8 @@ class DashboardController < ApplicationController
            .includes(:student, :enrollment, :schedules)
            .each do |p|
       first_schedule = p.schedules.order(:lesson_date).first
-      if first_schedule&.lesson_date == date
+      relevant_date = first_schedule&.status == "makeup_scheduled" ? first_schedule&.makeup_date : first_schedule&.lesson_date
+      if relevant_date == date
         results << { student: p.student, enrollment: p.enrollment, type: :deposit_first_lesson, payment: p }
       end
     end

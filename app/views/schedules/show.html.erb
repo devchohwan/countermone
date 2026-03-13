@@ -113,7 +113,7 @@
                 { prompt: "선생님 선택" },
                 class: "select select-bordered w-full text-sm" %>
           </div>
-          <% if @schedule.subject == "믹싱" && @schedule.enrollment.student.rank == "first" %>
+          <% if @schedule.subject == "믹싱1차" %>
             <div class="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700">
               믹싱 1차전직 보강 순서:<br>
               1️⃣ 같은 주차 미라쿠도 반 슬롯<br>
@@ -140,7 +140,7 @@
           <p>1단계: 보강 등록을 먼저 시도하세요.</p>
           <p>2단계: 보강도 불가하면 결석 차감으로 처리하세요.</p>
         </div>
-      <% elsif @schedule.subject == "믹싱" %>
+      <% elsif @schedule.subject.in?(%w[믹싱1차 믹싱2차]) %>
         <div class="bg-orange-50 border border-orange-200 rounded p-3 text-xs text-orange-700">
           <p class="font-medium mb-1">⚠️ 믹싱 패스 불가</p>
           <p>1단계: 보강 등록을 시도하세요.</p>

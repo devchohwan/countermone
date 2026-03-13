@@ -109,7 +109,7 @@ class SchedulesController < ApplicationController
     end
 
     # 믹싱 패스 불가 → 보강 유도
-    if enrollment.subject == "믹싱"
+    if enrollment.subject.in?(%w[믹싱1차 믹싱2차])
       range = @schedule.makeup_available_range
       if range
         return redirect_to schedule_path(@schedule),
@@ -205,12 +205,11 @@ class SchedulesController < ApplicationController
     remove_pass_schedule_if_needed(@schedule)
 
     # 믹싱 보강 승인 플로우
-    needs_approval = @schedule.subject == "믹싱"
+    needs_approval = @schedule.subject.in?(%w[믹싱1차 믹싱2차])
     approved = true
     if needs_approval
-      rank = @schedule.enrollment.student.rank
-      if rank == "first"
-        # 1차전직: 같은 주차 미라쿠도 반 슬롯 확인
+      if @schedule.subject == "믹싱1차"
+        # 1차전직: 같은 주차 슬롯 확인
         week_start = makeup_date.beginning_of_week(:monday)
         week_end   = makeup_date.end_of_week(:monday)
         same_week_slot = Schedule.where(
@@ -236,8 +235,7 @@ class SchedulesController < ApplicationController
 
     notice = "보강 일정이 등록되었습니다. "
     if needs_approval && !approved
-      rank = @schedule.enrollment.student.rank
-      notice += "믹싱 #{rank == 'second' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."
+      notice += "믹싱 #{@schedule.subject == '믹싱2차' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."
     end
     tab_redirect(notice: notice)
   end

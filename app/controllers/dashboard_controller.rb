@@ -100,6 +100,13 @@ class DashboardController < ApplicationController
       results << { student: e.student, enrollment: e, type: :next_payment_due, payment: last_payment }
     end
 
+    # 3. 오늘 체험수업 대상자
+    Schedule.where(lesson_date: date, trial: true, status: %w[scheduled attended late])
+            .includes(:student, :enrollment)
+            .each do |s|
+      results << { student: s.student, enrollment: s.enrollment, type: :trial_lesson, schedule: s }
+    end
+
     results
   end
 

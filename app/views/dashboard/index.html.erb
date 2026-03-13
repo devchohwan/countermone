@@ -330,7 +330,7 @@
           <% else %>
             <ul class="space-y-1">
               <% @daily_payments.each do |p| %>
-                <li class="text-sm"><%= p.student.name %> — <%= p.subject %> (<%= format_amount(p.amount) %>)</li>
+                <li class="text-sm"><%= link_to p.student.name, student_path(p.student), class: "hover:underline" %> — <%= p.subject %> (<%= format_amount(p.amount) %>)</li>
               <% end %>
             </ul>
           <% end %>

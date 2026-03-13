@@ -63,11 +63,11 @@
                             data: { turbo_confirm: "#{s.student.name} 지류상품권을 발급하시겠습니까?" } %>
                     <% end %>
 
-                    <%# 당취 — scheduled 상태면 항상 표시 %>
-                    <% if s.status == "scheduled" && !readonly %>
+                    <%# 당취 — scheduled/makeup_scheduled 상태면 항상 표시 %>
+                    <% if s.status.in?(%w[scheduled makeup_scheduled]) && !readonly %>
                       <button type="button"
                               class="btn btn-xs btn-outline btn-error"
-                              onclick="openDangchwiModal(<%= s.id %>, '<%= j s.student.name %>', '<%= j s.subject %>')">당취</button>
+                              onclick="openDangchwiModal(<%= s.id %>, '<%= j s.student.name %>', '<%= j s.subject %>', '<%= s.status %>')">당취</button>
                     <% end %>
                   </div>
                 <% end %>

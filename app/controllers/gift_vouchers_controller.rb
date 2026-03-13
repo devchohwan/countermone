@@ -86,15 +86,18 @@ class GiftVouchersController < ApplicationController
     existing = @voucher.trial_schedule
 
     if existing && existing.status.in?(%w[attended late makeup_done])
-      return render json: { error: "이미 완료된 체험수업은 변경할 수 없습니다." }, status: :unprocessable_entity
+      return respond_to do |format|
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("flash-notice", html: "<div class='alert alert-error text-sm'>이미 완료된 체험수업은 변경할 수 없습니다.</div>".html_safe) }
+        format.html { redirect_back fallback_location: root_path, alert: "이미 완료된 체험수업은 변경할 수 없습니다." }
+        format.json { render json: { error: "이미 완료된 체험수업은 변경할 수 없습니다." }, status: :unprocessable_entity }
+      end
     end
 
-    teacher  = Teacher.find(params[:teacher_id])
-    date     = Date.parse(params[:date])
-    time_str = params[:time]
-    hour, min = time_str.split(":").map(&:to_i)
+    teacher     = Teacher.find(params[:teacher_id])
+    date        = Date.parse(params[:date])
+    time_str    = params[:time]
     lesson_time = Time.zone.parse("#{date} #{time_str}")
-    subject  = params[:subject].presence || @voucher.enrollment.subject
+    subject     = params[:subject].presence || @voucher.enrollment.subject
 
     if existing
       existing.update!(
@@ -106,25 +109,68 @@ class GiftVouchersController < ApplicationController
       )
     else
       Schedule.create!(
-        student:     @voucher.student,
-        enrollment:  @voucher.enrollment,
-        teacher:     teacher,
-        lesson_date: date,
-        lesson_time: lesson_time,
-        subject:     subject,
-        status:      "scheduled",
-        trial:       true,
+        student:      @voucher.student,
+        enrollment:   @voucher.enrollment,
+        teacher:      teacher,
+        lesson_date:  date,
+        lesson_time:  lesson_time,
+        subject:      subject,
+        status:       "scheduled",
+        trial:        true,
         gift_voucher: @voucher,
-        sequence:    0
+        sequence:     0
       )
     end
 
-    redirect_to student_path(@voucher.student), notice: "체험수업이 #{date.strftime('%m/%d')} #{time_str}으로 등록되었습니다."
+    # 대시보드 실시간 반영: 체험 수업 날짜가 오늘이면 즉각 broadcast
+    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
+    if date == effective
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "dashboard_current",
+        target: "hourly_arrival",
+        partial: "dashboard/hourly_arrival_text",
+        locals: { schedules: trial_aware_arrivals(effective) }
+      )
+    end
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "gift-vouchers-#{@voucher.student_id}",
+          partial: "students/gift_vouchers",
+          locals: { student: @voucher.student }
+        )
+      end
+      format.html do
+        redirect_to student_path(@voucher.student), notice: "체험수업이 #{date.strftime('%m/%d')} #{time_str}으로 등록되었습니다."
+      end
+    end
   end
 
   private
 
   def set_voucher
     @voucher = GiftVoucher.find(params[:id])
+  end
+
+  def trial_aware_arrivals(date)
+    regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .joins(:enrollment)
+                       .where(lesson_date: date, status: %w[scheduled attended late])
+                       .where(enrollments: { status: "active" })
+    trial    = Schedule.includes(:student, :teacher, :enrollment, :attendance)
+                       .where(lesson_date: date, trial: true, status: %w[scheduled attended late])
+    same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .joins(:enrollment)
+                       .where(makeup_date: date, status: %w[makeup_scheduled makeup_done])
+                       .where(enrollments: { status: "active" })
+    (regular.to_a + trial.to_a + same_day.to_a).uniq(&:id).sort_by do |s|
+      if s.status.in?(%w[makeup_scheduled makeup_done])
+        [s.makeup_time&.hour.to_i, s.makeup_time&.min.to_i]
+      else
+        t = s.lesson_time.in_time_zone("Seoul")
+        [t.hour, t.min]
+      end
+    end
   end
 end

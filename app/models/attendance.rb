@@ -3,7 +3,7 @@ class Attendance < ApplicationRecord
 
   belongs_to :student
   belongs_to :schedule
-  belongs_to :payment
+  belongs_to :payment, optional: true
 
   validates :error_type, inclusion: { in: ERROR_TYPES }, allow_nil: true
 end

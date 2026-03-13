@@ -12,8 +12,8 @@ class SchedulesController < ApplicationController
   def show; end
 
   def attend
-    # 완납필요: 예약금 미완납 + 첫 수업이면 등원 차단
-    if @schedule.payment.fully_paid == false && @schedule.payment.payment_type == "deposit"
+    # 완납필요: 예약금 미완납 + 첫 수업이면 등원 차단 (trial 수업은 payment 없으므로 스킵)
+    if @schedule.payment && @schedule.payment.fully_paid == false && @schedule.payment.payment_type == "deposit"
       first = @schedule.payment.schedules.order(:lesson_date, :id).first
       if first&.id == @schedule.id
         return redirect_back fallback_location: root_path, alert: "완납 후 등원 처리 가능합니다."
@@ -50,10 +50,13 @@ class SchedulesController < ApplicationController
           turbo_stream.replace("schedule-badge-#{@schedule.id}",
             partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
           turbo_stream.replace("enrollment-stats-#{enrollment.id}",
-            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment }),
-          turbo_stream.replace("payment-chunk-header-#{payment.id}",
-            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
+            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment })
         ]
+        # trial 수업은 payment 없으므로 payment-chunk-header 업데이트 스킵
+        if payment
+          streams << turbo_stream.replace("payment-chunk-header-#{payment.id}",
+            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
+        end
         render turbo_stream: streams
       end
       format.html { tab_redirect(notice: "출석 처리되었습니다.") }
@@ -432,10 +435,13 @@ class SchedulesController < ApplicationController
           turbo_stream.replace("schedule-badge-#{@schedule.id}",
             partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
           turbo_stream.replace("enrollment-stats-#{enrollment.id}",
-            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment }),
-          turbo_stream.replace("payment-chunk-header-#{payment.id}",
-            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
+            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment })
         ]
+        # trial 수업은 payment 없으므로 payment-chunk-header 업데이트 스킵
+        if payment
+          streams << turbo_stream.replace("payment-chunk-header-#{payment.id}",
+            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
+        end
         render turbo_stream: streams
       end
       format.html do
@@ -488,16 +494,18 @@ class SchedulesController < ApplicationController
   end
 
   def today_arrival_schedules
-    today   = Date.today
-    regular = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
-                      .joins(:enrollment)
-                      .where(lesson_date: today, status: %w[scheduled attended late])
-                      .where(enrollments: { status: "active" })
+    today    = Date.today
+    regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .joins(:enrollment)
+                       .where(lesson_date: today, status: %w[scheduled attended late])
+                       .where(enrollments: { status: "active" })
+    trial    = Schedule.includes(:student, :teacher, :enrollment, :attendance)
+                       .where(lesson_date: today, trial: true, status: %w[scheduled attended late])
     same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
                        .joins(:enrollment)
                        .where(makeup_date: today, status: %w[makeup_scheduled makeup_done])
                        .where(enrollments: { status: "active" })
-    (regular.to_a + same_day.to_a).sort_by do |s|
+    (regular.to_a + trial.to_a + same_day.to_a).uniq(&:id).sort_by do |s|
       if s.status.in?(%w[makeup_scheduled makeup_done])
         [s.makeup_time&.hour.to_i, s.makeup_time&.min.to_i]
       else

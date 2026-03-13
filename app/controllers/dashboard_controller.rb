@@ -126,11 +126,13 @@ class DashboardController < ApplicationController
                        .joins(:enrollment)
                        .where(lesson_date: date, status: %w[scheduled attended late])
                        .where(enrollments: { status: "active" })
+    trial    = Schedule.includes(:student, :teacher, :enrollment, :attendance)
+                       .where(lesson_date: date, trial: true, status: %w[scheduled attended late])
     same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
                        .joins(:enrollment)
                        .where(makeup_date: date, status: %w[makeup_scheduled makeup_done])
                        .where(enrollments: { status: "active" })
-    (regular.to_a + same_day.to_a).sort_by do |s|
+    (regular.to_a + trial.to_a + same_day.to_a).uniq(&:id).sort_by do |s|
       if s.status.in?(%w[makeup_scheduled makeup_done])
         [s.makeup_time&.hour.to_i, s.makeup_time&.min.to_i]
       else

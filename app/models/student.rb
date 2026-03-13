@@ -55,6 +55,28 @@ class Student < ApplicationRecord
     enrollment.schedules.where(status: %w[attended makeup_done deducted]).count
   end
 
+  # 후기 마일스톤 카운터: 마지막 후기할인 적용일(또는 복귀일) 기준, 패스 끊김
+  def review_weeks_for_raw(enrollment)
+    return 0 if enrollment.status == "leave"
+
+    candidates = [Date.new(2025, 10, 28), enrollment.last_review_discount_at, enrollment.return_at]
+    since = candidates.compact.max
+    enrollment.schedules
+              .where("lesson_date >= ?", since)
+              .where("lesson_date <= ? OR status IN (?)", Date.today, %w[attended late makeup_done pass])
+              .order(lesson_date: :desc)
+              .to_a
+              .take_while { |s| %w[attended makeup_done].include?(s.status) }
+              .count
+  end
+
+  def review_weeks_for(enrollment)
+    return 0 if enrollment.status == "leave"
+
+    computed = review_weeks_for_raw(enrollment)
+    [computed + (enrollment.gift_voucher_eligible_offset || 0), 0].max
+  end
+
   # 지류상품권 조건: 휴원 후 복귀일 기준 (없으면 첫 결제 시작일)로 카운트
   # 패스 포함, 지각 포함, 보강 포함, 차감 포함
   def gift_voucher_eligible_weeks_for_raw(enrollment)

@@ -9,9 +9,8 @@ class GiftVouchersController < ApplicationController
       return redirect_back fallback_location: root_path, alert: "이미 발급된 상품권이 있습니다."
     end
 
-    weeks = student.gift_voucher_eligible_weeks_for(enrollment)
-    if weeks < 24
-      return redirect_back fallback_location: root_path, alert: "24주 조건 미충족 (현재 #{weeks}주)."
+    unless enrollment.review_gift_eligible?
+      return redirect_back fallback_location: root_path, alert: "지류가능 조건 미충족 (24주 미달성)."
     end
 
     GiftVoucher.create!(
@@ -20,7 +19,7 @@ class GiftVouchersController < ApplicationController
       issued_at:  Date.today,
       expires_at: Date.today + 6.months
     )
-    student.update!(gift_voucher_issued: true)
+    enrollment.update_column(:review_gift_eligible, false)
     redirect_back fallback_location: root_path, notice: "#{student.name} 지류상품권 발급 완료."
   end
 

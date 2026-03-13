@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_12_162736) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_13_045533) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -62,6 +62,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_12_162736) do
     t.integer "consecutive_weeks_offset", default: 0, null: false
     t.integer "gift_voucher_eligible_offset", default: 0, null: false
     t.integer "pass_offset", default: 0, null: false
+    t.date "last_review_discount_at"
+    t.boolean "review_gift_eligible", default: false
     t.index ["student_id"], name: "index_enrollments_on_student_id"
     t.index ["teacher_id"], name: "index_enrollments_on_teacher_id"
   end

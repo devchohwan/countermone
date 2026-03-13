@@ -25,7 +25,7 @@ class SchedulesController < ApplicationController
     @schedule.update!(status: new_status)
     create_attendance_record(@schedule)
     check_consecutive_weeks(@schedule) unless new_status == "makeup_done"
-    check_gift_voucher(@schedule)
+    check_review_milestones(@schedule)
     respond_to do |format|
       format.turbo_stream do
         attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
@@ -78,7 +78,7 @@ class SchedulesController < ApplicationController
     @schedule.update!(status: "late")
     create_attendance_record(@schedule)
     check_consecutive_weeks(@schedule)
-    check_gift_voucher(@schedule)
+    check_review_milestones(@schedule)
     tab_redirect(notice: "지각 처리되었습니다.")
   end
 
@@ -433,18 +433,11 @@ class SchedulesController < ApplicationController
     end
   end
 
-  def check_gift_voucher(schedule)
+  def check_review_milestones(schedule)
     enrollment = schedule.enrollment
-    weeks      = schedule.student.gift_voucher_eligible_weeks_for(enrollment)
-    return unless weeks >= 24
-    return if GiftVoucher.where(enrollment: enrollment).exists?
-
-    GiftVoucher.create!(
-      student:    schedule.student,
-      enrollment: enrollment,
-      issued_at:  Date.today,
-      expires_at: Date.today + 6.months
-    )
-    schedule.student.update!(gift_voucher_issued: true)
+    weeks      = schedule.student.review_weeks_for(enrollment)
+    if weeks >= 24 && !GiftVoucher.where(enrollment: enrollment).exists?
+      enrollment.update_column(:review_gift_eligible, true)
+    end
   end
 end

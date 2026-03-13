@@ -127,6 +127,9 @@ class PaymentsController < ApplicationController
     @payment.enrollment.student.update!(waiting_expires_at: nil) if @payment.fully_paid?
 
     if @payment.save
+      if params[:cafe_review] == "1" || params[:video_review] == "1"
+        @payment.enrollment.update_column(:last_review_discount_at, Date.today)
+      end
       if params[:popup] == "1"
         return redirect_to payment_done_path(enrollment_id: @payment.enrollment_id)
       end

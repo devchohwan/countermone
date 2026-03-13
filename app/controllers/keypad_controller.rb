@@ -43,14 +43,15 @@ class KeypadController < ApplicationController
       return process_checkin(schedule, now)
     end
 
-    now_hm = now.strftime("%H:%M")
+    # time 컬럼 비교: SQLite는 "2000-01-01 HH:MM:SS" 형태로 저장 → 같은 형태로 맞춰야 정상 비교
+    now_as_db_time = Time.utc(2000, 1, 1, now.utc.hour, now.utc.min, now.utc.sec)
 
     regular  = Schedule.includes(:enrollment)
                        .where(student: student, lesson_date: today, status: "scheduled")
-                       .where("lesson_time <= ?", now_hm)
+                       .where("lesson_time <= ?", now_as_db_time)
     same_day = Schedule.includes(:enrollment)
                        .where(student: student, makeup_date: today, status: "makeup_scheduled")
-                       .where("makeup_time <= ?", now_hm)
+                       .where("makeup_time <= ?", now_as_db_time)
     schedules = (regular.to_a + same_day.to_a)
 
     if schedules.empty?

@@ -4,7 +4,7 @@ class DashboardController < ApplicationController
     @today_schedules = Schedule
       .includes(:student, :teacher, :enrollment, :attendance)
       .where(lesson_date: effective)
-      .where(status: %w[scheduled attended late makeup_scheduled])
+      .where(status: %w[scheduled attended late])
       .order(:lesson_time)
     render partial: "dashboard/hourly_arrival_text", locals: { schedules: @today_schedules }
   end
@@ -14,7 +14,7 @@ class DashboardController < ApplicationController
     @current_schedules = Schedule
       .includes(:student, :teacher, :enrollment, :attendance)
       .where(lesson_date: effective)
-      .where(status: %w[scheduled attended late makeup_scheduled])
+      .where(status: %w[scheduled attended late])
       .select { |s| s.lesson_time.in_time_zone('Seoul').hour == Time.current.hour }
     render partial: "dashboard/current_schedules"
   end
@@ -29,7 +29,7 @@ class DashboardController < ApplicationController
     @today_schedules = Schedule
       .includes(:student, :teacher, :enrollment, :attendance)
       .where(lesson_date: @date)
-      .where(status: %w[scheduled attended late makeup_scheduled])
+      .where(status: %w[scheduled attended late])
       .order(:lesson_time)
 
 

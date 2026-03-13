@@ -142,6 +142,17 @@
   <span>(첫) 첫수업 · (복) 복귀 · (패) 패스 · (휴) 휴원 · (보) 보강</span>
 </div>
 
+<% if @teacher.name == "오또" %>
+<div class="flex flex-wrap items-center gap-2 mt-2 text-xs text-base-content/50">
+  <span class="font-medium text-base-content/70">과목:</span>
+  <span class="badge badge-sm badge-info badge-outline">클린보컬</span>
+  <span class="badge badge-sm badge-outline" style="color:rgb(249,115,22);border-color:rgb(249,115,22);">믹싱1차</span>
+  <span class="badge badge-sm badge-outline" style="color:rgb(239,68,68);border-color:rgb(239,68,68);">믹싱2차</span>
+  <span class="badge badge-sm badge-outline" style="color:rgb(22,163,74);border-color:rgb(22,163,74);">기타</span>
+  <span class="badge badge-sm badge-outline" style="color:rgb(59,130,246);border-color:rgb(59,130,246);">작곡</span>
+</div>
+<% end %>
+
 <%# 팝업 모달 %>
 <dialog id="share-popup" class="modal">
   <div class="modal-box max-w-xs p-5">

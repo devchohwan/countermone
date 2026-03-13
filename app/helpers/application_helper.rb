@@ -2,7 +2,7 @@ module ApplicationHelper
   include Pagy::Frontend
 
   SUBJECT_BADGE_STYLE = {
-    "기타"    => "color:rgb(147,51,234);border-color:rgb(147,51,234);",   # 보라
+    "기타"    => "color:rgb(22,163,74);border-color:rgb(22,163,74);",     # 초록
     "작곡"    => "color:rgb(59,130,246);border-color:rgb(59,130,246);",   # 파랑
     "믹싱1차" => "color:rgb(249,115,22);border-color:rgb(249,115,22);",   # 주황
     "믹싱2차" => "color:rgb(239,68,68);border-color:rgb(239,68,68);",     # 빨강

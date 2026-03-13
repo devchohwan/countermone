@@ -53,12 +53,21 @@
                       <span class="w-12 text-base-content/20">-</span>
                     <% end %>
 
-                    <%# 지류상품권 — review_gift_eligible 배지 기반 %>
+                    <%# 지류상품권 — 등원 여부 무관, 해당자 항상 표시 %>
                     <% if !readonly && s.enrollment.review_gift_eligible? && !GiftVoucher.where(enrollment: s.enrollment).exists? %>
                       <%= button_to "🎁 지류상품권", gift_vouchers_path(enrollment_id: s.enrollment.id),
                             method: :post,
                             class: "btn btn-xs btn-warning",
                             data: { turbo_confirm: "#{s.student.name} 지류상품권을 발급하시겠습니까?" } %>
+                    <% end %>
+
+                    <%# 당취 — scheduled 상태면 항상 표시 %>
+                    <% if s.status == "scheduled" && !readonly %>
+                      <%= button_to "당취", emergency_pass_schedule_path(s),
+                            method: :patch,
+                            params: { pass_reason: "당일취소" },
+                            class: "btn btn-xs btn-outline btn-error",
+                            data: { turbo_confirm: "#{s.student.name} 당일취소 처리하시겠습니까?" } %>
                     <% end %>
                   </div>
                 <% end %>

@@ -148,7 +148,30 @@ class SchedulesController < ApplicationController
   def emergency_pass
     @schedule.update!(status: "emergency_pass", pass_reason: params[:pass_reason])
     create_pass_schedule(@schedule)
-    tab_redirect(notice: "긴급패스 처리되었습니다.")
+    respond_to do |format|
+      format.turbo_stream do
+        enrollment = @schedule.enrollment
+        student    = enrollment.student
+        payment    = @schedule.payment
+        render turbo_stream: [
+          turbo_stream.replace("hourly_arrival", partial: "dashboard/hourly_arrival_text",
+                               locals: { schedules: today_arrival_schedules }),
+          turbo_stream.replace("schedule-badge-#{@schedule.id}",
+            partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
+          turbo_stream.replace("enrollment-stats-#{enrollment.id}",
+            partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment }),
+          turbo_stream.replace("payment-chunk-header-#{payment.id}",
+            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
+        ]
+      end
+      format.html do
+        if request.referer&.match?(%r{/students/\d+})
+          redirect_to student_path(@schedule.student, tab: @schedule.enrollment_id), notice: "긴급패스 처리되었습니다."
+        else
+          redirect_back fallback_location: schedules_path, notice: "긴급패스 처리되었습니다."
+        end
+      end
+    end
   end
 
   def holiday
@@ -464,7 +487,7 @@ class SchedulesController < ApplicationController
   def today_arrival_schedules
     Schedule.includes(:student, :teacher, :enrollment, :attendance)
             .where(lesson_date: Date.today)
-            .where(status: %w[scheduled attended late makeup_scheduled])
+            .where(status: %w[scheduled attended late])
             .order(:lesson_time)
   end
 

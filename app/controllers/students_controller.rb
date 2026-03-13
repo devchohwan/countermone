@@ -72,16 +72,27 @@ class StudentsController < ApplicationController
   end
 
   def update
-    # teacher 변경 전 enrollment별 이전 teacher_id 기록
-    old_teacher_ids = @student.enrollments.index_by(&:id).transform_values(&:teacher_id)
+    # 변경 전 enrollment별 이전 값 기록
+    old_data = @student.enrollments.index_by(&:id).transform_values do |e|
+      { teacher_id: e.teacher_id, lesson_time: e.lesson_time, lesson_day: e.lesson_day }
+    end
 
     if @student.update(student_params)
-      # teacher_id가 바뀐 enrollment의 scheduled 수업도 일괄 업데이트
       @student.enrollments.each do |enrollment|
-        old_tid = old_teacher_ids[enrollment.id]
-        next if old_tid.nil? || enrollment.teacher_id == old_tid
-        enrollment.schedules.where(status: "scheduled", teacher_id: old_tid)
-                  .update_all(teacher_id: enrollment.teacher_id)
+        old = old_data[enrollment.id]
+        next if old.nil?
+
+        # teacher_id가 바뀐 경우 scheduled 수업의 teacher_id 업데이트
+        if enrollment.teacher_id != old[:teacher_id]
+          enrollment.schedules.where(status: "scheduled", teacher_id: old[:teacher_id])
+                    .update_all(teacher_id: enrollment.teacher_id)
+        end
+
+        # lesson_time이 바뀐 경우 scheduled 수업의 lesson_time 업데이트
+        if old[:lesson_time] && enrollment.lesson_time != old[:lesson_time]
+          enrollment.schedules.where(status: "scheduled")
+                    .update_all(lesson_time: enrollment.lesson_time)
+        end
       end
       save_referrers(@student)
       redirect_to @student, notice: "수강생 정보가 수정되었습니다."

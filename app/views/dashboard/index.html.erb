@@ -213,7 +213,8 @@
                             end
                           %>
                           <p class="flex items-center gap-1">
-                            <%= link_to pay_item_name.(item), student_path(item[:student]), class: "hover:underline", data: { turbo_frame: "_top" } %>
+                            <% pay_tab_id = item[:type] == :trial_lesson ? item[:schedule].enrollment_id : item[:enrollment].id %>
+                            <%= link_to pay_item_name.(item), student_path(item[:student], tab: pay_tab_id), class: "hover:underline", data: { turbo_frame: "_top" } %>
                             <span class="badge badge-xs <%= badge_color %>"><%= label %></span>
                             <% if item[:type] == :deposit_first_lesson %>
                               <button type="button" onclick="document.getElementById('cpd-<%= item[:payment].id %>').showModal()" class="btn btn-xs btn-error btn-outline">완납</button>
@@ -234,7 +235,7 @@
                         <% badge_color = item[:type] == :deposit_first_lesson ? "badge-error" : "badge-info" %>
                         <% label = item[:type] == :deposit_first_lesson ? "완납필요" : "결제예정" %>
                         <p class="flex items-center gap-1">
-                          <%= link_to "#{item[:student].name} — #{item[:enrollment].subject}", student_path(item[:student]), class: "hover:underline", data: { turbo_frame: "_top" } %>
+                          <%= link_to "#{item[:student].name} — #{item[:enrollment].subject}", student_path(item[:student], tab: item[:enrollment].id), class: "hover:underline", data: { turbo_frame: "_top" } %>
                           <span class="badge badge-xs <%= badge_color %>"><%= label %></span>
                           <% if item[:type] == :deposit_first_lesson %>
                             <button type="button" onclick="document.getElementById('cpd-<%= item[:payment].id %>').showModal()" class="btn btn-xs btn-error btn-outline">완납</button>

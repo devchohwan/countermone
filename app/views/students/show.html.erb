@@ -264,6 +264,9 @@ function showEnrollmentPanel(id) {
   document.querySelectorAll('[id^="enrollment-panel-"]').forEach(el => el.classList.add('hidden'));
   document.getElementById('enrollment-panel-' + id)?.classList.remove('hidden');
 }
+<% if target_tab && overflow.map(&:id).include?(target_tab) %>
+document.addEventListener('DOMContentLoaded', function() { showEnrollmentPanel(<%= target_tab %>); });
+<% end %>
 </script>
 
 <%# 복귀 처리 스크립트 %>

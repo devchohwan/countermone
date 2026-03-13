@@ -18,25 +18,6 @@
                 <% end %>
               </div>
             </div>
-            <% if !v.used? && v.expires_at >= Date.today %>
-              <% other_subjects = TeacherSubject::SUBJECTS - [v.enrollment.subject] %>
-              <% if other_subjects.any? %>
-                <form action="<%= use_gift_voucher_path(v) %>" method="post"
-                      onsubmit="return confirm('상품권을 사용 처리하시겠습니까?')">
-                  <input type="hidden" name="_method" value="patch">
-                  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-                  <select name="used_class" class="select select-bordered select-xs mr-1" required>
-                    <option value="">과목 선택</option>
-                    <% other_subjects.each do |subj| %>
-                      <option value="<%= subj %>"><%= subj %></option>
-                    <% end %>
-                  </select>
-                  <button type="submit" class="btn btn-xs btn-success">사용처리</button>
-                </form>
-              <% else %>
-                <span class="text-xs text-base-content/40">사용 가능 과목 없음</span>
-              <% end %>
-            <% end %>
           </div>
 
           <%# 체험수업 섹션 (믹싱 과목은 체험수업 없음) %>
@@ -83,6 +64,7 @@
   <dialog id="trial-modal" class="modal">
     <div class="modal-box max-w-2xl">
       <h3 class="font-bold text-base mb-3">🎓 체험수업 등록</h3>
+      <div id="trial-subject-bar" class="flex items-center gap-2 mb-3 flex-wrap"></div>
       <div id="trial-slot-area" class="min-h-24">
         <p class="text-xs text-base-content/50 py-4 text-center">불러오는 중…</p>
       </div>
@@ -95,13 +77,14 @@
 
   <script>
   (function() {
-    var _trialVoucherId = null;
-    var _trialSubject   = null;
-    var _trialData      = null;
-    var _trialWeekStart = null;
-    var _trialTeacherId = null;
-    var _csrfToken      = document.querySelector('meta[name="csrf-token"]').content;
-    var _studentId      = <%= student.id %>;
+    var _trialVoucherId     = null;
+    var _trialSubject       = null;
+    var _trialIssuingSubject = null;
+    var _trialData          = null;
+    var _trialWeekStart     = null;
+    var _trialTeacherId     = null;
+    var _csrfToken          = document.querySelector('meta[name="csrf-token"]').content;
+    var _studentId          = <%= student.id %>;
 
     function getMonday(d) {
       var day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -116,32 +99,57 @@
       return `${y}-${m}-${day}`;
     }
 
-    window.openTrialModal = function(voucherId, subject) {
-      _trialVoucherId = voucherId;
-      _trialSubject   = subject;
-      _trialData      = null;
-      _trialWeekStart = getMonday(new Date());
-      _trialTeacherId = null;
+    window.openTrialModal = function(voucherId, issuingSubject) {
+      _trialVoucherId      = voucherId;
+      _trialIssuingSubject = issuingSubject;
+      _trialSubject        = null;  // API에서 첫 번째 available_subject로 설정됨
+      _trialData           = null;
+      _trialWeekStart      = getMonday(new Date());
+      _trialTeacherId      = null;
       document.getElementById('trial-slot-area').innerHTML =
         '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
+      document.getElementById('trial-subject-bar').innerHTML = '';
       document.getElementById('trial-modal').showModal();
-      _trialLoadSlots(subject);
+      _trialLoadSlots(null);
     };
 
     function _trialLoadSlots(subject) {
-      var url = `/gift_vouchers/${_trialVoucherId}/trial_slots?subject=${encodeURIComponent(subject)}`;
+      var url = `/gift_vouchers/${_trialVoucherId}/trial_slots`;
+      if (subject) url += `?subject=${encodeURIComponent(subject)}`;
       fetch(url)
         .then(r => r.json())
         .then(data => {
-          _trialData      = data;
-          _trialSubject   = data.subject;
-          if (!_trialTeacherId && data.teachers.length > 0) {
+          _trialData    = data;
+          _trialSubject = data.subject;
+          _trialTeacherId = null;
+          if (data.teachers.length > 0) {
             _trialTeacherId = data.teachers[0].id;
+          }
+
+          // 과목 탭 (발급 과목 제외)
+          var subBar = document.getElementById('trial-subject-bar');
+          if (data.available_subjects && data.available_subjects.length > 1) {
+            subBar.innerHTML = '<span class="text-xs text-base-content/50 mr-1">과목:</span>' +
+              data.available_subjects.map(s => {
+                var active = s === _trialSubject;
+                return `<button onclick="window._trialChangeSubject('${s}')"
+                                class="btn btn-xs ${active ? 'btn-accent' : 'btn-ghost'}">${s}</button>`;
+              }).join('');
+          } else {
+            subBar.innerHTML = '';
           }
 
           window._trialRender();
         });
     }
+
+    window._trialChangeSubject = function(subject) {
+      _trialSubject   = subject;
+      _trialTeacherId = null;
+      document.getElementById('trial-slot-area').innerHTML =
+        '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
+      _trialLoadSlots(subject);
+    };
 
     window._trialRender = function _trialRender() {
       var data = _trialData;

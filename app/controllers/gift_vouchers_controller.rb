@@ -36,7 +36,14 @@ class GiftVouchersController < ApplicationController
   end
 
   def trial_slots
-    subject = params[:subject].presence || @voucher.enrollment.subject
+    issuing_subject    = @voucher.enrollment.subject
+    available_subjects = TeacherSubject::SUBJECTS - [issuing_subject] - %w[믹싱1차 믹싱2차]
+    # subject 파라미터가 없거나 발급 과목이면 첫 번째 선택 가능 과목 사용
+    subject = if params[:subject].present? && params[:subject] != issuing_subject
+      params[:subject]
+    else
+      available_subjects.first
+    end
     teachers = Teacher.by_position.joins(:teacher_subjects)
                       .where(teacher_subjects: { subject: subject })
     teacher_ids = teachers.map(&:id)
@@ -71,13 +78,14 @@ class GiftVouchersController < ApplicationController
     end
 
     render json: {
-      subject:   subject,
-      teachers:  teachers.map { |t| { id: t.id, name: t.name } },
-      dates:     (display_range.first..display_range.end).map(&:to_s),
-      times:     all_times.uniq.sort,
-      grid:      grid,
-      range_min: nil,
-      range_max: nil
+      subject:            subject,
+      available_subjects: available_subjects,
+      teachers:           teachers.map { |t| { id: t.id, name: t.name } },
+      dates:              (display_range.first..display_range.end).map(&:to_s),
+      times:              all_times.uniq.sort,
+      grid:               grid,
+      range_min:          nil,
+      range_max:          nil
     }
   end
 

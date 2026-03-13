@@ -534,9 +534,9 @@
       const teacher     = data.teachers.find(t => t.id === window._mkTeacherId);
       const teacherName = teacher?.name || '';
 
-      // 운영시간 고정: 13:00 ~ 21:00, 30분 간격
+      // 운영시간 고정: 13:00 ~ 22:00, 정시만
       const times = [];
-      for (let m = 13 * 60; m <= 22 * 60; m += 30) {
+      for (let m = 13 * 60; m <= 22 * 60; m += 60) {
         const h   = String(Math.floor(m / 60)).padStart(2, '0');
         const min = String(m % 60).padStart(2, '0');
         times.push(`${h}:${min}`);

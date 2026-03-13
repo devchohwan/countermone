@@ -100,18 +100,6 @@ class SchedulesController < ApplicationController
   def pass
     enrollment = @schedule.enrollment
 
-    # 당일 패스 → 보강 유도 → 차감 3단계 안내
-    if @schedule.lesson_date == Date.today
-      range = @schedule.makeup_available_range
-      if range
-        return redirect_to schedule_path(@schedule),
-          alert: "당일 패스는 불가합니다. 보강 등록을 먼저 시도해 보세요. 보강도 불가하면 결석 차감으로 처리하세요."
-      else
-        return redirect_back fallback_location: schedules_path,
-          alert: "당일 패스 및 보강이 불가합니다. 결석 차감으로 처리해 주세요."
-      end
-    end
-
     # 믹싱 패스 불가 → 보강 유도
     if enrollment.subject.in?(%w[믹싱1차 믹싱2차])
       range = @schedule.makeup_available_range

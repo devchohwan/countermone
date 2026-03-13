@@ -345,7 +345,7 @@
 
 <%# 당취 모달 — hourly_arrival turbo frame 밖에 위치 %>
 <dialog id="dangchwi-modal" class="modal">
-  <div class="modal-box max-w-xs p-5">
+  <div class="modal-box max-w-2xl p-5">
     <h3 class="font-bold text-base mb-1" id="dangchwi-title"></h3>
     <p class="text-xs text-base-content/50 mb-4" id="dangchwi-subject"></p>
     <div id="dangchwi-body"></div>
@@ -361,28 +361,41 @@
     return document.querySelector('meta[name="csrf-token"]')?.content || '';
   }
 
-  function patch(url, body) {
-    fetch(url, {
-      method: 'PATCH',
-      headers: {
-        'X-CSRF-Token': csrf(),
-        'Accept': 'text/vnd.turbo-stream.html, text/html',
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams(body)
-    }).then(r => r.text()).then(html => {
-      Turbo.renderStreamMessage(html);
-      document.getElementById('dangchwi-modal').close();
-    }).catch(() => {
-      document.getElementById('dangchwi-modal').close();
-      location.reload();
-    });
+  function body() { return document.getElementById('dangchwi-body'); }
+
+  // form.requestSubmit() → Turbo가 가로채어 turbo_stream 응답 처리
+  function patchForm(url, extra) {
+    const f = document.createElement('form');
+    f.method = 'POST';
+    f.action = url;
+    f.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf()}">
+                   <input type="hidden" name="_method" value="patch">` + (extra || '');
+    document.body.appendChild(f);
+    document.getElementById('dangchwi-modal').close();
+    f.requestSubmit();
   }
 
+  // ── 날짜 유틸 ──────────────────────────────────────────────
+  function parseDate(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function toDateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function getMonday(date) {
+    const d = new Date(date); const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
+  }
+
+  // ── 메인 화면 ───────────────────────────────────────────────
   function showMain() {
-    document.getElementById('dangchwi-body').innerHTML = `
+    document.getElementById('dangchwi-title').textContent =
+      document.getElementById('dangchwi-title').textContent.replace(' — 보강 등록', '');
+    body().innerHTML = `
       <div class="space-y-2">
-        <a href="/schedules/${_scheduleId}" class="btn btn-sm btn-info btn-outline w-full">보강</a>
+        <button onclick="dangchwiShowMakeup()" class="btn btn-sm btn-info btn-outline w-full">보강</button>
         <button onclick="dangchwiShowPass()" class="btn btn-sm btn-secondary btn-outline w-full">패스</button>
         <button onclick="dangchwiDeduct()" class="btn btn-sm btn-error btn-outline w-full">결석 차감</button>
       </div>`;
@@ -397,7 +410,7 @@
   };
 
   window.dangchwiShowPass = function() {
-    document.getElementById('dangchwi-body').innerHTML = `
+    body().innerHTML = `
       <div class="space-y-3">
         <div class="border rounded-lg p-3 space-y-2">
           <div class="flex items-center gap-2">
@@ -433,17 +446,164 @@
       </div>`;
   };
 
-  window.dangchwiShowMain  = showMain;
+  window.dangchwiShowMain = showMain;
 
   window.dangchwiSubmitPass = function(type) {
     const keyMap = { pass: 'pass', emergency_pass: 'emergency', holiday: 'holiday' };
     const reason = document.getElementById('dc-' + keyMap[type] + '-reason')?.value || '';
-    patch(`/schedules/${_scheduleId}/${type}`, { pass_reason: reason });
+    patchForm(`/schedules/${_scheduleId}/${type}`,
+      `<input type="hidden" name="pass_reason" value="${reason.replace(/"/g, '&quot;')}">`);
   };
 
   window.dangchwiDeduct = function() {
     if (!confirm('결석 차감 처리하시겠습니까?')) return;
-    patch(`/schedules/${_scheduleId}/deduct`, {});
+    patchForm(`/schedules/${_scheduleId}/deduct`, '');
+  };
+
+  // ── 보강 시간표 그리드 ────────────────────────────────────
+  window.dangchwiShowMakeup = function() {
+    document.getElementById('dangchwi-title').textContent = '보강 등록';
+    body().innerHTML = '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
+    fetch(`/schedules/${_scheduleId}/makeup_slots`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.range_min) {
+          body().innerHTML = `
+            <p class="text-sm text-error py-2">보강 가능 기간이 없습니다.</p>
+            <button onclick="dangchwiShowMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>`;
+          return;
+        }
+        window._dcData      = data;
+        window._dcWeekStart = getMonday(new Date());
+        window._dcTeacherId = data.teachers[0]?.id ?? null;
+        window._dcSid       = _scheduleId;
+        window._dcRender();
+      });
+  };
+
+  window._dcRender = function() {
+    const data     = window._dcData;
+    const ws       = window._dcWeekStart;
+    const rangeMin = parseDate(data.range_min);
+    const rangeMax = data.range_max ? parseDate(data.range_max) : null;
+    const inRange  = d => d >= rangeMin && (rangeMax === null || d <= rangeMax);
+    const DAY_KO   = ['일','월','화','수','목','금','토'];
+
+    const days = Array.from({length: 7}, (_, i) =>
+      new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i));
+
+    const prevWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() - 7);
+    const nextWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7);
+    const prevDays = Array.from({length:7}, (_, i) => new Date(prevWs.getFullYear(), prevWs.getMonth(), prevWs.getDate() + i));
+    const nextDays = Array.from({length:7}, (_, i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate() + i));
+    const prevOk   = prevDays.some(d => inRange(d));
+    const nextOk   = rangeMax === null || nextDays.some(d => inRange(d));
+
+    const weekEnd   = days[6];
+    const weekLabel = `${ws.getMonth()+1}/${ws.getDate()} ~ ${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
+
+    const teacherTabs = data.teachers.map(t => {
+      const active = window._dcTeacherId === t.id;
+      return `<button onclick="window._dcTeacherId=${t.id};window._dcRender();"
+                      class="btn btn-xs ${active ? 'btn-primary' : 'btn-ghost'}">${t.name}</button>`;
+    }).join('');
+
+    const tid      = String(window._dcTeacherId);
+    const tGrid    = (data.grid || {})[tid] || {};
+    const tConflict = ((data.conflict_grid || {})[tid]) || {};
+    const teacher  = data.teachers.find(t => t.id === window._dcTeacherId);
+    const tName    = teacher?.name || '';
+
+    const times = [];
+    for (let m = 13 * 60; m <= 22 * 60; m += 60) {
+      times.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
+    }
+
+    const thCells = days.map(d => {
+      const ok = inRange(d);
+      return `<th class="text-xs font-normal text-center px-1 py-1 ${ok ? '' : 'opacity-25'}">
+        ${d.getMonth()+1}/${d.getDate()}<br>
+        <span class="text-base-content/60">${DAY_KO[d.getDay()]}</span>
+      </th>`;
+    }).join('');
+
+    const rows = times.map(time => {
+      const tds = days.map(d => {
+        const ok = inRange(d);
+        const ds = toDateStr(d);
+        if (!ok) return `<td class="text-center opacity-20 text-xs select-none px-1 py-1">—</td>`;
+        const slots    = ((tGrid[ds] || {})[time]) || 0;
+        const conflict = ((tConflict[ds] || {})[time]) === 'conflict';
+        if (conflict) return `<td class="text-center text-xs select-none px-1 py-1 rounded"
+          style="background:rgba(251,146,60,0.12);color:rgba(251,146,60,0.5);" title="다른 과목 수업 있음">✕</td>`;
+        if (slots >= 3) return `<td class="text-center text-xs select-none px-1 py-1 rounded"
+          style="background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.5);" title="마감 (3/3)">✕</td>`;
+        const colorCls = slots === 0 ? 'text-success' : 'text-warning';
+        return `<td class="text-center cursor-pointer rounded px-1 py-1"
+          style="background:rgba(34,197,94,0.12);"
+          onmouseover="this.style.background='rgba(34,197,94,0.25)'"
+          onmouseout="this.style.background='rgba(34,197,94,0.12)'"
+          onclick="window._dcConfirm('${ds}',${window._dcTeacherId},'${time}','${tName}')"
+          title="${tName} — ${slots}/3명">
+          <span class="font-mono text-xs ${colorCls}">${'●'.repeat(slots)}</span><span class="font-mono text-xs opacity-30">${'○'.repeat(3-slots)}</span>
+        </td>`;
+      }).join('');
+      return `<tr>
+        <td class="text-xs text-base-content/50 text-right pr-2 py-1 whitespace-nowrap font-mono w-12">${time}</td>
+        ${tds}
+      </tr>`;
+    }).join('');
+
+    body().innerHTML = `
+      <div class="text-xs text-base-content/50 mb-2">보강 가능: ${data.range_min} ~ ${data.range_max || '상한 없음'}</div>
+      <div class="flex flex-wrap gap-1 mb-3">${teacherTabs}</div>
+      <div class="flex items-center justify-between mb-2">
+        <button onclick="window._dcNav(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>
+        <span class="text-sm font-medium">${weekLabel}</span>
+        <button onclick="window._dcNav(1)"  class="btn btn-xs btn-ghost" ${!nextOk ? 'disabled' : ''}>→</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table table-xs w-full">
+          <thead><tr><th class="w-12"></th>${thCells}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <button onclick="dangchwiShowMain()" class="btn btn-sm btn-ghost w-full mt-3">← 돌아가기</button>`;
+  };
+
+  window._dcNav = function(dir) {
+    const ws = window._dcWeekStart;
+    window._dcWeekStart = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + dir * 7);
+    window._dcRender();
+  };
+
+  window._dcConfirm = function(date, teacherId, time, teacherName) {
+    const sid  = window._dcSid;
+    const tok  = csrf();
+    body().innerHTML = `
+      <div class="border rounded-lg p-4 space-y-3">
+        <div class="text-sm font-semibold">${date} · ${teacherName} 선생님</div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-base-content/60 w-16 shrink-0">보강 시간</label>
+          <input type="time" id="dc-confirm-time" value="${time}" class="input input-bordered input-sm flex-1">
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button onclick="
+            const t = document.getElementById('dc-confirm-time').value;
+            const f = document.createElement('form');
+            f.method = 'POST'; f.action = '/schedules/${sid}/makeup';
+            f.innerHTML = '<input type=\\'hidden\\' name=\\'authenticity_token\\' value=\\'${tok}\\'>' +
+                          '<input type=\\'hidden\\' name=\\'_method\\' value=\\'patch\\'>' +
+                          '<input type=\\'hidden\\' name=\\'makeup_date\\' value=\\'${date}\\'>' +
+                          '<input type=\\'hidden\\' name=\\'makeup_time\\' value=\\'' + t + '\\'>' +
+                          '<input type=\\'hidden\\' name=\\'makeup_teacher_id\\' value=\\'${teacherId}\\'>';
+            document.body.appendChild(f);
+            document.getElementById('dangchwi-modal').close();
+            f.requestSubmit();
+          " class="btn btn-sm btn-primary flex-1">보강 등록</button>
+          <button onclick="window._dcRender()" class="btn btn-sm btn-ghost flex-1">← 취소</button>
+        </div>
+      </div>`;
   };
 })();
 </script>

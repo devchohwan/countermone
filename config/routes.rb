@@ -74,6 +74,8 @@ Rails.application.routes.draw do
   resources :gift_vouchers, only: [:create] do
     member do
       patch :use
+      get   :trial_slots
+      patch :schedule_trial
     end
   end
 

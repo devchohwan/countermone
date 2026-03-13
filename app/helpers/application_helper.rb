@@ -97,6 +97,8 @@ module ApplicationHelper
   # 자리대기: 홍길동(대기)
   # 특이사항: 홍길동(5.20첫)>수강동의서받기
   def timetable_label(schedule)
+    return "#{schedule.student.name}(체험수업)" if schedule.trial?
+
     s = schedule.student
     e = schedule.enrollment
     tags = []

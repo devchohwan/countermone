@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_13_085126) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_13_123326) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -119,7 +119,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_13_085126) do
   create_table "schedules", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "enrollment_id", null: false
-    t.bigint "payment_id", null: false
+    t.bigint "payment_id"
     t.bigint "teacher_id", null: false
     t.date "lesson_date", null: false
     t.time "lesson_time", null: false
@@ -134,7 +134,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_13_085126) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "from_pass", default: false
+    t.boolean "trial", default: false, null: false
+    t.bigint "gift_voucher_id"
     t.index ["enrollment_id"], name: "index_schedules_on_enrollment_id"
+    t.index ["gift_voucher_id"], name: "index_schedules_on_gift_voucher_id"
     t.index ["lesson_date"], name: "index_schedules_on_lesson_date"
     t.index ["makeup_date"], name: "index_schedules_on_makeup_date"
     t.index ["makeup_teacher_id"], name: "index_schedules_on_makeup_teacher_id"

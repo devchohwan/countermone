@@ -1,5 +1,5 @@
 class GiftVouchersController < ApplicationController
-  before_action :set_voucher, only: [:use]
+  before_action :set_voucher, only: [:use, :trial_slots, :schedule_trial]
 
   def create
     enrollment = Enrollment.find(params[:enrollment_id])
@@ -33,6 +33,93 @@ class GiftVouchersController < ApplicationController
 
     @voucher.update!(used: true, used_at: Date.today, used_class: used_class)
     redirect_back fallback_location: root_path, notice: "상품권 사용 처리 완료 (#{used_class})."
+  end
+
+  def trial_slots
+    subject = params[:subject].presence || @voucher.enrollment.subject
+    teachers = Teacher.by_position.joins(:teacher_subjects)
+                      .where(teacher_subjects: { subject: subject })
+    teacher_ids = teachers.map(&:id)
+
+    display_range = Date.today..(Date.today + 90.days)
+
+    regulars = Schedule.where(
+      teacher_id: teacher_ids, subject: subject, lesson_date: display_range
+    ).where(status: %w[scheduled attended]).pluck(:teacher_id, :lesson_date, :lesson_time)
+
+    makeups = Schedule.where(
+      makeup_teacher_id: teacher_ids, subject: subject, makeup_date: display_range
+    ).where(status: %w[makeup_scheduled makeup_done]).pluck(:makeup_teacher_id, :makeup_date, :makeup_time)
+
+    grid      = {}
+    all_times = []
+
+    regulars.each do |tid, date, time|
+      next unless time
+      ts = time.strftime("%H:%M"); ds = date.to_s; key = tid.to_s
+      grid[key] ||= {}; grid[key][ds] ||= {}
+      grid[key][ds][ts] = (grid[key][ds][ts] || 0) + 1
+      all_times << ts
+    end
+
+    makeups.each do |tid, date, time|
+      next unless time
+      ts = time.strftime("%H:%M"); ds = date.to_s; key = tid.to_s
+      grid[key] ||= {}; grid[key][ds] ||= {}
+      grid[key][ds][ts] = (grid[key][ds][ts] || 0) + 1
+      all_times << ts
+    end
+
+    render json: {
+      subject:   subject,
+      subjects:  TeacherSubject::SUBJECTS,
+      teachers:  teachers.map { |t| { id: t.id, name: t.name } },
+      dates:     (display_range.first..display_range.end).map(&:to_s),
+      times:     all_times.uniq.sort,
+      grid:      grid,
+      range_min: nil,
+      range_max: nil
+    }
+  end
+
+  def schedule_trial
+    existing = @voucher.trial_schedule
+
+    if existing && existing.status.in?(%w[attended late makeup_done])
+      return render json: { error: "이미 완료된 체험수업은 변경할 수 없습니다." }, status: :unprocessable_entity
+    end
+
+    teacher  = Teacher.find(params[:teacher_id])
+    date     = Date.parse(params[:date])
+    time_str = params[:time]
+    hour, min = time_str.split(":").map(&:to_i)
+    lesson_time = Time.zone.parse("#{date} #{time_str}")
+    subject  = params[:subject].presence || @voucher.enrollment.subject
+
+    if existing
+      existing.update!(
+        teacher:     teacher,
+        lesson_date: date,
+        lesson_time: lesson_time,
+        subject:     subject,
+        status:      "scheduled"
+      )
+    else
+      Schedule.create!(
+        student:     @voucher.student,
+        enrollment:  @voucher.enrollment,
+        teacher:     teacher,
+        lesson_date: date,
+        lesson_time: lesson_time,
+        subject:     subject,
+        status:      "scheduled",
+        trial:       true,
+        gift_voucher: @voucher,
+        sequence:    0
+      )
+    end
+
+    redirect_to student_path(@voucher.student), notice: "체험수업이 #{date.strftime('%m/%d')} #{time_str}으로 등록되었습니다."
   end
 
   private

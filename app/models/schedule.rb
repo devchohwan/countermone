@@ -7,16 +7,18 @@ class Schedule < ApplicationRecord
 
   belongs_to :student
   belongs_to :enrollment
-  belongs_to :payment
+  belongs_to :payment,      optional: true
   belongs_to :teacher
   belongs_to :makeup_teacher, class_name: "Teacher", optional: true
+  belongs_to :gift_voucher, optional: true
   has_one    :attendance, dependent: :destroy
 
   validates :lesson_date, presence: true
   validates :lesson_time, presence: true
   validates :subject,     presence: true
   validates :status,      inclusion: { in: STATUSES }
-  validates :sequence,    numericality: { greater_than: 0 }
+  validates :sequence,    numericality: { greater_than: 0 }, unless: :trial?
+  validates :payment_id,  presence: true, unless: :trial?
 
   scope :today,       -> { where(lesson_date: Date.today) }
   scope :scheduled,   -> { where(status: "scheduled") }

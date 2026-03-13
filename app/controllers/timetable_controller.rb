@@ -37,7 +37,7 @@ class TimetableController < ApplicationController
       .joins(:enrollment)
       .where(lesson_date: week_days)
       .where(status: %w[scheduled attended late pass emergency_pass holiday makeup_scheduled])
-      .where(enrollments: { status: "active" })
+      .where("enrollments.status = 'active' OR schedules.trial = ?", true)
 
     makeups = Schedule
       .includes(:student)
@@ -53,7 +53,7 @@ class TimetableController < ApplicationController
       .joins(:enrollment)
       .where(teacher: teacher, lesson_date: week_days)
       .where(status: %w[scheduled attended late pass emergency_pass holiday makeup_scheduled])
-      .where(enrollments: { status: "active" })
+      .where("enrollments.status = 'active' OR schedules.trial = ?", true)
 
     makeups = Schedule
       .includes(:student, :enrollment, :makeup_teacher)

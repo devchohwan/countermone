@@ -221,44 +221,295 @@
 <% if @student.gift_vouchers.any? %>
   <div class="card bg-base-100 shadow-sm p-4 mt-4">
     <h3 class="font-semibold text-sm mb-3">지류상품권</h3>
-    <div class="space-y-2">
+    <div class="space-y-3">
       <% @student.gift_vouchers.order(:issued_at).each do |v| %>
-        <div class="flex items-center gap-3 text-sm border rounded p-2 <%= v.used? ? 'opacity-50' : '' %>">
-          <div class="flex-1 space-y-0.5">
-            <div class="font-medium"><%= v.enrollment.subject %> 과목 발급</div>
-            <div class="text-xs text-base-content/60">
-              발급일: <%= v.issued_at.strftime("%Y.%m.%d") %> /
-              만료일: <%= v.expires_at.strftime("%Y.%m.%d") %>
-              <% if v.used? %>
-                / <span class="text-success">사용완료 <%= v.used_at&.strftime("%Y.%m.%d") %> (<%= v.used_class %>)</span>
-              <% elsif v.expires_at < Date.today %>
-                / <span class="text-error">만료</span>
-              <% end %>
+        <div class="border rounded p-3 text-sm <%= v.used? ? 'opacity-60' : '' %>">
+          <div class="flex items-start gap-3">
+            <div class="flex-1 space-y-0.5">
+              <div class="font-medium"><%= v.enrollment.subject %> 과목 발급</div>
+              <div class="text-xs text-base-content/60">
+                발급일: <%= v.issued_at.strftime("%Y.%m.%d") %> /
+                만료일: <%= v.expires_at.strftime("%Y.%m.%d") %>
+                <% if v.used? %>
+                  / <span class="text-success">사용완료 <%= v.used_at&.strftime("%Y.%m.%d") %> (<%= v.used_class %>)</span>
+                <% elsif v.expires_at < Date.today %>
+                  / <span class="text-error">만료</span>
+                <% end %>
+              </div>
             </div>
-          </div>
-          <% if !v.used? && v.expires_at >= Date.today %>
-            <% other_subjects = TeacherSubject::SUBJECTS - [v.enrollment.subject] %>
-            <% if other_subjects.any? %>
-              <form action="<%= use_gift_voucher_path(v) %>" method="post"
-                    onsubmit="return confirm('상품권을 사용 처리하시겠습니까?')">
-                <input type="hidden" name="_method" value="patch">
-                <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-                <select name="used_class" class="select select-bordered select-xs mr-1" required>
-                  <option value="">과목 선택</option>
-                  <% other_subjects.each do |subj| %>
-                    <option value="<%= subj %>"><%= subj %></option>
-                  <% end %>
-                </select>
-                <button type="submit" class="btn btn-xs btn-success">사용처리</button>
-              </form>
-            <% else %>
-              <span class="text-xs text-base-content/40">사용 가능 과목 없음</span>
+            <% if !v.used? && v.expires_at >= Date.today %>
+              <% other_subjects = TeacherSubject::SUBJECTS - [v.enrollment.subject] %>
+              <% if other_subjects.any? %>
+                <form action="<%= use_gift_voucher_path(v) %>" method="post"
+                      onsubmit="return confirm('상품권을 사용 처리하시겠습니까?')">
+                  <input type="hidden" name="_method" value="patch">
+                  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                  <select name="used_class" class="select select-bordered select-xs mr-1" required>
+                    <option value="">과목 선택</option>
+                    <% other_subjects.each do |subj| %>
+                      <option value="<%= subj %>"><%= subj %></option>
+                    <% end %>
+                  </select>
+                  <button type="submit" class="btn btn-xs btn-success">사용처리</button>
+                </form>
+              <% else %>
+                <span class="text-xs text-base-content/40">사용 가능 과목 없음</span>
+              <% end %>
             <% end %>
-          <% end %>
+          </div>
+
+          <%# 체험수업 섹션 %>
+          <div class="mt-2 pt-2 border-t border-base-200">
+            <% trial = v.trial_schedule %>
+            <% if trial.nil? %>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-base-content/50">체험수업: 미등록</span>
+                <button onclick="openTrialModal(<%= v.id %>, '<%= j v.enrollment.subject %>')"
+                        class="btn btn-xs btn-outline btn-accent">체험수업 잡기</button>
+              </div>
+            <% elsif trial.status.in?(%w[attended late makeup_done]) %>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-success">✓ 체험수업 완료</span>
+                <span class="text-xs text-base-content/50">
+                  <%= trial.lesson_date.strftime("%m/%d") %>
+                  <%= trial.lesson_time.strftime("%H:%M") %>
+                  <%= trial.teacher.name %>선생님
+                  (<%= trial.subject %>)
+                </span>
+              </div>
+            <% else %>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs text-base-content/50">체험수업:</span>
+                <span class="text-xs font-medium">
+                  <%= "#{trial.lesson_date.strftime('%m/%d')}(#{%w[일 월 화 수 목 금 토][trial.lesson_date.wday]})" %>
+                  <%= trial.lesson_time.strftime("%H:%M") %>
+                  <%= trial.teacher.name %>선생님
+                </span>
+                <span class="badge badge-xs badge-info"><%= trial.subject %></span>
+                <button onclick="openTrialModal(<%= v.id %>, '<%= j trial.subject %>')"
+                        class="btn btn-xs btn-ghost btn-outline">변경</button>
+              </div>
+            <% end %>
+          </div>
         </div>
       <% end %>
     </div>
   </div>
+
+  <%# 체험수업 슬롯 모달 %>
+  <dialog id="trial-modal" class="modal">
+    <div class="modal-box max-w-2xl">
+      <h3 class="font-bold text-base mb-3">🎓 체험수업 등록</h3>
+      <div id="trial-subject-bar" class="flex items-center gap-2 mb-3 flex-wrap"></div>
+      <div id="trial-slot-area" class="min-h-24">
+        <p class="text-xs text-base-content/50 py-4 text-center">불러오는 중…</p>
+      </div>
+      <div class="modal-action mt-2">
+        <form method="dialog"><button class="btn btn-sm btn-ghost">닫기</button></form>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+
+  <script>
+  (function() {
+    var _trialVoucherId = null;
+    var _trialSubject   = null;
+    var _trialData      = null;
+    var _trialWeekStart = null;
+    var _trialTeacherId = null;
+    var _csrfToken      = document.querySelector('meta[name="csrf-token"]').content;
+
+    function getMonday(d) {
+      var day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(d.getFullYear(), d.getMonth(), diff);
+    }
+    function parseDate(s) {
+      if (!s) return null;
+      var p = s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]);
+    }
+    function toDateStr(d) {
+      var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+
+    window.openTrialModal = function(voucherId, subject) {
+      _trialVoucherId = voucherId;
+      _trialSubject   = subject;
+      _trialData      = null;
+      _trialWeekStart = getMonday(new Date());
+      _trialTeacherId = null;
+      document.getElementById('trial-slot-area').innerHTML =
+        '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
+      document.getElementById('trial-subject-bar').innerHTML = '';
+      document.getElementById('trial-modal').showModal();
+      _trialLoadSlots(subject);
+    };
+
+    function _trialLoadSlots(subject) {
+      var url = `/gift_vouchers/${_trialVoucherId}/trial_slots?subject=${encodeURIComponent(subject)}`;
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          _trialData      = data;
+          _trialSubject   = data.subject;
+          if (!_trialTeacherId && data.teachers.length > 0) {
+            _trialTeacherId = data.teachers[0].id;
+          }
+
+          // 과목 탭
+          var subBar = document.getElementById('trial-subject-bar');
+          subBar.innerHTML = '<span class="text-xs text-base-content/50">과목:</span>' +
+            data.subjects.map(s => {
+              var active = s === _trialSubject;
+              return `<button onclick="window._trialChangeSubject('${s}')"
+                              class="btn btn-xs ${active ? 'btn-accent' : 'btn-ghost'}">${s}</button>`;
+            }).join('');
+
+          window._trialRender();
+        });
+    }
+
+    window._trialChangeSubject = function(subject) {
+      _trialSubject   = subject;
+      _trialTeacherId = null;
+      document.getElementById('trial-slot-area').innerHTML =
+        '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
+      _trialLoadSlots(subject);
+    };
+
+    window._trialRender = function _trialRender() {
+      var data = _trialData;
+      var ws   = _trialWeekStart;
+      var DAY_KO = ['일','월','화','수','목','금','토'];
+
+      var days = Array.from({length: 7}, (_, i) =>
+        new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i));
+
+      var prevWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() - 7);
+      var nextWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7);
+      var today    = new Date(); today.setHours(0,0,0,0);
+      var nextDays = Array.from({length:7}, (_,i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate()+i));
+      var prevOk   = days.some(d => d >= today);
+      var nextOk   = true;
+
+      var weekEnd   = days[6];
+      var weekLabel = `${ws.getMonth()+1}/${ws.getDate()} ~ ${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
+
+      // 선생님 탭
+      var teacherTabs = data.teachers.map(t => {
+        var active = _trialTeacherId === t.id;
+        return `<button onclick="window._trialSetTeacher(${t.id})"
+                        class="btn btn-xs ${active ? 'btn-primary' : 'btn-ghost'}">${t.name}</button>`;
+      }).join('');
+
+      var tid    = String(_trialTeacherId);
+      var tGrid  = (data.grid || {})[tid] || {};
+
+      var times = [];
+      for (var m = 13 * 60; m <= 22 * 60; m += 60) {
+        var h   = String(Math.floor(m/60)).padStart(2,'0');
+        var min = String(m%60).padStart(2,'0');
+        times.push(`${h}:${min}`);
+      }
+
+      var thCells = days.map(d => {
+        var past = d < today;
+        return `<th class="text-xs font-normal text-center px-1 py-1 ${past ? 'opacity-25' : ''}">
+          ${d.getMonth()+1}/${d.getDate()}<br>
+          <span class="text-base-content/60">${DAY_KO[d.getDay()]}</span>
+        </th>`;
+      }).join('');
+
+      var rows = times.map(time => {
+        var tds = days.map(d => {
+          var past = d < today;
+          var ds   = toDateStr(d);
+          if (past) return `<td class="text-center opacity-20 text-xs select-none px-1 py-1">—</td>`;
+          var slots = ((tGrid[ds] || {})[time]) || 0;
+          if (slots >= 3) {
+            return `<td class="text-center text-xs select-none px-1 py-1 rounded"
+                        style="background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.5);"
+                        title="마감 (3/3)">✕</td>`;
+          }
+          var filled   = '●'.repeat(slots);
+          var empty    = '○'.repeat(3 - slots);
+          var colorCls = slots === 0 ? 'text-success' : 'text-warning';
+          var teacher  = data.teachers.find(t => t.id === _trialTeacherId);
+          var tName    = teacher ? teacher.name : '';
+          return `<td class="text-center cursor-pointer rounded px-1 py-1"
+                      style="background:rgba(34,197,94,0.12);"
+                      onmouseover="this.style.background='rgba(34,197,94,0.25)'"
+                      onmouseout="this.style.background='rgba(34,197,94,0.12)'"
+                      onclick="window._trialConfirm('${ds}',${_trialTeacherId},'${time}','${tName}')"
+                      title="${tName} — ${slots}/3명">
+                    <span class="font-mono text-xs ${colorCls}">${filled}</span><span class="font-mono text-xs opacity-30">${empty}</span>
+                  </td>`;
+        }).join('');
+        return `<tr>
+          <td class="text-xs text-base-content/50 text-right pr-2 py-1 whitespace-nowrap font-mono w-12">${time}</td>
+          ${tds}
+        </tr>`;
+      }).join('');
+
+      document.getElementById('trial-slot-area').innerHTML = `
+        <div class="flex flex-wrap gap-1 mb-3">${teacherTabs}</div>
+        <div class="flex items-center justify-between mb-2">
+          <button onclick="window._trialNav(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>
+          <span class="text-sm font-medium">${weekLabel}</span>
+          <button onclick="window._trialNav(1)"  class="btn btn-xs btn-ghost">→</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-xs w-full">
+            <thead><tr><th class="w-12"></th>${thCells}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    window._trialSetTeacher = function(id) {
+      _trialTeacherId = id;
+      window._trialRender();
+    };
+
+    window._trialNav = function(dir) {
+      _trialWeekStart = new Date(_trialWeekStart.getFullYear(), _trialWeekStart.getMonth(), _trialWeekStart.getDate() + dir * 7);
+      window._trialRender();
+    };
+
+    window._trialConfirm = function(date, teacherId, time, teacherName) {
+      document.getElementById('trial-slot-area').innerHTML = `
+        <div class="border rounded-lg p-4 space-y-3">
+          <div class="text-sm font-semibold">${date} · ${teacherName} 선생님 · ${_trialSubject}</div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-base-content/60 w-16 shrink-0">시간</label>
+            <input type="time" id="trial-confirm-time" value="${time}"
+                   class="input input-bordered input-sm flex-1">
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button onclick="window._trialSubmit('${date}',${teacherId})" class="btn btn-sm btn-accent flex-1">체험수업 등록</button>
+            <button onclick="window._trialRender()" class="btn btn-sm btn-ghost flex-1">← 취소</button>
+          </div>
+        </div>`;
+    };
+
+    window._trialSubmit = function(date, teacherId) {
+      var time = document.getElementById('trial-confirm-time').value;
+      var form = document.createElement('form');
+      form.method = 'post';
+      form.action = `/gift_vouchers/${_trialVoucherId}/schedule_trial`;
+      form.innerHTML =
+        `<input type="hidden" name="_method" value="patch">` +
+        `<input type="hidden" name="authenticity_token" value="${_csrfToken}">` +
+        `<input type="hidden" name="date" value="${date}">` +
+        `<input type="hidden" name="time" value="${time}">` +
+        `<input type="hidden" name="teacher_id" value="${teacherId}">` +
+        `<input type="hidden" name="subject" value="${_trialSubject}">`;
+      document.body.appendChild(form);
+      form.submit();
+    };
+  })();
+  </script>
 <% end %>
 
 <%# 메모 %>

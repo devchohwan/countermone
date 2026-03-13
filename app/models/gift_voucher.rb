@@ -1,6 +1,7 @@
 class GiftVoucher < ApplicationRecord
   belongs_to :student
   belongs_to :enrollment
+  has_one    :trial_schedule, -> { where(trial: true) }, class_name: "Schedule", foreign_key: :gift_voucher_id, dependent: :destroy
 
   validates :issued_at,  presence: true
   validates :expires_at, presence: true

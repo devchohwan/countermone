@@ -9,8 +9,10 @@ class DashboardController < ApplicationController
     @current_date = effective
     @current_schedules = Schedule
       .includes(:student, :teacher, :enrollment, :attendance)
+      .joins(:teacher)
       .where(lesson_date: effective)
       .where(status: %w[scheduled attended late])
+      .where(teachers: { military: false })
       .select { |s| s.lesson_time.in_time_zone('Seoul').hour == Time.current.hour }
     render partial: "dashboard/current_schedules"
   end
@@ -123,9 +125,10 @@ class DashboardController < ApplicationController
 
   def arrival_schedules_for(date)
     regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
-                       .joins(:enrollment)
+                       .joins(:enrollment, :teacher)
                        .where(lesson_date: date, status: %w[scheduled attended late])
                        .where(enrollments: { status: "active" })
+                       .where(teachers: { military: false })
     trial    = Schedule.includes(:student, :teacher, :enrollment, :attendance)
                        .where(lesson_date: date, trial: true, status: %w[scheduled attended late])
     same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)

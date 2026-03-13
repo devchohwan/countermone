@@ -44,7 +44,7 @@ class GiftVouchersController < ApplicationController
     else
       available_subjects.first
     end
-    teachers = Teacher.by_position.joins(:teacher_subjects)
+    teachers = Teacher.by_position.non_military.joins(:teacher_subjects)
                       .where(teacher_subjects: { subject: subject })
     teacher_ids = teachers.map(&:id)
 
@@ -162,9 +162,10 @@ class GiftVouchersController < ApplicationController
 
   def trial_aware_arrivals(date)
     regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
-                       .joins(:enrollment)
+                       .joins(:enrollment, :teacher)
                        .where(lesson_date: date, status: %w[scheduled attended late])
                        .where(enrollments: { status: "active" })
+                       .where(teachers: { military: false })
     trial    = Schedule.includes(:student, :teacher, :enrollment, :attendance)
                        .where(lesson_date: date, trial: true, status: %w[scheduled attended late])
     same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)

@@ -123,7 +123,7 @@
           <div>
             <label class="block text-xs font-medium text-base-content mb-1">선생님</label>
             <%= f.select :makeup_teacher_id,
-                Teacher.joins(:teacher_subjects).where(teacher_subjects: { subject: @schedule.subject }).map { |t| [t.name, t.id] },
+                Teacher.non_military.joins(:teacher_subjects).where(teacher_subjects: { subject: @schedule.subject }).map { |t| [t.name, t.id] },
                 { prompt: "선생님 선택" },
                 class: "select select-bordered w-full text-sm" %>
           </div>

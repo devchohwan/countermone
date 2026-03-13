@@ -286,7 +286,7 @@ class SchedulesController < ApplicationController
       # 상한이 nil(무제한)이면 시간표 표시용으로 90일로 cap
       display_upper = range.end || (range.first + 90.days)
       display_range = range.first..display_upper
-      teachers    = Teacher.by_position.joins(:teacher_subjects)
+      teachers    = Teacher.by_position.non_military.joins(:teacher_subjects)
                            .where(teacher_subjects: { subject: subject })
       teacher_ids = teachers.map(&:id)
 
@@ -491,9 +491,10 @@ class SchedulesController < ApplicationController
   def today_arrival_schedules
     today    = Date.today
     regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
-                       .joins(:enrollment)
+                       .joins(:enrollment, :teacher)
                        .where(lesson_date: today, status: %w[scheduled attended late])
                        .where(enrollments: { status: "active" })
+                       .where(teachers: { military: false })
     trial    = Schedule.includes(:student, :teacher, :enrollment, :attendance)
                        .where(lesson_date: today, trial: true, status: %w[scheduled attended late])
     same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)

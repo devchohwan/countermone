@@ -43,6 +43,7 @@
       <% end_hour = @teacher.max_lesson_hour || 21 %>
       <% (start_hour..end_hour).each do |hour| %>
         <% is_break = (hour == 18) %>
+        <% monday_max = @teacher.monday_max_lesson_hour || 17 %>
         <%# 해당 시간대 전체 선생님 기준 차량 총합 (주차공간 공유) %>
         <% weekly_car_total = @week_days.sum do |wd|
              r = @all_schedule_data[:regular].select { |s| s.lesson_date == wd && s.lesson_time.hour == hour }
@@ -60,15 +61,16 @@
           </td>
           <% @week_days.each do |d| %>
             <% is_breaktime_open = @breaktime_openings.include?(d) %>
+            <% is_monday_restricted = d.wday == 1 && hour > monday_max %>
             <% regular = @schedule_data[:regular].select { |s| s.lesson_date == d && s.lesson_time.hour == hour } %>
             <% makeups = @schedule_data[:makeups].select { |s| s.makeup_date == d && s.makeup_time&.hour == hour } %>
             <% slot_total = regular.count { |s| s.status.in?(%w[scheduled attended late]) } + makeups.count %>
             <% is_full = slot_total >= 3 %>
             <td class="align-top py-3 text-center
               <%= d == Date.today ? 'bg-primary/5' : '' %>
-              <%= is_break && !is_breaktime_open ? 'bg-base-200' : '' %>
-              <%= is_full && !(is_break && !is_breaktime_open) ? 'bg-success/15' : '' %>">
-              <% if is_break && !is_breaktime_open %>
+              <%= (is_break && !is_breaktime_open) || is_monday_restricted ? 'bg-base-200' : '' %>
+              <%= is_full && !(is_break && !is_breaktime_open) && !is_monday_restricted ? 'bg-success/15' : '' %>">
+              <% if (is_break && !is_breaktime_open) || is_monday_restricted %>
                 <span class="text-xs text-base-content/30">-</span>
               <% else %>
                 <div class="flex flex-col items-center gap-0.5">

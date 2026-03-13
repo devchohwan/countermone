@@ -412,7 +412,7 @@
   <% teachers.each do |teacher| %>
     <% teacher.teacher_subjects.each do |ts| %>
       if (!window.teachersBySubject['<%= ts.subject %>']) window.teachersBySubject['<%= ts.subject %>'] = [];
-      window.teachersBySubject['<%= ts.subject %>'].push({ id: <%= teacher.id %>, name: '<%= teacher.name %>' });
+      window.teachersBySubject['<%= ts.subject %>'].push({ id: <%= teacher.id %>, name: '<%= teacher.name %>', mondayMax: <%= teacher.monday_max_lesson_hour %> });
     <% end %>
   <% end %>
 
@@ -452,7 +452,15 @@
       const day = dayEl.value;
       timeEl.innerHTML = '<option value="">시간 선택</option>';
       if (!day) return;
-      const hours = day === 'monday' ? [14, 15, 16, 17] : [13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+      let hours;
+      if (day === 'monday') {
+        const teacherId = parseInt(teacherEl.value);
+        const teacherData = Object.values(window.teachersBySubject).flat().find(t => t.id === teacherId);
+        const mondayMax = teacherData?.mondayMax || 17;
+        hours = Array.from({length: mondayMax - 14 + 1}, (_, i) => i + 14);
+      } else {
+        hours = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+      }
       hours.forEach(h => {
         const opt = document.createElement('option');
         opt.value = `${h.toString().padStart(2,'0')}:00`;
@@ -494,6 +502,7 @@
 
     subjectEl.addEventListener('change', updateTeachers);
     dayEl.addEventListener('change', updateTimes);
+    teacherEl.addEventListener('change', updateTimes);
     monthsEl.addEventListener('input', updateLessons);
     typeEl?.addEventListener('change', toggleDeposit);
     depositAmtEl?.addEventListener('input', recalcAmount);

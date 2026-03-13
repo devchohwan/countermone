@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_13_045533) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_13_083752) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -330,6 +330,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_13_045533) do
     t.datetime "updated_at", null: false
     t.integer "position"
     t.integer "max_lesson_hour", default: 21, null: false
+    t.integer "monday_max_lesson_hour", default: 17, null: false
   end
 
   create_table "users", force: :cascade do |t|

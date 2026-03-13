@@ -81,6 +81,8 @@ Rails.application.routes.draw do
   get  "timetable/:teacher_id", to: "timetable#show", as: :teacher_timetable
   get  "pass_sheet",            to: "timetable#pass_sheet"
 
+  get  "share/timetable/:teacher_id", to: "share#timetable", as: :share_timetable
+
   get  "keypad",          to: "keypad#index"
   post "keypad/checkin",  to: "keypad#checkin"
   post "keypad/checkout", to: "keypad#checkout"

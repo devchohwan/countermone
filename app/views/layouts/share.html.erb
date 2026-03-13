@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light" id="html-root" class="h-full">
+  <head>
+    <title><%= content_for(:title) || "시간표 공유" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <link rel="icon" href="/icon.png" type="image/png">
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="h-full bg-base-200">
+    <main class="p-4 max-w-5xl mx-auto">
+      <%= yield %>
+    </main>
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        const toggle = document.getElementById('theme-toggle');
+        if (toggle) toggle.checked = (theme === 'dark');
+      })();
+      function toggleTheme(el) {
+        const theme = el.checked ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+      }
+    </script>
+  </body>
+</html>

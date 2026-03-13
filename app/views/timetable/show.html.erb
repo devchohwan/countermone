@@ -11,11 +11,15 @@
 </div>
 
 <%# 선생님 탭 %>
-<div class="tabs tabs-box mb-4 overflow-x-auto flex-nowrap">
-  <% @teachers.each do |t| %>
-    <%= link_to t.name, teacher_timetable_path(t.id, date: @date.to_s),
-          class: "tab #{t.id == @teacher.id ? 'tab-active' : ''} shrink-0" %>
-  <% end %>
+<div class="flex items-center gap-2 mb-4">
+  <div class="tabs tabs-box overflow-x-auto flex-nowrap flex-1">
+    <% @teachers.each do |t| %>
+      <%= link_to t.name, teacher_timetable_path(t.id, date: @date.to_s),
+            class: "tab #{t.id == @teacher.id ? 'tab-active' : ''} shrink-0" %>
+    <% end %>
+  </div>
+  <%= link_to "↗ 공유", share_timetable_path(@teacher.id), target: "_blank",
+        class: "btn btn-xs btn-outline shrink-0", title: "선생님 공유 시간표 (새 탭)" %>
 </div>
 
 <%# 시간표 테이블 %>

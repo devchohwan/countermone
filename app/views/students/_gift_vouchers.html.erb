@@ -62,8 +62,10 @@
                   <%= trial.teacher.name %>선생님
                 </span>
                 <span class="badge badge-xs badge-info"><%= trial.subject %></span>
-                <button onclick="openTrialModal(<%= v.id %>, '<%= j trial.subject %>')"
-                        class="btn btn-xs btn-ghost btn-outline">변경</button>
+                <% unless v.used? %>
+                  <button onclick="openTrialModal(<%= v.id %>, '<%= j v.enrollment.subject %>')"
+                          class="btn btn-xs btn-ghost btn-outline">변경</button>
+                <% end %>
               </div>
             <% end %>
           </div>

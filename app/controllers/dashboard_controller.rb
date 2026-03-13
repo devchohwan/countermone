@@ -43,7 +43,7 @@ class DashboardController < ApplicationController
 
     # 시간대별 수업 텍스트용: 수강권별 잔여 scheduled 횟수 (정규 + 보강 모두 포함)
     enrollment_ids = (@today_schedules + @today_makeups).map(&:enrollment_id).uniq
-    @enrollment_remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled])
+    @enrollment_remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled], trial: false)
                                     .group(:enrollment_id).count
 
     # 해당일 마감 집계

@@ -18,6 +18,19 @@
                 <% end %>
               </div>
             </div>
+            <% if !v.used? && v.expires_at >= Date.today %>
+              <% trial_subj = v.trial_schedule&.subject %>
+              <% used_class_val = trial_subj || (TeacherSubject::SUBJECTS - [v.enrollment.subject] - %w[믹싱1차 믹싱2차]).first %>
+              <% if used_class_val %>
+                <form action="<%= use_gift_voucher_path(v) %>" method="post"
+                      onsubmit="return confirm('<%= j used_class_val %> 수강완료 처리하시겠습니까?')">
+                  <input type="hidden" name="_method" value="patch">
+                  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                  <input type="hidden" name="used_class" value="<%= used_class_val %>">
+                  <button type="submit" class="btn btn-xs btn-success">수강완료</button>
+                </form>
+              <% end %>
+            <% end %>
           </div>
 
           <%# 체험수업 섹션 (믹싱 과목은 체험수업 없음) %>

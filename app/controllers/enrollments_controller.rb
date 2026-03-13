@@ -116,7 +116,11 @@ class EnrollmentsController < ApplicationController
     )
 
     @enrollment.update!(attendance_event_pending: false, last_attendance_event_at: Date.today)
-    redirect_to root_path(todo_tab: "keungeun"), notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
+    if request.referer&.include?("/students/")
+      redirect_to student_path(@enrollment.student, tab: @enrollment.id), notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
+    else
+      redirect_to root_path(todo_tab: "keungeun"), notice: "개근 처리 완료. #{new_date.strftime('%m/%d')} 수업 1회 추가되었습니다."
+    end
   end
 
   def add_lesson
@@ -215,15 +219,19 @@ class EnrollmentsController < ApplicationController
       @enrollment.update_columns(pass_offset: value - computed_passes)
     end
 
-    respond_to do |format|
-      format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          "enrollment-stats-#{@enrollment.id}",
-          partial: "students/enrollment_stats",
-          locals: { student: student, enrollment: @enrollment }
-        )
+    if stat == "gift_voucher_eligible"
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            "enrollment-stats-#{@enrollment.id}",
+            partial: "students/enrollment_stats",
+            locals: { student: student, enrollment: @enrollment }
+          )
+        end
+        format.json { render json: { ok: true, value: value } }
       end
-      format.json { render json: { ok: true, value: value } }
+    else
+      render json: { ok: true, value: value }
     end
   end
 

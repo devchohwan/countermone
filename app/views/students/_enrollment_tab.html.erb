@@ -979,16 +979,25 @@
       btn.disabled = true;
       btn.textContent = '...';
 
-      fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Accept': 'text/vnd.turbo-stream.html' },
-        body: JSON.stringify({ stat, value })
+      const isBadgeStat = stat === 'gift_voucher_eligible';
+      const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf };
+      if (isBadgeStat) headers['Accept'] = 'text/vnd.turbo-stream.html';
+
+      fetch(url, { method: 'PATCH', headers, body: JSON.stringify({ stat, value }) })
+      .then(r => { if (!r.ok) throw new Error('저장 실패'); return isBadgeStat ? r.text() : r.json(); })
+      .then(data => {
+        if (isBadgeStat) {
+          Turbo.renderStreamMessage(data);
+        } else {
+          const statEl = wrapper.closest('[data-stat]');
+          const displayEl = statEl.querySelector('.stat-display');
+          const unitMap = { consecutive_weeks: '주', pass: '회' };
+          const unit = unitMap[stat] || '';
+          displayEl.innerHTML = `${value}<span class="text-sm font-normal">${unit}</span>`;
+          displayEl.style.display = '';
+          wrapper.remove();
+        }
       })
-      .then(r => {
-        if (!r.ok) throw new Error('저장 실패');
-        return r.text();
-      })
-      .then(html => { Turbo.renderStreamMessage(html); })
       .catch(() => {
         alert('저장 실패');
         btn.disabled = false;

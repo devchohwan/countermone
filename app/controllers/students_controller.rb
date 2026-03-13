@@ -170,15 +170,23 @@ class StudentsController < ApplicationController
 
   def save_referrers(student)
     ids = Array(params[:referrer_ids]).map(&:to_i).uniq.reject(&:zero?).first(7)
+    old_ids = student.student_referrals.pluck(:referrer_id)
+    new_ids = ids - old_ids  # 새로 추가된 추천인 ID
+
     student.student_referrals.destroy_all
     ids.each do |referrer_id|
       next if referrer_id == student.id
       student.student_referrals.create!(referrer_id: referrer_id)
     end
-    # 피추천인 첫 완납 결제가 있으면 추천인들에게 할인 대기 알림
-    # (notify_referrer_if_applicable은 save 시점에 referrers가 비어있어 여기서 처리)
-    if ids.any? && student.payments.where(fully_paid: true).exists?
-      Student.where(id: ids).where.not(id: student.id).each do |referrer|
+
+    # 새로 추가된 추천인 수만큼 학생 본인에게 다음 결제 할인 적립
+    if new_ids.any?
+      student.increment!(:referral_discount_pending, new_ids.size)
+    end
+
+    # 피추천인 첫 완납 결제가 있으면 추천인들에게도 할인 대기 알림
+    if new_ids.any? && student.payments.where(fully_paid: true).exists?
+      Student.where(id: new_ids).where.not(id: student.id).each do |referrer|
         referrer.increment!(:referral_discount_pending)
       end
     end

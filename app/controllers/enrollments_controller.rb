@@ -33,13 +33,26 @@ class EnrollmentsController < ApplicationController
   end
 
   def update
-    old_teacher_id = @enrollment.teacher_id
+    old_teacher_id  = @enrollment.teacher_id
+    old_lesson_time = @enrollment.lesson_time
+    old_lesson_day  = @enrollment.lesson_day
+
     if @enrollment.update(enrollment_params)
-      # 선생님이 바뀌었으면 예정 수업 일괄 업데이트
+      scheduled = @enrollment.schedules.where(status: "scheduled")
+
+      # 선생님 변경 → 예정 수업 teacher 일괄 업데이트
       if @enrollment.teacher_id != old_teacher_id
-        @enrollment.schedules.where(status: "scheduled", teacher_id: old_teacher_id)
-                   .update_all(teacher_id: @enrollment.teacher_id)
+        scheduled.update_all(teacher_id: @enrollment.teacher_id)
       end
+
+      # 시간 변경 → 예정 수업 lesson_time 일괄 업데이트
+      if @enrollment.lesson_time != old_lesson_time
+        scheduled.update_all(lesson_time: @enrollment.lesson_time)
+      end
+
+      # 요일 변경은 날짜 재계산이 필요하므로 reschedule 액션 안내
+      # (lesson_day만 변경된 경우 schedules의 lesson_date는 수동 reschedule 필요)
+
       redirect_to student_path(@enrollment.student, anchor: "enrollment-#{@enrollment.id}"),
                   notice: "클래스 정보가 수정되었습니다."
     else

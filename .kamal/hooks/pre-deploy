@@ -1,0 +1,3 @@
+#!/bin/bash
+# 배포 전 DB 마이그레이션 자동 실행
+kamal app exec --reuse 'bin/rails db:migrate'

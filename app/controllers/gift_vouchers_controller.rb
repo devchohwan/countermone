@@ -72,7 +72,6 @@ class GiftVouchersController < ApplicationController
 
     render json: {
       subject:   subject,
-      subjects:  TeacherSubject::SUBJECTS,
       teachers:  teachers.map { |t| { id: t.id, name: t.name } },
       dates:     (display_range.first..display_range.end).map(&:to_s),
       times:     all_times.uniq.sort,

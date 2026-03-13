@@ -39,7 +39,8 @@
             <% end %>
           </div>
 
-          <%# 체험수업 섹션 %>
+          <%# 체험수업 섹션 (믹싱 과목은 체험수업 없음) %>
+          <% unless v.enrollment.subject.in?(%w[믹싱1차 믹싱2차]) %>
           <div class="mt-2 pt-2 border-t border-base-200">
             <% trial = v.trial_schedule %>
             <% if trial.nil? %>
@@ -72,6 +73,7 @@
               </div>
             <% end %>
           </div>
+          <% end %> <%# unless 믹싱 %>
         </div>
       <% end %>
     </div>
@@ -81,7 +83,6 @@
   <dialog id="trial-modal" class="modal">
     <div class="modal-box max-w-2xl">
       <h3 class="font-bold text-base mb-3">🎓 체험수업 등록</h3>
-      <div id="trial-subject-bar" class="flex items-center gap-2 mb-3 flex-wrap"></div>
       <div id="trial-slot-area" class="min-h-24">
         <p class="text-xs text-base-content/50 py-4 text-center">불러오는 중…</p>
       </div>
@@ -123,7 +124,6 @@
       _trialTeacherId = null;
       document.getElementById('trial-slot-area').innerHTML =
         '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
-      document.getElementById('trial-subject-bar').innerHTML = '';
       document.getElementById('trial-modal').showModal();
       _trialLoadSlots(subject);
     };
@@ -139,26 +139,9 @@
             _trialTeacherId = data.teachers[0].id;
           }
 
-          // 과목 탭
-          var subBar = document.getElementById('trial-subject-bar');
-          subBar.innerHTML = '<span class="text-xs text-base-content/50">과목:</span>' +
-            data.subjects.map(s => {
-              var active = s === _trialSubject;
-              return `<button onclick="window._trialChangeSubject('${s}')"
-                              class="btn btn-xs ${active ? 'btn-accent' : 'btn-ghost'}">${s}</button>`;
-            }).join('');
-
           window._trialRender();
         });
     }
-
-    window._trialChangeSubject = function(subject) {
-      _trialSubject   = subject;
-      _trialTeacherId = null;
-      document.getElementById('trial-slot-area').innerHTML =
-        '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
-      _trialLoadSlots(subject);
-    };
 
     window._trialRender = function _trialRender() {
       var data = _trialData;

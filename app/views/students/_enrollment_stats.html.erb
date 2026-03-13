@@ -51,14 +51,10 @@
 <% review_weeks    = student.review_weeks_for(enrollment) %>
 <% consec_weeks    = student.consecutive_weeks_for(enrollment) %>
 <% has_gift_voucher  = GiftVoucher.where(enrollment: enrollment).exists? %>
-<% has_cafe_discount = enrollment.payments.joins(:discounts).where(discounts: { discount_type: 'review', memo: '3개월 카페후기 할인' }).exists? %>
-<% has_video_discount = enrollment.payments.joins(:discounts).where(discounts: { discount_type: 'review', memo: '6개월 영상후기 할인' }).exists? %>
 <% show_keungeun = consec_weeks > 0 && consec_weeks % 12 == 0 %>
-<% show_cafe     = review_weeks >= 12 && !has_cafe_discount %>
-<% show_video    = review_weeks >= 24 && !has_video_discount %>
 <% show_gift     = enrollment.review_gift_eligible? && !has_gift_voucher %>
 
-<% if show_keungeun || show_cafe || show_video || show_gift %>
+<% if show_keungeun || show_gift %>
   <div class="flex flex-wrap gap-2 mb-3">
     <% if show_keungeun %>
       <%= button_to "🏆 #{consec_weeks}주 연속개근 — 수업 1회 추가",
@@ -66,12 +62,6 @@
             method: :patch,
             class: "badge badge-accent gap-1 cursor-pointer border-0",
             data: { turbo_confirm: "#{consec_weeks}주 연속개근! 수업 1회를 추가하시겠습니까?" } %>
-    <% end %>
-    <% if show_cafe %>
-      <span class="badge badge-warning gap-1">☕ 카페후기 할인 가능</span>
-    <% end %>
-    <% if show_video %>
-      <span class="badge badge-info gap-1">🎬 영상후기 할인 가능</span>
     <% end %>
     <% if show_gift %>
       <%= button_to "🎁 지류가능", gift_vouchers_path(enrollment_id: enrollment.id),

@@ -30,7 +30,7 @@ class SchedulesController < ApplicationController
       format.turbo_stream do
         attendance_events = Enrollment.where(attendance_event_pending: true).includes(:student)
         count = attendance_events.count
-        badge_html = count > 0 ? "<div class=\"badge badge-accent gap-1\">🔥 개근달성 #{count}명</div>" : ""
+        badge_html = (count > 0 ? "<div class=\"badge badge-accent gap-1\">🔥 개근달성 #{count}명</div>" : "").html_safe
         tab_label  = "🎯 개근 (#{count})"
         enrollment = @schedule.enrollment
         student    = enrollment.student
@@ -45,7 +45,7 @@ class SchedulesController < ApplicationController
                                locals: { attendance_events: attendance_events }),
           turbo_stream.update("keungeun-alert-badge", html: badge_html),
           turbo_stream.replace("keungeun-tab-radio",
-            html: "<input type='radio' name='todo-tabs' role='tab' class='tab' id='keungeun-tab-radio' aria-label='#{tab_label}' #{count > 0 ? 'checked' : ''} onchange=\"switchTodoCopy('keungeun')\">"),
+            html: "<input type='radio' name='todo-tabs' role='tab' class='tab' id='keungeun-tab-radio' aria-label='#{tab_label}' #{count > 0 ? 'checked' : ''} onchange=\"switchTodoCopy('keungeun')\">".html_safe),
           # 학생 페이지 타깃
           turbo_stream.replace("schedule-badge-#{@schedule.id}",
             partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),

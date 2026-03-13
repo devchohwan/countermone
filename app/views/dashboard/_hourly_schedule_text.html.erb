@@ -97,7 +97,7 @@
                   is_first  = first_lesson_ids.include?(s.id)
                 %>
                 <p>
-                  <%= s.student.name %><% if s.trial? %><span class="text-accent">(체험)</span><% elsif is_first %><span class="text-success">(첫)</span><% end %>
+                  <%= link_to s.student.name, student_path(s.student), class: "hover:underline" %><% if s.trial? %><span class="text-accent">(체험)</span><% elsif is_first %><span class="text-success">(첫)</span><% end %>
                   <% if attended %>
                     <span class="text-base-content/40"><%= remaining + 1 %>-<%= remaining %></span>
                   <% else %>
@@ -112,7 +112,7 @@
                   attended  = s.status == "makeup_done"
                 %>
                 <p>
-                  <%= s.student.name %><span class="text-purple-500">(보/<%= s.teacher.name %>)</span>
+                  <%= link_to s.student.name, student_path(s.student), class: "hover:underline" %><span class="text-purple-500">(보/<%= s.teacher.name %>)</span>
                   <% if attended %>
                     <span class="text-base-content/40"><%= remaining + 1 %>-<%= remaining %></span>
                   <% else %>

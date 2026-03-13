@@ -31,7 +31,7 @@
                 <div class="flex flex-col gap-1">
                 <% hour_schedules.each do |s| %>
                   <div class="flex items-center gap-2 text-xs">
-                    <%= link_to student_path(s.student), class: "font-medium w-14 truncate hover:underline" do %><%= s.student.name %><% if s.trial? %><span class="text-accent text-xs">(체험)</span><% end %><% end %>
+                    <%= link_to student_path(s.student), class: "font-medium w-14 truncate hover:underline", data: { turbo_frame: "_top" } do %><%= s.student.name %><% if s.trial? %><span class="text-accent text-xs">(체험)</span><% end %><% end %>
 
                     <%# 등원 %>
                     <% if s.attendance&.checked_in_at %>

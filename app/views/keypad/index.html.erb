@@ -1,16 +1,52 @@
 <% content_for :title, "출석 키패드" %>
 
-<div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
+<style>
+  body.is-fullscreen #keypad-wrapper {
+    min-height: 100dvh;
+    background: oklch(var(--b2) / 1);
+  }
+  body.is-fullscreen #keypad-container {
+    max-width: 540px;
+  }
+  body.is-fullscreen #keypad-body {
+    padding: 2.5rem;
+    gap: 1.5rem;
+  }
+  body.is-fullscreen #keypad-title   { font-size: 2rem; }
+  body.is-fullscreen #keypad-subtitle { font-size: 1.1rem; }
+  body.is-fullscreen #keypad-display-wrap {
+    font-size: 3.5rem;
+    min-height: 5.5rem;
+    padding: 1rem 1.5rem;
+  }
+  body.is-fullscreen #result-message  { font-size: 1.2rem; padding: 1rem; }
+  body.is-fullscreen .keypad-btn      { font-size: 2.8rem !important; height: 6rem !important; }
+  body.is-fullscreen #clear-btn,
+  body.is-fullscreen #submit-btn      { font-size: 2rem !important; height: 6rem !important; }
+  body.is-fullscreen .class-select-btn { font-size: 1.2rem; height: 3.5rem; }
+</style>
+
+<%# 전체화면 토글 버튼 %>
+<button id="fs-btn" class="fixed top-3 right-3 z-50 btn btn-sm btn-ghost opacity-30 hover:opacity-80" title="전체화면">
+  <svg id="fs-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="15 3 21 3 21 9"/>
+    <polyline points="9 21 3 21 3 15"/>
+    <line x1="21" y1="3" x2="14" y2="10"/>
+    <line x1="3" y1="21" x2="10" y2="14"/>
+  </svg>
+</button>
+
+<div class="min-h-screen bg-base-200 flex items-center justify-center p-4" id="keypad-wrapper">
   <div class="card bg-base-100 shadow-2xl w-full max-w-sm" id="keypad-container">
-    <div class="card-body items-center text-center gap-4 p-8">
+    <div class="card-body items-center text-center gap-4 p-8" id="keypad-body">
 
       <div>
-        <h1 class="card-title text-xl justify-center">모네뮤직</h1>
-        <p class="text-base-content/50 text-sm">출결 코드를 입력하세요</p>
+        <h1 class="card-title text-xl justify-center" id="keypad-title">모네뮤직</h1>
+        <p class="text-base-content/50 text-sm" id="keypad-subtitle">출결 코드를 입력하세요</p>
       </div>
 
       <%# 입력 표시 %>
-      <div class="bg-base-200 rounded-xl px-4 py-3 w-full text-2xl font-mono tracking-widest min-h-12 flex items-center justify-center" id="keypad-display">
+      <div class="bg-base-200 rounded-xl px-4 py-3 w-full text-2xl font-mono tracking-widest min-h-12 flex items-center justify-center" id="keypad-display-wrap">
         <span id="code-display">_</span>
       </div>
 
@@ -106,5 +142,35 @@
     resultDiv.textContent = msg;
     setTimeout(() => resultDiv.className = "hidden w-full", 3000);
   }
+
+  // ── 전체화면 ──────────────────────────────────────────────
+  const fsBtn  = document.getElementById('fs-btn');
+  const fsIcon = document.getElementById('fs-icon');
+
+  const ICON_EXPAND = `
+    <polyline points="15 3 21 3 21 9"/>
+    <polyline points="9 21 3 21 3 15"/>
+    <line x1="21" y1="3" x2="14" y2="10"/>
+    <line x1="3" y1="21" x2="10" y2="14"/>`;
+  const ICON_SHRINK = `
+    <polyline points="4 14 10 14 10 20"/>
+    <polyline points="20 10 14 10 14 4"/>
+    <line x1="10" y1="14" x2="3" y2="21"/>
+    <line x1="21" y1="3" x2="14" y2="10"/>`;
+
+  fsBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    const isFs = !!document.fullscreenElement;
+    document.body.classList.toggle('is-fullscreen', isFs);
+    fsIcon.innerHTML = isFs ? ICON_SHRINK : ICON_EXPAND;
+    fsBtn.title = isFs ? '전체화면 종료' : '전체화면';
+  });
 })();
 </script>

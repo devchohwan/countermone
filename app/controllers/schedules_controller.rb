@@ -196,11 +196,14 @@ class SchedulesController < ApplicationController
     makeup_time = params[:makeup_time]
     teacher_id  = params[:makeup_teacher_id].to_i
 
-    range = @schedule.makeup_available_range
-    if range && !range.cover?(makeup_date)
-      upper_str = range.end ? range.end.to_s : "상한 없음"
-      return redirect_back fallback_location: schedules_path,
-        alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{upper_str})"
+    military = params[:military] == "1"
+    unless military
+      range = @schedule.makeup_available_range
+      if range && !range.cover?(makeup_date)
+        upper_str = range.end ? range.end.to_s : "상한 없음"
+        return redirect_back fallback_location: schedules_path,
+          alert: "보강 가능 기간 외입니다. (#{range.first} ~ #{upper_str})"
+      end
     end
 
     slot = Schedule.slot_count(teacher_id, @schedule.subject, makeup_date, makeup_time)

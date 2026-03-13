@@ -99,8 +99,22 @@
         <% end %>
         <%= form_with url: makeup_schedule_path(@schedule), method: :patch, class: "space-y-3" do |f| %>
           <div>
+            <label class="flex items-center gap-2 cursor-pointer mb-2">
+              <input type="checkbox" id="military-toggle-<%= @schedule.id %>" class="checkbox checkbox-sm checkbox-warning"
+                     onchange="(function(el){
+                       var m=el.checked;
+                       var df=document.getElementById('makeup-date-<%= @schedule.id %>');
+                       if(m){df.removeAttribute('min');df.removeAttribute('max');}
+                       else{df.setAttribute('min','<%= range.first %>');<%if range.end%>df.setAttribute('max','<%= range.end %>');<%end%>}
+                       document.getElementById('military-field-<%= @schedule.id %>').value=m?'1':'';
+                     })(this)">
+              <span class="text-sm">군보강 <span class="text-xs text-base-content/50">(날짜 제한 없음)</span></span>
+            </label>
+            <%= f.hidden_field :military, value: "", id: "military-field-#{@schedule.id}" %>
+          </div>
+          <div>
             <label class="block text-xs font-medium text-base-content mb-1">보강 날짜</label>
-            <%= f.date_field :makeup_date, min: range.first, max: range.end.presence, class: "input input-bordered w-full text-sm" %>
+            <%= f.date_field :makeup_date, id: "makeup-date-#{@schedule.id}", min: range.first, max: range.end.presence, class: "input input-bordered w-full text-sm" %>
           </div>
           <div>
             <label class="block text-xs font-medium text-base-content mb-1">보강 시간</label>

@@ -656,7 +656,8 @@
               window._mkPatchForm('/schedules/${scheduleId}/makeup',
                 '<input type=\\'hidden\\' name=\\'makeup_date\\' value=\\'${date}\\'>' +
                 '<input type=\\'hidden\\' name=\\'makeup_time\\' value=\\'' + t + '\\'>' +
-                '<input type=\\'hidden\\' name=\\'makeup_teacher_id\\' value=\\'${teacherId}\\'>');
+                '<input type=\\'hidden\\' name=\\'makeup_teacher_id\\' value=\\'${teacherId}\\'>' +
+                (window._mkMilitary ? '<input type=\\'hidden\\' name=\\'military\\' value=\\'1\\'>' : ''));
             " class="btn btn-sm btn-primary flex-1">보강 등록</button>
             <button onclick="window._mkRender()" class="btn btn-sm btn-ghost flex-1">← 취소</button>
           </div>

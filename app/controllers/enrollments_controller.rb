@@ -46,12 +46,26 @@ class EnrollmentsController < ApplicationController
       end
 
       # 시간 변경 → 예정 수업 lesson_time 일괄 업데이트
-      if @enrollment.lesson_time != old_lesson_time
+      if @enrollment.lesson_time != old_lesson_time && @enrollment.lesson_day == old_lesson_day
         scheduled.update_all(lesson_time: @enrollment.lesson_time)
       end
 
-      # 요일 변경은 날짜 재계산이 필요하므로 reschedule 액션 안내
-      # (lesson_day만 변경된 경우 schedules의 lesson_date는 수동 reschedule 필요)
+      # 요일 변경 → 예정 수업 lesson_date 재계산 + lesson_time/teacher 동시 반영
+      if @enrollment.lesson_day != old_lesson_day
+        day_map = { "monday" => 1, "tuesday" => 2, "wednesday" => 3,
+                    "thursday" => 4, "friday" => 5, "saturday" => 6, "sunday" => 0 }
+        target_wday = day_map[@enrollment.lesson_day]
+        first_date = Date.today
+        first_date += 1.day until first_date.wday == target_wday
+
+        scheduled.order(:lesson_date).each_with_index do |s, i|
+          s.update!(
+            lesson_date: first_date + (i * 7).days,
+            lesson_time: @enrollment.lesson_time,
+            teacher_id:  @enrollment.teacher_id
+          )
+        end
+      end
 
       redirect_to student_path(@enrollment.student, anchor: "enrollment-#{@enrollment.id}"),
                   notice: "클래스 정보가 수정되었습니다."

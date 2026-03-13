@@ -215,7 +215,16 @@ class EnrollmentsController < ApplicationController
       @enrollment.update_columns(pass_offset: value - computed_passes)
     end
 
-    render json: { ok: true, value: value }
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "enrollment-stats-#{@enrollment.id}",
+          partial: "students/enrollment_stats",
+          locals: { student: student, enrollment: @enrollment }
+        )
+      end
+      format.json { render json: { ok: true, value: value } }
+    end
   end
 
   private

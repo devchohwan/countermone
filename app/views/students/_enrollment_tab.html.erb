@@ -981,27 +981,16 @@
 
       fetch(url, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Accept': 'text/vnd.turbo-stream.html' },
         body: JSON.stringify({ stat, value })
       })
-      .then(r => r.json())
-      .then(data => {
-        if (data.ok) {
-          const statEl = wrapper.closest('[data-stat]');
-          const displayEl = statEl.querySelector('.stat-display');
-          const unitMap = { gift_voucher_eligible: '주', consecutive_weeks: '주', pass: '회' };
-          const unit = unitMap[stat] || '';
-          displayEl.innerHTML = `${value}<span class="text-sm font-normal">${unit}</span>`;
-          displayEl.style.display = '';
-          wrapper.remove();
-        } else {
-          alert('저장 실패: ' + (data.error || '오류'));
-          btn.disabled = false;
-          btn.textContent = '저장';
-        }
+      .then(r => {
+        if (!r.ok) throw new Error('저장 실패');
+        return r.text();
       })
+      .then(html => { Turbo.renderStreamMessage(html); })
       .catch(() => {
-        alert('네트워크 오류');
+        alert('저장 실패');
         btn.disabled = false;
         btn.textContent = '저장';
       });

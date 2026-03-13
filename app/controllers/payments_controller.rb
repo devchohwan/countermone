@@ -102,7 +102,7 @@ class PaymentsController < ApplicationController
         has_qualifying = @enrollment.student.enrollments
           .where(status: "active")
           .where.not(id: @enrollment.id)
-          .any? { |e| e.schedules.where(status: "scheduled").count > 0 }
+          .exists?
         @multi_class_discount = has_qualifying ? 50_000 : 0
         @multi_class_memo     = has_qualifying ? "다중 수강 할인" : nil
       end
@@ -290,7 +290,7 @@ class PaymentsController < ApplicationController
     has_qualifying = enrollment.student.enrollments
       .where(status: "active")
       .where.not(id: enrollment.id)
-      .any? { |e| e.schedules.where(status: "scheduled").count > 0 }
+      .exists?
     return unless has_qualifying
     payment.discounts.build(
       discount_type: "multi_class",

@@ -78,7 +78,7 @@ class StudentsController < ApplicationController
     end
 
     if @student.update(student_params)
-      @student.enrollments.each do |enrollment|
+      @student.enrollments.reload.each do |enrollment|
         old = old_data[enrollment.id]
         next if old.nil?
 

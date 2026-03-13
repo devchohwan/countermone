@@ -493,20 +493,26 @@
     // ── 보강: 시간표 그리드 ────────────────────────────────
     function showMakeup() {
       titleEl.textContent = '보강 등록';
+      window._mkMilitary = false;
       actionsEl.innerHTML = '<p class="text-xs text-base-content/50 py-4 text-center">슬롯 불러오는 중…</p>';
 
       fetch(`/schedules/${scheduleId}/makeup_slots`)
         .then(r => r.json())
         .then(data => {
-          if (!data.range_min) {
+          window._mkData = data;
+          window._mkWeekStart = getMonday(parseDate(lessonDateStr));
+          window._mkTeacherId = (teacherId && data.teachers.find(t => t.id === teacherId)) ? teacherId : (data.teachers[0]?.id ?? null);
+          if (!data.range_min && !window._mkMilitary) {
             actionsEl.innerHTML = `
+              <label class="flex items-center gap-2 mb-3 cursor-pointer">
+                <input type="checkbox" class="checkbox checkbox-sm checkbox-warning"
+                       onchange="window._mkMilitary=this.checked; window._mkRender();">
+                <span class="text-sm">군보강 <span class="text-xs text-base-content/50">(날짜 제한 없음)</span></span>
+              </label>
               <p class="text-sm text-error py-2">보강 가능 기간이 없습니다.</p>
               <button onclick="showMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>`;
             return;
           }
-          window._mkData = data;
-          window._mkWeekStart = getMonday(parseDate(lessonDateStr));
-          window._mkTeacherId = (teacherId && data.teachers.find(t => t.id === teacherId)) ? teacherId : (data.teachers[0]?.id ?? null);
           window._mkRender();
         });
     }
@@ -516,9 +522,10 @@
     window._mkRender = function() {
       const data     = window._mkData;
       const ws       = window._mkWeekStart;
-      const rangeMin = parseDate(data.range_min);
-      const rangeMax = data.range_max ? parseDate(data.range_max) : null; // null = 상한 없음
-      const inRangeFn = d => d >= rangeMin && (rangeMax === null || d <= rangeMax);
+      const military = !!window._mkMilitary;
+      const rangeMin = military ? new Date(2000, 0, 1) : parseDate(data.range_min);
+      const rangeMax = (military || !data.range_max) ? null : parseDate(data.range_max);
+      const inRangeFn = d => military || (d >= rangeMin && (rangeMax === null || d <= rangeMax));
       const DAY_KO   = ['일','월','화','수','목','금','토'];
 
       // 월~일 7일
@@ -530,8 +537,8 @@
       const nextWs   = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 7);
       const prevDays = Array.from({length:7}, (_,i) => new Date(prevWs.getFullYear(), prevWs.getMonth(), prevWs.getDate()+i));
       const nextDays = Array.from({length:7}, (_,i) => new Date(nextWs.getFullYear(), nextWs.getMonth(), nextWs.getDate()+i));
-      const prevOk   = prevDays.some(d => inRangeFn(d));
-      const nextOk   = rangeMax === null || nextDays.some(d => inRangeFn(d));
+      const prevOk   = military || prevDays.some(d => inRangeFn(d));
+      const nextOk   = military || rangeMax === null || nextDays.some(d => inRangeFn(d));
 
       const weekEnd   = days[6];
       const weekLabel = `${ws.getMonth()+1}/${ws.getDate()} ~ ${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
@@ -607,7 +614,12 @@
       }).join('');
 
       actionsEl.innerHTML = `
-        <div class="text-xs text-base-content/50 mb-2">보강 가능: ${data.range_min} ~ ${data.range_max || '상한 없음'}</div>
+        <label class="flex items-center gap-2 mb-3 cursor-pointer">
+          <input type="checkbox" class="checkbox checkbox-sm checkbox-warning" ${military ? 'checked' : ''}
+                 onchange="window._mkMilitary=this.checked; window._mkRender();">
+          <span class="text-sm">군보강 <span class="text-xs text-base-content/50">(날짜 제한 없음)</span></span>
+        </label>
+        <div class="text-xs text-base-content/50 mb-2">${military ? '날짜 제한 없음 (군보강)' : `보강 가능: ${data.range_min} ~ ${data.range_max || '상한 없음'}`}</div>
         <div class="flex flex-wrap gap-1 mb-3">${teacherTabs}</div>
         <div class="flex items-center justify-between mb-2">
           <button onclick="window._mkNav(-1)" class="btn btn-xs btn-ghost" ${!prevOk ? 'disabled' : ''}>←</button>

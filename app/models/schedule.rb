@@ -92,5 +92,7 @@ class Schedule < ApplicationRecord
     teacher_ids.each do |tid|
       Turbo::StreamsChannel.broadcast_refresh_to("teacher_timetable_#{tid}")
     end
+  rescue StandardError
+    # solid_cable 테이블 미생성 등 브로드캐스트 오류는 무시
   end
 end

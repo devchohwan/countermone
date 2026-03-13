@@ -5,7 +5,8 @@ class DashboardController < ApplicationController
   end
 
   def current_schedules
-    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
+    effective = params[:date].present? ? Date.parse(params[:date]) : (Time.current.hour >= 21 ? Date.tomorrow : Date.today)
+    @current_date = effective
     @current_schedules = Schedule
       .includes(:student, :teacher, :enrollment, :attendance)
       .where(lesson_date: effective)
@@ -20,7 +21,8 @@ class DashboardController < ApplicationController
     @dual_date_mode  = Time.current.hour.in?(21..22)  # 21:00~22:59: 오늘·내일 동시 처리 구간
     @is_today        = @date == effective_today || (@dual_date_mode && @date == Date.today)
     @effective_today = effective_today
-    @current_hour    = @date == Date.today ? Time.current.hour : nil
+    @current_hour    = @is_today ? Time.current.hour : nil
+    @current_date    = @date
 
     # 시간표 (당일 보강 포함)
     @today_schedules = arrival_schedules_for(@date)

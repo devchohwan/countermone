@@ -35,6 +35,7 @@ class SchedulesController < ApplicationController
         enrollment = @schedule.enrollment
         student    = enrollment.student
         payment    = @schedule.payment
+        @current_date = @schedule.lesson_date
         streams = [
           # 대시보드 타깃
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),

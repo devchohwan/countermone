@@ -54,7 +54,7 @@
 
     <% if @is_today %>
       <div>
-        <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path, loading: :lazy do %>
+        <%= turbo_frame_tag "current_schedules", src: dashboard_current_schedules_path(date: @date), loading: :lazy do %>
           <%= render "current_schedules" %>
         <% end %>
       </div>

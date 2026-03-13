@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_13_123326) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_13_125410) do
   create_table "attendances", force: :cascade do |t|
     t.bigint "student_id", null: false
     t.bigint "schedule_id", null: false
@@ -153,6 +153,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_13_123326) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
+  create_table "solid_cable_messages", force: :cascade do |t|
+    t.binary "channel", limit: 1024, null: false
+    t.binary "payload", limit: 536870912, null: false
+    t.integer "channel_hash", limit: 8, null: false
+    t.datetime "created_at", null: false
+    t.index ["channel"], name: "index_solid_cable_messages_on_channel"
+    t.index ["channel_hash"], name: "index_solid_cable_messages_on_channel_hash"
+    t.index ["created_at"], name: "index_solid_cable_messages_on_created_at"
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|

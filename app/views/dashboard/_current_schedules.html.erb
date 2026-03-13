@@ -4,7 +4,10 @@
       <h3 class="card-title text-sm flex items-center gap-2">
         <span class="w-2 h-2 bg-success rounded-full animate-pulse inline-block"></span>
         지금 이 순간
-        <span class="text-xs font-normal text-base-content/40">(<%= Time.now.strftime("%H:%M") %>)</span>
+        <span class="text-xs font-normal text-base-content/40">
+          <% _disp = defined?(@current_date) && @current_date ? @current_date : Date.today %>
+          (<%= _disp == Date.today ? "" : "#{_disp.strftime('%-m/%-d')} " %><%= Time.now.strftime("%H:%M") %>)
+        </span>
       </h3>
 
       <% current_hour = Time.now.hour %>

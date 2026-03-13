@@ -455,7 +455,7 @@
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/attend','${csrf}','${enrollmentId}')" class="btn btn-sm btn-success w-full">출석</button>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/late','${csrf}','${enrollmentId}')"   class="btn btn-sm btn-warning w-full">지각</button>`;
         html += `<button onclick="showMakeup()" class="btn btn-sm btn-info btn-outline w-full">보강</button>`;
-        if (status === 'scheduled' && !(subject || '').includes('믹싱')) {
+        if (['scheduled', 'makeup_scheduled'].includes(status) && !(subject || '').includes('믹싱')) {
           html += `<button onclick="showPass()" class="btn btn-sm btn-secondary btn-outline w-full">패스</button>`;
         }
         html += `<button onclick="if(confirm('결석 차감 처리하시겠습니까?')) submitPatch('/schedules/${scheduleId}/deduct','${csrf}','${enrollmentId}')"

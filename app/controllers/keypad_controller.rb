@@ -43,10 +43,15 @@ class KeypadController < ApplicationController
       return process_checkin(schedule, now)
     end
 
-    schedules  = Schedule.includes(:enrollment)
-                         .where(student: student, lesson_date: today)
-                         .where(status: %w[scheduled makeup_scheduled])
-                         .where("lesson_time <= ?", now.strftime("%H:%M"))
+    now_hm = now.strftime("%H:%M")
+
+    regular  = Schedule.includes(:enrollment)
+                       .where(student: student, lesson_date: today, status: "scheduled")
+                       .where("lesson_time <= ?", now_hm)
+    same_day = Schedule.includes(:enrollment)
+                       .where(student: student, makeup_date: today, status: "makeup_scheduled")
+                       .where("makeup_time <= ?", now_hm)
+    schedules = (regular.to_a + same_day.to_a)
 
     if schedules.empty?
       render json: { error: "오늘 해당 시간대 수업이 없습니다." }, status: :not_found and return
@@ -109,8 +114,10 @@ class KeypadController < ApplicationController
       render json: { error: "이미 출석 처리된 수업입니다. 상담원에게 문의하세요.", error_type: "double_checkin" } and return
     end
 
-    status = time <= Time.parse("#{Date.today} #{schedule.lesson_time.strftime('%H:%M')}") + 1.minute ? "attended" : "late"
-    schedule.update!(status: status)
+    class_time_str = schedule.status == "makeup_scheduled" ? schedule.makeup_time&.strftime('%H:%M') : schedule.lesson_time.strftime('%H:%M')
+    on_time_cutoff = Time.parse("#{Date.today} #{class_time_str}") + 1.minute
+    new_status     = schedule.status == "makeup_scheduled" ? "makeup_done" : (time <= on_time_cutoff ? "attended" : "late")
+    schedule.update!(status: new_status)
     Attendance.create!(
       student:      schedule.student,
       schedule:     schedule,

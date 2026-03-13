@@ -426,6 +426,8 @@ class SchedulesController < ApplicationController
         student    = enrollment.student
         payment    = @schedule.payment
         streams = [
+          turbo_stream.replace("hourly_arrival", partial: "dashboard/hourly_arrival_text",
+                               locals: { schedules: today_arrival_schedules }),
           turbo_stream.replace("schedule-badge-#{@schedule.id}",
             partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
           turbo_stream.replace("enrollment-stats-#{enrollment.id}",

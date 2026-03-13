@@ -343,6 +343,111 @@
 
 </div>
 
+<%# 당취 모달 — hourly_arrival turbo frame 밖에 위치 %>
+<dialog id="dangchwi-modal" class="modal">
+  <div class="modal-box max-w-xs p-5">
+    <h3 class="font-bold text-base mb-1" id="dangchwi-title"></h3>
+    <p class="text-xs text-base-content/50 mb-4" id="dangchwi-subject"></p>
+    <div id="dangchwi-body"></div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+(function() {
+  let _scheduleId = null;
+
+  function csrf() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+  }
+
+  function patch(url, body) {
+    fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': csrf(),
+        'Accept': 'text/vnd.turbo-stream.html, text/html',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams(body)
+    }).then(r => r.text()).then(html => {
+      Turbo.renderStreamMessage(html);
+      document.getElementById('dangchwi-modal').close();
+    }).catch(() => {
+      document.getElementById('dangchwi-modal').close();
+      location.reload();
+    });
+  }
+
+  function showMain() {
+    document.getElementById('dangchwi-body').innerHTML = `
+      <div class="space-y-2">
+        <a href="/schedules/${_scheduleId}" class="btn btn-sm btn-info btn-outline w-full">보강</a>
+        <button onclick="dangchwiShowPass()" class="btn btn-sm btn-secondary btn-outline w-full">패스</button>
+        <button onclick="dangchwiDeduct()" class="btn btn-sm btn-error btn-outline w-full">결석 차감</button>
+      </div>`;
+  }
+
+  window.openDangchwiModal = function(scheduleId, studentName, subject) {
+    _scheduleId = scheduleId;
+    document.getElementById('dangchwi-title').textContent = studentName;
+    document.getElementById('dangchwi-subject').textContent = subject;
+    showMain();
+    document.getElementById('dangchwi-modal').showModal();
+  };
+
+  window.dangchwiShowPass = function() {
+    document.getElementById('dangchwi-body').innerHTML = `
+      <div class="space-y-3">
+        <div class="border rounded-lg p-3 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-purple-700">일반 패스</span>
+            <span class="badge badge-xs badge-warning">횟수 1회 소진</span>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="dc-pass-reason" placeholder="사유 (선택)" class="input input-bordered input-sm flex-1 text-sm">
+            <button onclick="dangchwiSubmitPass('pass')" class="btn btn-sm bg-purple-100 text-purple-700 hover:bg-purple-200 border-0">패스</button>
+          </div>
+        </div>
+        <div class="border rounded-lg p-3 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-pink-700">긴급 패스</span>
+            <span class="badge badge-xs badge-ghost">횟수 소진 없음</span>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="dc-emergency-reason" placeholder="사유 (선택)" class="input input-bordered input-sm flex-1 text-sm">
+            <button onclick="dangchwiSubmitPass('emergency_pass')" class="btn btn-sm bg-pink-100 text-pink-700 hover:bg-pink-200 border-0">긴급패스</button>
+          </div>
+        </div>
+        <div class="border rounded-lg p-3 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-green-700">공휴일 패스</span>
+            <span class="badge badge-xs badge-ghost">횟수 소진 없음</span>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="dc-holiday-reason" placeholder="공휴일명 (예: 삼일절)" class="input input-bordered input-sm flex-1 text-sm">
+            <button onclick="dangchwiSubmitPass('holiday')" class="btn btn-sm bg-green-100 text-green-700 hover:bg-green-200 border-0">공휴일</button>
+          </div>
+        </div>
+        <button onclick="dangchwiShowMain()" class="btn btn-sm btn-ghost w-full">← 돌아가기</button>
+      </div>`;
+  };
+
+  window.dangchwiShowMain  = showMain;
+
+  window.dangchwiSubmitPass = function(type) {
+    const keyMap = { pass: 'pass', emergency_pass: 'emergency', holiday: 'holiday' };
+    const reason = document.getElementById('dc-' + keyMap[type] + '-reason')?.value || '';
+    patch(`/schedules/${_scheduleId}/${type}`, { pass_reason: reason });
+  };
+
+  window.dangchwiDeduct = function() {
+    if (!confirm('결석 차감 처리하시겠습니까?')) return;
+    patch(`/schedules/${_scheduleId}/deduct`, {});
+  };
+})();
+</script>
+
 <% if @is_today %>
 <script>
   const DAYS_KO = ['일','월','화','수','목','금','토'];

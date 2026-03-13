@@ -63,11 +63,9 @@
 
                     <%# 당취 — scheduled 상태면 항상 표시 %>
                     <% if s.status == "scheduled" && !readonly %>
-                      <%= button_to "당취", emergency_pass_schedule_path(s),
-                            method: :patch,
-                            params: { pass_reason: "당일취소" },
-                            class: "btn btn-xs btn-outline btn-error",
-                            data: { turbo_confirm: "#{s.student.name} 당일취소 처리하시겠습니까?" } %>
+                      <button type="button"
+                              class="btn btn-xs btn-outline btn-error"
+                              onclick="openDangchwiModal(<%= s.id %>, '<%= j s.student.name %>', '<%= j s.subject %>')">당취</button>
                     <% end %>
                   </div>
                 <% end %>

@@ -80,4 +80,15 @@ class Schedule < ApplicationRecord
                         .any? { |s| s.makeup_time&.hour == hour }
     makeup_conflict
   end
+
+  after_commit :broadcast_timetable_refresh
+
+  private
+
+  def broadcast_timetable_refresh
+    teacher_ids = [teacher_id, makeup_teacher_id].compact.uniq
+    teacher_ids.each do |tid|
+      Turbo::StreamsChannel.broadcast_refresh_to("teacher_timetable_#{tid}")
+    end
+  end
 end

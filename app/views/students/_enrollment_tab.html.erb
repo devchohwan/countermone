@@ -468,10 +468,13 @@
         if (status === 'makeup_scheduled') {
           html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-ghost btn-outline w-full mt-1">보강 상세 보기</a>`;
         }
+        html += `<button onclick="if(confirm('이 스케줄을 삭제하시겠습니까?')) submitDelete('/schedules/${scheduleId}','${csrf}','${enrollmentId}')" class="btn btn-sm btn-error btn-outline w-full mt-1">삭제</button>`;
       } else if (status === 'deducted') {
         html += `<p class="text-xs text-error mb-1">결석 차감 처리됨</p>`;
         html += `<button onclick="submitPatch('/schedules/${scheduleId}/undo_deduct','${csrf}','${enrollmentId}')" class="btn btn-sm btn-warning btn-outline w-full">차감 취소</button>`;
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-ghost w-full mt-1">수업 상세 보기</a>`;
+        html += `<button onclick="showReschedule()" class="btn btn-sm btn-outline w-full mt-1">수업 일자 변경</button>`;
+        html += `<button onclick="if(confirm('이 스케줄을 삭제하시겠습니까?')) submitDelete('/schedules/${scheduleId}','${csrf}','${enrollmentId}')" class="btn btn-sm btn-error btn-outline w-full mt-1">삭제</button>`;
       } else if (status === 'makeup_scheduled') {
         html += `<a href="/schedules/${scheduleId}" class="btn btn-sm btn-primary w-full">수업 상세 / 전환</a>`;
       } else if (['attended', 'late', 'makeup_done'].includes(status)) {
@@ -486,6 +489,8 @@
           : '등원 취소하시겠습니까?\\n출석 기록이 삭제되고 예정 상태로 돌아갑니다.';
         html += `<button onclick="if(confirm('${undoMsg}')) submitPatch('/schedules/${scheduleId}/undo_attend','${csrf}','${enrollmentId}')"
                          class="btn btn-sm btn-warning btn-outline w-full mt-2">${undoLabel}</button>`;
+        html += `<button onclick="showReschedule()" class="btn btn-sm btn-outline w-full mt-1">수업 일자 변경</button>`;
+        html += `<button onclick="if(confirm('이 스케줄을 삭제하시겠습니까?')) submitDelete('/schedules/${scheduleId}','${csrf}','${enrollmentId}')" class="btn btn-sm btn-error btn-outline w-full mt-1">삭제</button>`;
       }
       actionsEl.innerHTML = html;
     }
@@ -831,6 +836,15 @@
 
     showMain();
     modal.showModal();
+  };
+
+  window.submitDelete = function(url, csrf, enrollmentId) {
+    const f = document.createElement('form');
+    f.method = 'POST'; f.action = url;
+    f.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf}">
+                   <input type="hidden" name="_method" value="delete">`;
+    document.body.appendChild(f);
+    f.submit();
   };
 
   window.submitPatch = function(url, csrf, enrollmentId) {

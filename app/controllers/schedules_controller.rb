@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct undo_attend makeup_slots cancel_pass move_date]
+  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct undo_attend makeup_slots cancel_pass move_date destroy]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -173,13 +173,17 @@ class SchedulesController < ApplicationController
   end
 
   def move_date
-    unless @schedule.status == "scheduled"
-      return redirect_back fallback_location: schedules_path, alert: "예정 상태인 수업만 날짜를 변경할 수 있습니다."
-    end
     new_date = Date.parse(params[:new_date])
     old_date = @schedule.lesson_date
     @schedule.update!(lesson_date: new_date)
     tab_redirect(notice: "수업 날짜가 #{old_date.strftime('%-m/%-d')} → #{new_date.strftime('%-m/%-d')}로 변경되었습니다.")
+  end
+
+  def destroy
+    student = @schedule.enrollment.student
+    @schedule.attendance&.destroy
+    @schedule.destroy!
+    redirect_to student_path(student), notice: "스케줄이 삭제되었습니다."
   end
 
   def cancel_pass

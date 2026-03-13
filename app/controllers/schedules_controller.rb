@@ -193,6 +193,14 @@ class SchedulesController < ApplicationController
       return redirect_back fallback_location: schedules_path, alert: "해당 슬롯이 이미 3명입니다."
     end
 
+    # 다과목 선생님: 해당 시간대에 다른 과목 있으면 보강 불가
+    makeup_teacher = Teacher.find(teacher_id)
+    if makeup_teacher.teacher_subjects.count > 1 &&
+       Schedule.subject_conflict?(teacher_id, @schedule.subject, makeup_date, makeup_time)
+      return redirect_back fallback_location: schedules_path,
+        alert: "해당 시간에 다른 과목 수업이 있어 보강을 등록할 수 없습니다."
+    end
+
     # 패스 → 보강 전환 시 from_pass schedule 삭제
     remove_pass_schedule_if_needed(@schedule)
 
@@ -297,6 +305,28 @@ class SchedulesController < ApplicationController
       result[:dates]    = range_dates
       result[:times]    = all_times.uniq.sort
       result[:grid]     = grid
+
+      # 다과목 선생님: 다른 과목 점유 슬롯을 conflict_grid에 표시 (값 = "conflict")
+      multi_subject_teacher_ids = teachers.select { |t| t.teacher_subjects.count > 1 }.map { |t| t.id.to_s }
+      if multi_subject_teacher_ids.any?
+        conflict_grid = {}
+        conflict_regulars = Schedule.where(teacher_id: multi_subject_teacher_ids.map(&:to_i), lesson_date: display_range)
+                                    .where(status: %w[scheduled attended late])
+                                    .where.not(subject: subject)
+                                    .pluck(:teacher_id, :lesson_date, :lesson_time)
+        conflict_makeups  = Schedule.where(makeup_teacher_id: multi_subject_teacher_ids.map(&:to_i), makeup_date: display_range)
+                                    .where(status: %w[makeup_scheduled makeup_done])
+                                    .where.not(subject: subject)
+                                    .pluck(:makeup_teacher_id, :makeup_date, :makeup_time)
+
+        (conflict_regulars + conflict_makeups).each do |tid, date, time|
+          next unless time
+          ts = time.strftime("%H:%M"); ds = date.to_s; key = tid.to_s
+          conflict_grid[key] ||= {}; conflict_grid[key][ds] ||= {}
+          conflict_grid[key][ds][ts] = "conflict"
+        end
+        result[:conflict_grid] = conflict_grid
+      end
     end
 
     render json: result

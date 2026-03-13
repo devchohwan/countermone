@@ -63,4 +63,21 @@ class Schedule < ApplicationRecord
 
     regular_count + makeup_count
   end
+
+  # 다과목 선생님 전용: 해당 시간대에 다른 과목이 있는지 확인
+  def self.subject_conflict?(teacher_id, subject, date, time)
+    hour = time.to_s.split(":").first.to_i
+
+    regular_conflict = where(teacher_id: teacher_id, lesson_date: date)
+                         .where(status: %w[scheduled attended late])
+                         .where.not(subject: subject)
+                         .any? { |s| s.lesson_time&.hour == hour }
+    return true if regular_conflict
+
+    makeup_conflict = where(makeup_teacher_id: teacher_id, makeup_date: date)
+                        .where(status: %w[makeup_scheduled makeup_done])
+                        .where.not(subject: subject)
+                        .any? { |s| s.makeup_time&.hour == hour }
+    makeup_conflict
+  end
 end

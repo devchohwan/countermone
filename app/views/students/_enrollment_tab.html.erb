@@ -528,8 +528,9 @@
       }).join('');
 
       // 현재 선생님 그리드 (grid[tid][date][time] = count)
-      const tid   = String(window._mkTeacherId);
-      const tGrid = (data.grid || {})[tid] || {};
+      const tid         = String(window._mkTeacherId);
+      const tGrid       = (data.grid || {})[tid] || {};
+      const tConflict   = ((data.conflict_grid || {})[tid]) || {};
 
       const teacher     = data.teachers.find(t => t.id === window._mkTeacherId);
       const teacherName = teacher?.name || '';
@@ -558,7 +559,13 @@
           const ds      = toDateStr(d);
           if (!inRange) return `<td class="text-center opacity-20 text-xs select-none px-1 py-1">—</td>`;
 
-          const slots = ((tGrid[ds] || {})[time]) || 0;
+          const slots    = ((tGrid[ds] || {})[time]) || 0;
+          const conflict = ((tConflict[ds] || {})[time]) === "conflict";
+          if (conflict) {
+            return `<td class="text-center text-xs select-none px-1 py-1 rounded"
+                        style="background:rgba(251,146,60,0.12);color:rgba(251,146,60,0.5);"
+                        title="다른 과목 수업 있음">✕</td>`;
+          }
           if (slots >= 3) {
             return `<td class="text-center text-xs select-none px-1 py-1 rounded"
                         style="background:rgba(239,68,68,0.12);color:rgba(239,68,68,0.5);"

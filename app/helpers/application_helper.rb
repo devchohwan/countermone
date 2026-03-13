@@ -1,5 +1,17 @@
 module ApplicationHelper
   include Pagy::Frontend
+
+  SUBJECT_BADGE_STYLE = {
+    "기타"    => "color:rgb(147,51,234);border-color:rgb(147,51,234);",   # 보라
+    "작곡"    => "color:rgb(59,130,246);border-color:rgb(59,130,246);",   # 파랑
+    "믹싱1차" => "color:rgb(249,115,22);border-color:rgb(249,115,22);",   # 주황
+    "믹싱2차" => "color:rgb(239,68,68);border-color:rgb(239,68,68);",     # 빨강
+  }.freeze
+
+  def subject_badge_style(subject)
+    SUBJECT_BADGE_STYLE[subject]
+  end
+
   LESSON_DAY_KO = {
     "monday" => "월", "tuesday" => "화", "wednesday" => "수",
     "thursday" => "목", "friday" => "금", "saturday" => "토", "sunday" => "일"

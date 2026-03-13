@@ -86,12 +86,17 @@
                          "data-makeup-time"   => s.makeup_time&.strftime("%H:%M"),
                          "onclick"            => "showTimetablePopup(this)"
                        } %>
+                    <% subj_style = subject_badge_style(s.subject) %>
                     <% if s.status == "makeup_scheduled" %>
                       <div class="badge badge-sm badge-ghost badge-outline w-full h-auto py-0.5 whitespace-normal justify-center opacity-50 cursor-pointer" <%= badge_data.map { |k,v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
                         <%= timetable_label(s) %>(→<%= s.makeup_teacher&.name %>)
                       </div>
                     <% elsif is_pass %>
                       <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center cursor-pointer opacity-50" style="color:#9ca3af;border-color:#9ca3af;" <%= badge_data.map { |k,v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
+                        <%= timetable_label(s) %>
+                      </div>
+                    <% elsif subj_style %>
+                      <div class="badge badge-sm badge-outline w-full h-auto py-0.5 whitespace-normal justify-center cursor-pointer" style="<%= subj_style %>" <%= badge_data.map { |k,v| "#{k}=\"#{v}\"" }.join(" ").html_safe %>>
                         <%= timetable_label(s) %>
                       </div>
                     <% else %>

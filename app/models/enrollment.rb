@@ -19,6 +19,10 @@ class Enrollment < ApplicationRecord
   validate :lesson_time_within_business_hours
 
   def leave!(reason = nil)
+    # 보강 예정 스케줄 취소 (makeup_date가 오늘 이후인 것만)
+    Schedule.where(enrollment_id: id, status: "makeup_scheduled")
+            .where("makeup_date >= ?", Date.today)
+            .update_all(status: "scheduled", makeup_date: nil, makeup_time: nil, makeup_teacher_id: nil)
     update_columns(status: "leave", leave_at: Date.today, leave_reason: reason)
     student.update_columns(status: "leave") if student.enrollments.where(status: "active").none?
   end

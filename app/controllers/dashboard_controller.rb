@@ -1,12 +1,7 @@
 class DashboardController < ApplicationController
   def today_arrivals
     effective = Time.current.hour >= 22 ? Date.tomorrow : Date.today
-    @today_schedules = Schedule
-      .includes(:student, :teacher, :enrollment, :attendance)
-      .where(lesson_date: effective)
-      .where(status: %w[scheduled attended late])
-      .order(:lesson_time)
-    render partial: "dashboard/hourly_arrival_text", locals: { schedules: @today_schedules }
+    render partial: "dashboard/hourly_arrival_text", locals: { schedules: arrival_schedules_for(effective) }
   end
 
   def current_schedules
@@ -25,22 +20,20 @@ class DashboardController < ApplicationController
     @is_today    = @date == effective_today
     @current_hour = @date == Date.today ? Time.current.hour : nil
 
-    # 시간표
-    @today_schedules = Schedule
-      .includes(:student, :teacher, :enrollment, :attendance)
-      .where(lesson_date: @date)
-      .where(status: %w[scheduled attended late])
-      .order(:lesson_time)
+    # 시간표 (당일 보강 포함)
+    @today_schedules = arrival_schedules_for(@date)
 
-
-    # 보강 일정
+    # 보강 일정 (당일 보강은 시간대별 등하원에도 표시되지만, 보강 섹션에서도 유지)
     @today_makeups = Schedule
       .includes(:student, :teacher, :makeup_teacher, :enrollment)
       .where(makeup_date: @date)
       .where(status: %w[makeup_scheduled makeup_done])
 
     # 현재 시간대 수업 중 (오늘만)
-    @current_schedules = @is_today ? @today_schedules.select { |s| s.lesson_time.in_time_zone('Seoul').hour == @current_hour } : []
+    @current_schedules = @is_today ? @today_schedules.select { |s|
+      hour = s.status.in?(%w[makeup_scheduled makeup_done]) ? s.makeup_time&.hour.to_i : s.lesson_time.in_time_zone('Seoul').hour
+      hour == @current_hour
+    } : []
 
     # 시간대별 수업 텍스트용: 수강권별 잔여 scheduled 횟수 (정규 + 보강 모두 포함)
     enrollment_ids = (@today_schedules + @today_makeups).map(&:enrollment_id).uniq
@@ -120,5 +113,20 @@ class DashboardController < ApplicationController
     end
 
     results
+  end
+
+  def arrival_schedules_for(date)
+    regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .where(lesson_date: date, status: %w[scheduled attended late])
+    same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .where(makeup_date: date, status: %w[makeup_scheduled makeup_done])
+    (regular.to_a + same_day.to_a).sort_by do |s|
+      if s.status.in?(%w[makeup_scheduled makeup_done])
+        [s.makeup_time&.hour.to_i, s.makeup_time&.min.to_i]
+      else
+        t = s.lesson_time.in_time_zone('Seoul')
+        [t.hour, t.min]
+      end
+    end
   end
 end

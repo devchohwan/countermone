@@ -6,12 +6,14 @@
 
       <%
         teacher_order = Teacher.by_position.pluck(:name).each_with_index.to_h
+        effective_hour    = ->(s) { s.status.in?(%w[makeup_scheduled makeup_done]) ? s.makeup_time&.hour.to_i : s.lesson_time.in_time_zone('Seoul').hour }
+        effective_teacher = ->(s) { s.status.in?(%w[makeup_scheduled makeup_done]) && s.makeup_teacher ? s.makeup_teacher : s.teacher }
         hourly_groups = schedules
-          .group_by { |s| s.lesson_time.in_time_zone('Seoul').hour }
+          .group_by { |s| effective_hour.call(s) }
           .sort
           .map { |hour, hour_schedules|
             by_teacher = hour_schedules
-              .group_by { |s| s.teacher }
+              .group_by { |s| effective_teacher.call(s) }
               .sort_by { |t, _| teacher_order.fetch(t.name, 999) }
             [hour, by_teacher]
           }
@@ -34,7 +36,7 @@
                     <%# 등원 %>
                     <% if s.attendance&.checked_in_at %>
                       <span class="text-success w-12"><%= s.attendance.checked_in_at.in_time_zone('Seoul').strftime("%H:%M") %> ✓</span>
-                    <% elsif s.status == "scheduled" && !readonly %>
+                    <% elsif s.status.in?(%w[scheduled makeup_scheduled]) && !readonly %>
                       <%= button_to "등원", attend_schedule_path(s),
                             method: :patch,
                             class: "btn btn-xs btn-outline btn-success w-12" %>

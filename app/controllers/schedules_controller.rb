@@ -487,10 +487,19 @@ class SchedulesController < ApplicationController
   end
 
   def today_arrival_schedules
-    Schedule.includes(:student, :teacher, :enrollment, :attendance)
-            .where(lesson_date: Date.today)
-            .where(status: %w[scheduled attended late])
-            .order(:lesson_time)
+    today   = Date.today
+    regular = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                      .where(lesson_date: today, status: %w[scheduled attended late])
+    same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .where(makeup_date: today, status: %w[makeup_scheduled makeup_done])
+    (regular.to_a + same_day.to_a).sort_by do |s|
+      if s.status.in?(%w[makeup_scheduled makeup_done])
+        [s.makeup_time&.hour.to_i, s.makeup_time&.min.to_i]
+      else
+        t = s.lesson_time.in_time_zone('Seoul')
+        [t.hour, t.min]
+      end
+    end
   end
 
   def available_passes(enrollment)

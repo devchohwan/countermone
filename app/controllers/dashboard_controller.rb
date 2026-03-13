@@ -73,6 +73,8 @@ class DashboardController < ApplicationController
 
     # 1. 예약금 미완납 + 오늘 첫 수업
     Payment.where(fully_paid: false, payment_type: "deposit")
+           .joins(:enrollment)
+           .where(enrollments: { status: "active" })
            .includes(:student, :enrollment, :schedules)
            .each do |p|
       first_schedule = p.schedules.order(:lesson_date).first
@@ -119,9 +121,13 @@ class DashboardController < ApplicationController
 
   def arrival_schedules_for(date)
     regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .joins(:enrollment)
                        .where(lesson_date: date, status: %w[scheduled attended late])
+                       .where(enrollments: { status: "active" })
     same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .joins(:enrollment)
                        .where(makeup_date: date, status: %w[makeup_scheduled makeup_done])
+                       .where(enrollments: { status: "active" })
     (regular.to_a + same_day.to_a).sort_by do |s|
       if s.status.in?(%w[makeup_scheduled makeup_done])
         [s.makeup_time&.hour.to_i, s.makeup_time&.min.to_i]

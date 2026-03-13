@@ -489,9 +489,13 @@ class SchedulesController < ApplicationController
   def today_arrival_schedules
     today   = Date.today
     regular = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                      .joins(:enrollment)
                       .where(lesson_date: today, status: %w[scheduled attended late])
+                      .where(enrollments: { status: "active" })
     same_day = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
+                       .joins(:enrollment)
                        .where(makeup_date: today, status: %w[makeup_scheduled makeup_done])
+                       .where(enrollments: { status: "active" })
     (regular.to_a + same_day.to_a).sort_by do |s|
       if s.status.in?(%w[makeup_scheduled makeup_done])
         [s.makeup_time&.hour.to_i, s.makeup_time&.min.to_i]

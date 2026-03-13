@@ -74,13 +74,14 @@
         without_sched = @payment_due_today.reject { |i| sched_by_enroll[i[:enrollment].id] || makeup_by_enroll[i[:enrollment].id] }
         effective_hour = ->(i) {
           s = sched_by_enroll[i[:enrollment].id]
-          if s
+          base_hour = if s
             s.status.in?(%w[makeup_scheduled makeup_done]) ?
               s.makeup_time&.in_time_zone('Seoul')&.hour :
               s.lesson_time.in_time_zone('Seoul').hour
           else
             makeup_by_enroll[i[:enrollment].id].makeup_time&.in_time_zone('Seoul')&.hour
           end
+          i[:type] == :deposit_first_lesson ? base_hour : (base_hour ? base_hour + 1 : nil)
         }
         effective_teacher = ->(i) {
           s = sched_by_enroll[i[:enrollment].id]

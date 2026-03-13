@@ -10,6 +10,12 @@
 * **테스트 데이터는 실제 데이터 규칙 안에서 생성** — 임의 금액/시간 사용 금지. 반드시 PricePlan, 기존 enrollment의 lesson_time 등 실제 DB에 있는 값을 조회해서 그대로 사용할 것
 * **모든 경우의 수를 따져라** — 무언가를 분석하거나 구현할 때 모든 순열·조합·경우의 수를 빠짐없이 나열하고, 각각이 올바르게 처리되는지 확인한 뒤 답할 것
 
+## 라이브 서버 백업 확인
+* "라이브 서버 백업 확인"이라는 요청이 오면 아래 명령어로 확인한다:
+  ```bash
+  ssh -i ~/monemusic root@115.68.195.125 "ls -lt /root/backups/portal_monemusic/ | head -5"
+  ```
+
 ## Version Control
 * Whenever code changes are made, you must record a one-line description with emoji in korean of the change in `.commit_message.txt` with Edit Tool.
    - Read `.commit_message.txt` first, and then Edit.

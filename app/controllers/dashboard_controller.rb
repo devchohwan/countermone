@@ -1,11 +1,11 @@
 class DashboardController < ApplicationController
   def today_arrivals
-    effective = Time.current.hour >= 22 ? Date.tomorrow : Date.today
+    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
     render partial: "dashboard/hourly_arrival_text", locals: { schedules: arrival_schedules_for(effective) }
   end
 
   def current_schedules
-    effective = Time.current.hour >= 22 ? Date.tomorrow : Date.today
+    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
     @current_schedules = Schedule
       .includes(:student, :teacher, :enrollment, :attendance)
       .where(lesson_date: effective)
@@ -15,7 +15,7 @@ class DashboardController < ApplicationController
   end
 
   def index
-    effective_today = Time.current.hour >= 22 ? Date.tomorrow : Date.today
+    effective_today = Time.current.hour >= 21 ? Date.tomorrow : Date.today
     @date        = params[:date].present? ? Date.parse(params[:date]) : effective_today
     @is_today    = @date == effective_today
     @current_hour = @date == Date.today ? Time.current.hour : nil

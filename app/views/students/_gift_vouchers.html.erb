@@ -33,8 +33,7 @@
             <% end %>
           </div>
 
-          <%# 체험수업 섹션 (믹싱 과목은 체험수업 없음) %>
-          <% unless v.enrollment.subject.in?(%w[믹싱1차 믹싱2차]) %>
+          <%# 체험수업 섹션 (체험 과목에서 믹싱 제외는 trial_slots API에서 처리) %>
           <div class="mt-2 pt-2 border-t border-base-200">
             <% trial = v.trial_schedule %>
             <% if trial.nil? %>
@@ -69,7 +68,6 @@
               </div>
             <% end %>
           </div>
-          <% end %> <%# unless 믹싱 %>
         </div>
       <% end %>
     </div>

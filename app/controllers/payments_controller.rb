@@ -121,6 +121,8 @@ class PaymentsController < ApplicationController
     apply_multi_month_discount(@payment) if @payment.months.to_i > 1
     # 중복 수강 할인
     apply_multi_class_discount(@payment)
+    # 후기 할인
+    apply_review_discounts(@payment)
     # 신규 등록 시 waiting_expires_at 초기화
     @payment.enrollment.student.update!(waiting_expires_at: nil) if @payment.fully_paid?
 
@@ -253,6 +255,15 @@ class PaymentsController < ApplicationController
       :deposit_amount, :deposit_paid_at, :balance_amount, :balance_paid_at,
       :fully_paid, :starts_at
     )
+  end
+
+  def apply_review_discounts(payment)
+    if params[:cafe_review] == "1"
+      payment.discounts.build(discount_type: "review", amount: 50_000, memo: "3개월 카페후기 할인")
+    end
+    if params[:video_review] == "1"
+      payment.discounts.build(discount_type: "review", amount: 50_000, memo: "6개월 영상후기 할인")
+    end
   end
 
   def apply_multi_month_discount(payment)

@@ -52,7 +52,8 @@
         <% weekly_car_total = @week_days.sum do |wd|
              r = @all_schedule_data[:regular].select { |s| s.lesson_date == wd && s.lesson_time.hour == hour }
              m = @all_schedule_data[:makeups].select  { |s| s.makeup_date == wd && s.makeup_time&.hour == hour }
-             (r + m).count { |s| s.student.has_car? }
+             r_deduped = r.reject { |s| s.status == "makeup_scheduled" && m.include?(s) }
+             (r_deduped + m).count { |s| s.student.has_car? }
            end %>
         <tr class="<%= is_break ? 'opacity-40' : 'hover' %>">
           <td class="font-mono text-xs text-base-content/50 text-center py-3">
@@ -79,6 +80,7 @@
               <% else %>
                 <div class="flex flex-col items-center gap-0.5">
                   <% regular.each do |s| %>
+                    <% next if s.status == "makeup_scheduled" && makeups.include?(s) %>
                     <% is_pass = s.status.in?(%w[pass emergency_pass holiday]) %>
                     <% badge_data = {
                          "data-sid"           => s.id,

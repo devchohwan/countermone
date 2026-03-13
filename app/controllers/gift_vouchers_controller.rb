@@ -5,14 +5,6 @@ class GiftVouchersController < ApplicationController
     enrollment = Enrollment.find(params[:enrollment_id])
     student    = enrollment.student
 
-    if GiftVoucher.where(enrollment: enrollment).exists?
-      return redirect_back fallback_location: root_path, alert: "이미 발급된 상품권이 있습니다."
-    end
-
-    unless enrollment.review_gift_eligible?
-      return redirect_back fallback_location: root_path, alert: "지류가능 조건 미충족 (24주 미달성)."
-    end
-
     GiftVoucher.create!(
       student:    student,
       enrollment: enrollment,
@@ -20,7 +12,7 @@ class GiftVouchersController < ApplicationController
       expires_at: Date.today + 6.months
     )
     enrollment.update_column(:review_gift_eligible, false)
-    redirect_back fallback_location: root_path, notice: "#{student.name} 지류상품권 발급 완료."
+    redirect_to student_path(student), notice: "#{student.name} — #{enrollment.subject} 지류상품권 발급 완료."
   end
 
   def use

@@ -115,6 +115,22 @@
                     <%= payment.discounts.map { |d| "#{d.memo}" }.join(" / ") %>
                   </div>
                 <% end %>
+                <% voucher = enrollment.gift_vouchers.order(:issued_at).last %>
+                <% if voucher %>
+                  <div class="text-xs mt-1">
+                    <span class="text-accent font-medium">🎟 지류상품권</span>
+                    <span class="text-base-content/50 ml-1">
+                      <%= voucher.issued_at.strftime("%Y.%m.%d") %> 발급
+                      <% if voucher.used? %>
+                        · <span class="text-success">사용완료 (<%= voucher.used_class %>)</span>
+                      <% elsif voucher.expires_at < Date.today %>
+                        · <span class="text-error">만료</span>
+                      <% else %>
+                        · <span class="text-success">사용가능</span>
+                      <% end %>
+                    </span>
+                  </div>
+                <% end %>
               </div>
             </div>
           <% end %>

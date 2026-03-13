@@ -6,6 +6,7 @@
   <h2 class="text-xl font-bold"><%= @student.name %></h2>
   <%= status_badge(@student.status) %>
   <div class="ml-auto flex gap-2">
+    <button onclick="document.getElementById('gift-voucher-modal').showModal()" class="btn btn-sm btn-outline btn-accent">🎟 지류상품권 발급</button>
     <%= link_to "수정", edit_student_path(@student), class: "btn btn-sm btn-ghost" %>
     <button onclick="document.getElementById('delete-confirm-modal').showModal()" class="btn btn-sm btn-ghost text-error">삭제</button>
 
@@ -18,6 +19,28 @@
           <form method="dialog"><button class="btn btn-sm btn-ghost">취소</button></form>
           <%= button_to "삭제 확인", student_path(@student), method: :delete, class: "btn btn-sm btn-error" %>
         </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <%# 지류상품권 발급 모달 %>
+    <dialog id="gift-voucher-modal" class="modal">
+      <div class="modal-box max-w-sm">
+        <h3 class="font-bold text-base mb-4">🎟 지류상품권 발급</h3>
+        <%= form_with url: gift_vouchers_path, method: :post do |f| %>
+          <div class="form-control mb-4">
+            <label class="label"><span class="label-text text-sm">발급 과목 (클래스)</span></label>
+            <%= f.select :enrollment_id,
+                  @enrollments.map { |e| ["#{e.subject} — #{e.teacher.name} (#{lesson_day_ko(e.lesson_day)}요일)", e.id] },
+                  { prompt: "클래스 선택" },
+                  class: "select select-bordered select-sm w-full", required: true %>
+          </div>
+          <div class="modal-action mt-2">
+            <form method="dialog"><button class="btn btn-sm btn-ghost">취소</button></form>
+            <%= f.submit "발급", class: "btn btn-sm btn-accent",
+                  onclick: "return confirm('지류상품권을 발급하시겠습니까?')" %>
+          </div>
+        <% end %>
       </div>
       <form method="dialog" class="modal-backdrop"><button>close</button></form>
     </dialog>

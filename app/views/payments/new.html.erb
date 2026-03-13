@@ -202,7 +202,20 @@
           monthsEl?.addEventListener("change", updateReceipt);
           amountEl?.addEventListener("input",  updateReceipt);
           depositEl?.addEventListener("input", updateReceipt);
-          document.getElementById("payment_payment_type")?.addEventListener("change", updateReceipt);
+
+          const payTypeEl = document.getElementById("payment_payment_type");
+          const depositSection = document.getElementById("deposit-section");
+
+          function toggleDepositSection() {
+            const isDeposit = payTypeEl?.value === "deposit";
+            if (depositSection) depositSection.classList.toggle("hidden", !isDeposit);
+            if (!isDeposit && depositEl) { depositEl.value = ""; }
+            if (!isDeposit && balanceEl) { balanceEl.value = ""; }
+            updateReceipt();
+          }
+
+          payTypeEl?.addEventListener("change", toggleDepositSection);
+          toggleDepositSection();
 
           cafeReviewEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
           videoReviewEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
@@ -211,8 +224,8 @@
         })();
       </script>
 
-      <div class="border-t pt-3 space-y-3">
-        <h4 class="text-sm font-medium">예약금 설정 (예약금 결제 시)</h4>
+      <div id="deposit-section" class="border-t pt-3 space-y-3 hidden">
+        <h4 class="text-sm font-medium">예약금 설정</h4>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <%= f.label :deposit_amount, "예약금", class: "block text-sm font-medium text-base-content mb-1" %>

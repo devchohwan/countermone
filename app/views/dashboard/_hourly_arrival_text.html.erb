@@ -40,6 +40,8 @@
                       <%= button_to "등원", attend_schedule_path(s),
                             method: :patch,
                             class: "btn btn-xs btn-outline btn-success w-12" %>
+                    <% elsif s.status.in?(%w[attended late makeup_done]) %>
+                      <span class="text-success w-12">✓</span>
                     <% else %>
                       <span class="w-12 text-base-content/30">-</span>
                     <% end %>

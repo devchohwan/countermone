@@ -355,8 +355,7 @@
 
 <script>
 (function() {
-  let _scheduleId  = null;
-  let _isMakeup    = false;
+  let _scheduleId = null;
 
   function csrf() {
     return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -394,11 +393,9 @@
   function showMain() {
     document.getElementById('dangchwi-title').textContent =
       document.getElementById('dangchwi-title').textContent.replace(' — 보강 등록', '');
-    const makeupBtn = _isMakeup ? '' :
-      `<button onclick="dangchwiShowMakeup()" class="btn btn-sm btn-info btn-outline w-full">보강</button>`;
     body().innerHTML = `
       <div class="space-y-2">
-        ${makeupBtn}
+        <button onclick="dangchwiShowMakeup()" class="btn btn-sm btn-info btn-outline w-full">보강</button>
         <button onclick="dangchwiShowPass()" class="btn btn-sm btn-secondary btn-outline w-full">패스</button>
         <button onclick="dangchwiDeduct()" class="btn btn-sm btn-error btn-outline w-full">결석 차감</button>
       </div>`;
@@ -406,7 +403,6 @@
 
   window.openDangchwiModal = function(scheduleId, studentName, subject, status) {
     _scheduleId = scheduleId;
-    _isMakeup   = (status === 'makeup_scheduled');
     document.getElementById('dangchwi-title').textContent = studentName;
     document.getElementById('dangchwi-subject').textContent = subject;
     showMain();

@@ -67,7 +67,7 @@
                     <% if s.status.in?(%w[scheduled makeup_scheduled]) && !readonly %>
                       <button type="button"
                               class="btn btn-xs btn-outline btn-error"
-                              onclick="openDangchwiModal(<%= s.id %>, '<%= j s.student.name %>', '<%= j s.subject %>', '<%= s.status %>')">당취</button>
+                              onclick="openDangchwiModal(<%= s.id %>, '<%= j s.student.name %>', '<%= j s.subject %>')">당취</button>
                     <% end %>
                   </div>
                 <% end %>

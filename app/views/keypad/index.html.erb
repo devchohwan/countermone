@@ -1,6 +1,13 @@
 <% content_for :title, "출석 키패드" %>
 
 <style>
+  body.is-fullscreen .navbar,
+  body.is-fullscreen .drawer-side {
+    display: none !important;
+  }
+  body.is-fullscreen .drawer-content {
+    margin-left: 0 !important;
+  }
   body.is-fullscreen #keypad-wrapper {
     min-height: 100dvh;
     background: oklch(var(--b2) / 1);

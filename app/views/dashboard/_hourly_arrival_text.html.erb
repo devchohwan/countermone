@@ -53,16 +53,12 @@
                       <span class="w-12 text-base-content/20">-</span>
                     <% end %>
 
-                    <%# 지류상품권 — 오늘이 24번째 수업이고 미발급인 경우 %>
-                    <% if !readonly %>
-                      <% eligible_weeks = s.student.gift_voucher_eligible_weeks_for(s.enrollment) %>
-                      <% already_issued = GiftVoucher.where(enrollment: s.enrollment).exists? %>
-                      <% if eligible_weeks >= 23 && !already_issued %>
-                        <%= button_to "지류상품권", gift_vouchers_path(enrollment_id: s.enrollment.id),
-                              method: :post,
-                              class: "btn btn-xs btn-warning",
-                              data: { turbo_confirm: "#{s.student.name} 지류상품권을 발급하시겠습니까?" } %>
-                      <% end %>
+                    <%# 지류상품권 — review_gift_eligible 배지 기반 %>
+                    <% if !readonly && s.enrollment.review_gift_eligible? && !GiftVoucher.where(enrollment: s.enrollment).exists? %>
+                      <%= button_to "🎁 지류상품권", gift_vouchers_path(enrollment_id: s.enrollment.id),
+                            method: :post,
+                            class: "btn btn-xs btn-warning",
+                            data: { turbo_confirm: "#{s.student.name} 지류상품권을 발급하시겠습니까?" } %>
                     <% end %>
                   </div>
                 <% end %>

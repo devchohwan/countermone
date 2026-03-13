@@ -65,7 +65,10 @@
       <span class="badge badge-info gap-1">🎬 영상후기 할인 가능</span>
     <% end %>
     <% if show_gift %>
-      <span class="badge badge-success gap-1">🎁 지류가능</span>
+      <%= button_to "🎁 지류가능", gift_vouchers_path(enrollment_id: enrollment.id),
+            method: :post,
+            class: "badge badge-success gap-1 cursor-pointer border-0",
+            data: { turbo_confirm: "#{enrollment.student.name} (#{enrollment.subject}) 지류상품권을 발급하시겠습니까?" } %>
     <% end %>
   </div>
 <% end %>

@@ -40,9 +40,6 @@ class StudentsController < ApplicationController
     @student.first_enrolled_at ||= Date.today
     @student.waiting_expires_at = Date.today + 14.days if @student.status == "pending"
 
-    referrer_count = Array(params[:referrer_ids]).reject(&:blank?).size
-    @student.referral_discount_pending = referrer_count if referrer_count > 0
-
     ActiveRecord::Base.transaction do
       @student.enrollments.each do |enrollment|
         enrollment.status = "active"
@@ -193,13 +190,6 @@ class StudentsController < ApplicationController
     # 새로 추가된 추천인 수만큼 학생 본인에게 다음 결제 할인 적립
     if new_ids.any?
       student.increment!(:referral_discount_pending, new_ids.size)
-    end
-
-    # 피추천인 첫 완납 결제가 있으면 추천인들에게도 할인 대기 알림
-    if new_ids.any? && student.payments.where(fully_paid: true).exists?
-      Student.where(id: new_ids).where.not(id: student.id).each do |referrer|
-        referrer.increment!(:referral_discount_pending)
-      end
     end
   end
 

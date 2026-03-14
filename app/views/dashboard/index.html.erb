@@ -350,16 +350,24 @@
       </div>
 
     <% else %>
-      <%# 과거: 그날 완납 결제 내역 %>
+      <%# 과거: 그날 결제 내역 %>
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-4">
-          <h3 class="card-title text-sm mb-2">결제 완료</h3>
+          <h3 class="card-title text-sm mb-2">결제 내역</h3>
           <% if @daily_payments.empty? %>
-            <p class="text-sm text-base-content/40">결제 완료 없음</p>
+            <p class="text-sm text-base-content/40">결제 없음</p>
           <% else %>
             <ul class="space-y-1">
               <% @daily_payments.each do |p| %>
-                <li class="text-sm"><%= link_to p.student.name, student_path(p.student), class: "hover:underline" %> — <%= p.subject %> (<%= format_amount(p.amount) %>)</li>
+                <li class="text-sm flex items-center gap-2">
+                  <%= link_to p.student.name, student_path(p.student), class: "hover:underline" %> — <%= p.subject %> (<%= format_amount(p.amount) %>)
+                  <% if p.payment_type == "deposit" && !p.fully_paid? %>
+                    <span class="badge badge-warning badge-xs">예약금</span>
+                  <% else %>
+                    <span class="badge badge-success badge-xs">완납</span>
+                  <% end %>
+                  <%= link_to "수정", edit_payment_path(p), class: "btn btn-xs btn-ghost" %>
+                </li>
               <% end %>
             </ul>
           <% end %>

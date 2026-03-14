@@ -64,7 +64,7 @@ class DashboardController < ApplicationController
                                     .group(:enrollment_id).count
 
     # 해당일 마감 집계
-    @daily_payments = Payment.where(fully_paid: true).where("DATE(updated_at) = ?", @date).includes(:student)
+    @daily_payments = Payment.where("DATE(created_at) = ?", @date).includes(:student)
     daily_leaves    = Enrollment.includes(:student, :schedules).where(leave_at: @date)
     @daily_leaves_short = daily_leaves.select { |e| e.student.total_attended_weeks_for(e) <= 12 }
     @daily_leaves_long  = daily_leaves.select { |e| e.student.total_attended_weeks_for(e) > 12 }

@@ -61,179 +61,6 @@
         </div>
       </div>
 
-      <%# 금액 자동 조회용 데이터 %>
-      <script>
-        document.addEventListener("turbo:load", function initPaymentForm() {
-          const PRICE_TABLE = {
-            <% @price_plans.each do |pp| %>
-              "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
-            <% end %>
-          };
-          const ENROLLMENT_SUBJECT   = "<%= @enrollment&.subject %>";
-          const MULTI_CLASS_DISCOUNT = <%= @multi_class_discount.to_i %>;
-          const REFERRAL_DISCOUNT    = <%= (@enrollment&.student&.referral_discount_pending || 0) * 50_000 %>;
-          const REVIEW_DISCOUNT_EACH = 50000;
-
-          const INTERVIEW_DISCOUNT = <%= @show_interview_discount ? 50_000 : 0 %>;
-
-          const cafeReviewEl      = document.getElementById("cafe_review_check");
-          const videoReviewEl     = document.getElementById("video_review_check");
-          const interviewDiscEl   = document.getElementById("interview_discount_check");
-
-          function reviewDiscount() {
-            return ((cafeReviewEl?.checked ? 1 : 0) + (videoReviewEl?.checked ? 1 : 0)) * REVIEW_DISCOUNT_EACH;
-          }
-
-          function interviewDiscount() {
-            return (interviewDiscEl?.checked ? 1 : 0) * INTERVIEW_DISCOUNT;
-          }
-
-          const monthsEl        = document.getElementById("payment_months");
-          const amountEl        = document.getElementById("payment_amount");
-          const lessonsEl       = document.getElementById("payment_total_lessons");
-          const hintEl          = document.getElementById("price-hint");
-          const multiMonthLine  = document.getElementById("multi-month-line");
-          const multiMonthMemo  = document.getElementById("multi-month-memo");
-          const multiMonthAmt   = document.getElementById("multi-month-amount");
-          const totalDiscountEl = document.getElementById("total-discount-amount");
-
-          function formatWon(n) {
-            return "-" + n.toLocaleString("ko-KR") + "원";
-          }
-
-          function updateDiscountPreview(months) {
-            if (!multiMonthLine) return;
-            const subject    = ENROLLMENT_SUBJECT || "";
-            const singlePrice = PRICE_TABLE[subject + "_1"];
-            const multiPrice  = PRICE_TABLE[subject + "_" + months];
-            let multiMonthDiscount = 0;
-
-            if (months > 1 && singlePrice && multiPrice) {
-              multiMonthDiscount = (singlePrice * months) - multiPrice;
-            }
-
-            if (multiMonthDiscount > 0) {
-              multiMonthMemo.textContent  = months + "개월 다개월 할인";
-              multiMonthAmt.textContent   = formatWon(multiMonthDiscount);
-              multiMonthLine.classList.remove("hidden");
-            } else {
-              multiMonthLine.classList.add("hidden");
-            }
-
-            if (totalDiscountEl) {
-              const total = MULTI_CLASS_DISCOUNT + multiMonthDiscount + reviewDiscount() + interviewDiscount();
-              totalDiscountEl.textContent = formatWon(total);
-            }
-          }
-
-          function lookupPrice() {
-            const months  = parseInt(monthsEl?.value) || 0;
-            const subject = ENROLLMENT_SUBJECT || "";
-            if (!months || !subject) return;
-
-            // 총 수업 횟수 자동 입력 (1개월 = 4회)
-            if (lessonsEl) lessonsEl.value = months * 4;
-
-            // 금액 자동 입력 (다중수강 + 추천인 할인 적용)
-            const price = PRICE_TABLE[subject + "_" + months];
-            if (price) {
-              const totalDiscount = MULTI_CLASS_DISCOUNT + REFERRAL_DISCOUNT + reviewDiscount() + interviewDiscount();
-              amountEl.value = Math.max(0, price - totalDiscount);
-              hintEl.textContent = totalDiscount > 0 ? "자동 입력 (할인 적용)" : "자동 입력";
-              hintEl.classList.remove("hidden");
-              setTimeout(() => hintEl.classList.add("hidden"), 2000);
-            }
-
-            updateDiscountPreview(months);
-          }
-
-          monthsEl?.addEventListener("change", lookupPrice);
-
-          // 예약금 입력 시 잔금 자동 계산
-          const depositEl  = document.getElementById("payment_deposit_amount");
-          const balanceEl  = document.getElementById("payment_balance_amount");
-
-          function recalcBalance() {
-            const total   = parseInt(amountEl?.value)  || 0;
-            const deposit = parseInt(depositEl?.value) || 0;
-            if (balanceEl && total > 0) balanceEl.value = Math.max(0, total - deposit);
-          }
-
-          depositEl?.addEventListener("input", recalcBalance);
-          amountEl?.addEventListener("input",  recalcBalance);
-
-          // ── 영수증 미리보기 ──────────────────────────────────
-          function formatWonPos(n) { return Number(n).toLocaleString("ko-KR") + "원"; }
-
-          function updateReceipt() {
-            const receiptBody = document.getElementById("payment-receipt-body");
-            if (!receiptBody) return;
-            const months  = parseInt(monthsEl?.value) || 0;
-            const amount  = parseInt(amountEl?.value) || 0;
-            const subject = ENROLLMENT_SUBJECT || "";
-            const typeEl  = document.getElementById("payment_payment_type");
-            const payType = typeEl?.value || "new";
-            const deposit = parseInt(depositEl?.value) || 0;
-            if (!months || !amount || !subject) {
-              receiptBody.innerHTML = '<p class="text-xs text-base-content/40">개월 수와 금액을 입력하면 자동으로 표시됩니다.</p>';
-              return;
-            }
-            const singlePrice    = PRICE_TABLE[subject + "_1"] || 0;
-            const multiPrice     = PRICE_TABLE[subject + "_" + months] || 0;
-            const listPrice      = multiPrice || (singlePrice * months);
-            const multiMonthDisc  = (months > 1 && singlePrice && multiPrice) ? (singlePrice * months - multiPrice) : 0;
-            const multiClassDisc  = MULTI_CLASS_DISCOUNT || 0;
-            const referralDisc    = REFERRAL_DISCOUNT || 0;
-            const reviewDisc      = reviewDiscount();
-            const interviewDisc   = interviewDiscount();
-            const totalDisc       = multiMonthDisc + multiClassDisc + referralDisc + reviewDisc + interviewDisc;
-            const balance        = payType === "deposit" ? Math.max(0, amount - deposit) : 0;
-
-            let rows = "";
-            rows += `<tr><td class="py-1 text-xs text-base-content/60">정가 (${months}개월)</td><td class="py-1 text-xs text-right">${formatWonPos(listPrice)}</td></tr>`;
-            if (multiMonthDisc > 0)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-primary">${months}개월 할인</td><td class="py-0.5 text-xs text-primary text-right">-${formatWonPos(multiMonthDisc)}</td></tr>`;
-            if (multiClassDisc > 0)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-secondary">다중수강 할인</td><td class="py-0.5 text-xs text-secondary text-right">-${formatWonPos(multiClassDisc)}</td></tr>`;
-            if (referralDisc > 0)    rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">친구 추천 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(referralDisc)}</td></tr>`;
-            if (cafeReviewEl?.checked)    rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">3개월 카페후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
-            if (videoReviewEl?.checked)   rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">6개월 영상후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
-            if (interviewDiscEl?.checked) rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">인터뷰 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(INTERVIEW_DISCOUNT)}</td></tr>`;
-            rows += `<tr class="border-t border-base-200"><td class="py-1 text-xs font-semibold">결제 금액</td><td class="py-1 text-xs font-semibold text-right">${formatWonPos(amount)}</td></tr>`;
-            if (payType === "deposit") {
-              rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">예약금</td><td class="py-0.5 text-xs text-right">${formatWonPos(deposit)}</td></tr>`;
-              rows += `<tr><td class="py-0.5 pl-3 text-xs text-warning">잔금</td><td class="py-0.5 text-xs text-warning text-right">${formatWonPos(balance)}</td></tr>`;
-            }
-
-            receiptBody.innerHTML = `
-              <div class="text-xs text-base-content/60 mb-2">${subject} ${months}개월</div>
-              <table class="w-full"><tbody>${rows}</tbody></table>`;
-          }
-
-          monthsEl?.addEventListener("change", updateReceipt);
-          amountEl?.addEventListener("input",  updateReceipt);
-          depositEl?.addEventListener("input", updateReceipt);
-
-          const payTypeEl = document.getElementById("payment_payment_type");
-          const depositSection = document.getElementById("deposit-section");
-
-          function toggleDepositSection() {
-            const isDeposit = payTypeEl?.value === "deposit";
-            if (depositSection) depositSection.classList.toggle("hidden", !isDeposit);
-            if (!isDeposit && depositEl) { depositEl.value = ""; }
-            if (!isDeposit && balanceEl) { balanceEl.value = ""; }
-            updateReceipt();
-          }
-
-          payTypeEl?.addEventListener("change", toggleDepositSection);
-          toggleDepositSection();
-
-          cafeReviewEl?.addEventListener("change",    function() { lookupPrice(); updateReceipt(); });
-          videoReviewEl?.addEventListener("change",   function() { lookupPrice(); updateReceipt(); });
-          interviewDiscEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
-
-          updateReceipt();
-        });
-      </script>
-
       <div id="deposit-section" class="border-t pt-3 space-y-3 hidden">
         <h4 class="text-sm font-medium">예약금 설정</h4>
         <div class="grid grid-cols-2 gap-4">
@@ -266,6 +93,150 @@
         <% end %>
       </div>
     </div>
+
+    <%# 금액 자동 조회용 스크립트 (체크박스 아래에 위치해야 getElementById가 동작함) %>
+    <script>
+      (function initPaymentForm() {
+        const PRICE_TABLE = {
+          <% @price_plans.each do |pp| %>
+            "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
+          <% end %>
+        };
+        const ENROLLMENT_SUBJECT   = "<%= @enrollment&.subject %>";
+        const MULTI_CLASS_DISCOUNT = <%= @multi_class_discount.to_i %>;
+        const REFERRAL_DISCOUNT    = <%= (@enrollment&.student&.referral_discount_pending || 0) * 50_000 %>;
+        const REVIEW_DISCOUNT_EACH = 50000;
+        const INTERVIEW_DISCOUNT   = <%= @show_interview_discount ? 50_000 : 0 %>;
+
+        const cafeReviewEl    = document.getElementById("cafe_review_check");
+        const videoReviewEl   = document.getElementById("video_review_check");
+        const interviewDiscEl = document.getElementById("interview_discount_check");
+
+        function reviewDiscount() {
+          return ((cafeReviewEl?.checked ? 1 : 0) + (videoReviewEl?.checked ? 1 : 0)) * REVIEW_DISCOUNT_EACH;
+        }
+        function interviewDiscount() {
+          return (interviewDiscEl?.checked ? 1 : 0) * INTERVIEW_DISCOUNT;
+        }
+
+        const monthsEl        = document.getElementById("payment_months");
+        const amountEl        = document.getElementById("payment_amount");
+        const lessonsEl       = document.getElementById("payment_total_lessons");
+        const hintEl          = document.getElementById("price-hint");
+        const multiMonthLine  = document.getElementById("multi-month-line");
+        const multiMonthMemo  = document.getElementById("multi-month-memo");
+        const multiMonthAmt   = document.getElementById("multi-month-amount");
+        const totalDiscountEl = document.getElementById("total-discount-amount");
+        const depositEl       = document.getElementById("payment_deposit_amount");
+        const balanceEl       = document.getElementById("payment_balance_amount");
+        const payTypeEl       = document.getElementById("payment_payment_type");
+        const depositSection  = document.getElementById("deposit-section");
+
+        function formatWon(n)    { return "-" + n.toLocaleString("ko-KR") + "원"; }
+        function formatWonPos(n) { return Number(n).toLocaleString("ko-KR") + "원"; }
+
+        function updateDiscountPreview(months) {
+          if (!multiMonthLine) return;
+          const subject = ENROLLMENT_SUBJECT || "";
+          const singlePrice = PRICE_TABLE[subject + "_1"];
+          const multiPrice  = PRICE_TABLE[subject + "_" + months];
+          let multiMonthDiscount = 0;
+          if (months > 1 && singlePrice && multiPrice) {
+            multiMonthDiscount = (singlePrice * months) - multiPrice;
+          }
+          if (multiMonthDiscount > 0) {
+            multiMonthMemo.textContent = months + "개월 다개월 할인";
+            multiMonthAmt.textContent  = formatWon(multiMonthDiscount);
+            multiMonthLine.classList.remove("hidden");
+          } else {
+            multiMonthLine.classList.add("hidden");
+          }
+          if (totalDiscountEl) {
+            totalDiscountEl.textContent = formatWon(MULTI_CLASS_DISCOUNT + multiMonthDiscount + reviewDiscount() + interviewDiscount());
+          }
+        }
+
+        function lookupPrice() {
+          const months  = parseInt(monthsEl?.value) || 0;
+          const subject = ENROLLMENT_SUBJECT || "";
+          if (!months || !subject) return;
+          if (lessonsEl) lessonsEl.value = months * 4;
+          const price = PRICE_TABLE[subject + "_" + months];
+          if (price) {
+            const totalDiscount = MULTI_CLASS_DISCOUNT + REFERRAL_DISCOUNT + reviewDiscount() + interviewDiscount();
+            amountEl.value = Math.max(0, price - totalDiscount);
+            hintEl.textContent = totalDiscount > 0 ? "자동 입력 (할인 적용)" : "자동 입력";
+            hintEl.classList.remove("hidden");
+            setTimeout(() => hintEl.classList.add("hidden"), 2000);
+          }
+          updateDiscountPreview(months);
+        }
+
+        function recalcBalance() {
+          const total   = parseInt(amountEl?.value)  || 0;
+          const deposit = parseInt(depositEl?.value) || 0;
+          if (balanceEl && total > 0) balanceEl.value = Math.max(0, total - deposit);
+        }
+
+        function updateReceipt() {
+          const receiptBody = document.getElementById("payment-receipt-body");
+          if (!receiptBody) return;
+          const months  = parseInt(monthsEl?.value) || 0;
+          const amount  = parseInt(amountEl?.value) || 0;
+          const subject = ENROLLMENT_SUBJECT || "";
+          const payType = payTypeEl?.value || "new";
+          const deposit = parseInt(depositEl?.value) || 0;
+          if (!months || !amount || !subject) {
+            receiptBody.innerHTML = '<p class="text-xs text-base-content/40">개월 수와 금액을 입력하면 자동으로 표시됩니다.</p>';
+            return;
+          }
+          const singlePrice    = PRICE_TABLE[subject + "_1"] || 0;
+          const multiPrice     = PRICE_TABLE[subject + "_" + months] || 0;
+          const listPrice      = multiPrice || (singlePrice * months);
+          const multiMonthDisc = (months > 1 && singlePrice && multiPrice) ? (singlePrice * months - multiPrice) : 0;
+          const reviewDisc     = reviewDiscount();
+          const interviewDisc  = interviewDiscount();
+          const balance        = payType === "deposit" ? Math.max(0, amount - deposit) : 0;
+
+          let rows = "";
+          rows += `<tr><td class="py-1 text-xs text-base-content/60">정가 (${months}개월)</td><td class="py-1 text-xs text-right">${formatWonPos(listPrice)}</td></tr>`;
+          if (multiMonthDisc > 0)      rows += `<tr><td class="py-0.5 pl-3 text-xs text-primary">${months}개월 할인</td><td class="py-0.5 text-xs text-primary text-right">-${formatWonPos(multiMonthDisc)}</td></tr>`;
+          if (MULTI_CLASS_DISCOUNT > 0) rows += `<tr><td class="py-0.5 pl-3 text-xs text-secondary">다중수강 할인</td><td class="py-0.5 text-xs text-secondary text-right">-${formatWonPos(MULTI_CLASS_DISCOUNT)}</td></tr>`;
+          if (REFERRAL_DISCOUNT > 0)   rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">친구 추천 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REFERRAL_DISCOUNT)}</td></tr>`;
+          if (cafeReviewEl?.checked)   rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">3개월 카페후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
+          if (videoReviewEl?.checked)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">6개월 영상후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
+          if (interviewDiscEl?.checked) rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">인터뷰 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(INTERVIEW_DISCOUNT)}</td></tr>`;
+          rows += `<tr class="border-t border-base-200"><td class="py-1 text-xs font-semibold">결제 금액</td><td class="py-1 text-xs font-semibold text-right">${formatWonPos(amount)}</td></tr>`;
+          if (payType === "deposit") {
+            rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">예약금</td><td class="py-0.5 text-xs text-right">${formatWonPos(deposit)}</td></tr>`;
+            rows += `<tr><td class="py-0.5 pl-3 text-xs text-warning">잔금</td><td class="py-0.5 text-xs text-warning text-right">${formatWonPos(balance)}</td></tr>`;
+          }
+          receiptBody.innerHTML = `<div class="text-xs text-base-content/60 mb-2">${subject} ${months}개월</div><table class="w-full"><tbody>${rows}</tbody></table>`;
+        }
+
+        function toggleDepositSection() {
+          const isDeposit = payTypeEl?.value === "deposit";
+          if (depositSection) depositSection.classList.toggle("hidden", !isDeposit);
+          if (!isDeposit && depositEl) depositEl.value = "";
+          if (!isDeposit && balanceEl) balanceEl.value = "";
+          updateReceipt();
+        }
+
+        monthsEl?.addEventListener("change", lookupPrice);
+        monthsEl?.addEventListener("change", updateReceipt);
+        amountEl?.addEventListener("input",  recalcBalance);
+        amountEl?.addEventListener("input",  updateReceipt);
+        depositEl?.addEventListener("input", recalcBalance);
+        depositEl?.addEventListener("input", updateReceipt);
+        payTypeEl?.addEventListener("change", toggleDepositSection);
+        cafeReviewEl?.addEventListener("change",    function() { lookupPrice(); updateReceipt(); });
+        videoReviewEl?.addEventListener("change",   function() { lookupPrice(); updateReceipt(); });
+        interviewDiscEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
+
+        toggleDepositSection();
+        updateReceipt();
+      })();
+    </script>
 
     <%# ── 예상 할인 안내 (다중수강 할인 있을 때 표시) ── %>
     <% if @enrollment && @multi_class_discount.to_i > 0 %>

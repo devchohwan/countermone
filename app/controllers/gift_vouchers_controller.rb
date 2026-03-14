@@ -130,7 +130,7 @@ class GiftVouchersController < ApplicationController
     end
 
     # 대시보드 실시간 반영: 체험 수업 날짜가 오늘이면 즉각 broadcast
-    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
+    effective = (Time.current.hour >= 21 || Time.current.hour == 0) ? Date.tomorrow : Date.today
     if date == effective
       Turbo::StreamsChannel.broadcast_replace_to(
         "dashboard_current",

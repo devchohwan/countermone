@@ -76,7 +76,10 @@ class SchedulesController < ApplicationController
         hs = hourly_schedule_locals
         streams << turbo_stream.replace("hourly_schedule",
           partial: "dashboard/hourly_schedule_text",
-          locals: { schedules: hs[:schedules], makeups: hs[:makeups], enrollment_remaining: hs[:enrollment_remaining] })
+          locals: { schedules: hs[:schedules], makeups: hs[:makeups],
+                    deducted_schedules: hs[:deducted_schedules],
+                    passed_schedules: hs[:passed_schedules],
+                    enrollment_remaining: hs[:enrollment_remaining] })
         render turbo_stream: streams
       end
       format.html { tab_redirect(notice: "출석 처리되었습니다.") }
@@ -114,13 +117,7 @@ class SchedulesController < ApplicationController
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "deducted",
                       makeup_date: nil, makeup_time: nil, makeup_teacher_id: nil)
-    hs = hourly_schedule_locals
-    extra = [turbo_stream.replace("hourly_schedule",
-      partial: "dashboard/hourly_schedule_text",
-      locals: { schedules: hs[:schedules], makeups: hs[:makeups],
-                deducted_schedules: hs[:deducted_schedules],
-                enrollment_remaining: hs[:enrollment_remaining] })]
-    tab_redirect(notice: "결석 차감 처리되었습니다.", extra_streams: extra)
+    tab_redirect(notice: "결석 차감 처리되었습니다.")
   end
 
   def pass
@@ -171,6 +168,7 @@ class SchedulesController < ApplicationController
         enrollment = @schedule.enrollment
         student    = enrollment.student
         payment    = @schedule.payment
+        hs = hourly_schedule_locals
         render turbo_stream: [
           turbo_stream.replace("hourly_arrival", method: :morph, partial: "dashboard/hourly_arrival_text",
                                locals: { schedules: today_arrival_schedules }),
@@ -179,7 +177,13 @@ class SchedulesController < ApplicationController
           turbo_stream.replace("enrollment-stats-#{enrollment.id}",
             partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment }),
           turbo_stream.replace("payment-chunk-header-#{payment.id}",
-            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
+            partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true }),
+          turbo_stream.replace("hourly_schedule",
+            partial: "dashboard/hourly_schedule_text",
+            locals: { schedules: hs[:schedules], makeups: hs[:makeups],
+                      deducted_schedules: hs[:deducted_schedules],
+                      passed_schedules: hs[:passed_schedules],
+                      enrollment_remaining: hs[:enrollment_remaining] })
         ]
       end
       format.html do
@@ -463,6 +467,13 @@ class SchedulesController < ApplicationController
           streams << turbo_stream.replace("payment-chunk-header-#{payment.id}",
             partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
         end
+        hs = hourly_schedule_locals
+        streams << turbo_stream.replace("hourly_schedule",
+          partial: "dashboard/hourly_schedule_text",
+          locals: { schedules: hs[:schedules], makeups: hs[:makeups],
+                    deducted_schedules: hs[:deducted_schedules],
+                    passed_schedules: hs[:passed_schedules],
+                    enrollment_remaining: hs[:enrollment_remaining] })
         streams.concat(extra_streams)
         render turbo_stream: streams
       end
@@ -525,10 +536,17 @@ class SchedulesController < ApplicationController
                          .where(lesson_date: effective, status: "deducted")
                          .where(enrollments: { status: "active" })
                          .where(teachers: { military: false })
-    enrollment_ids = (schedules + makeups.to_a + deducted.to_a).map(&:enrollment_id).uniq
+    raw_passed = Schedule.includes(:student, :teacher, :enrollment)
+                         .joins(:enrollment, :teacher)
+                         .where(lesson_date: effective, status: %w[pass emergency_pass holiday makeup_scheduled])
+                         .where(enrollments: { status: "active" })
+                         .where(teachers: { military: false })
+                         .where(trial: false)
+    passed = raw_passed.to_a.reject { |s| s.status == "makeup_scheduled" && s.makeup_date == effective }
+    enrollment_ids = (schedules + makeups.to_a + deducted.to_a + passed).map(&:enrollment_id).uniq
     remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled], trial: false)
                         .group(:enrollment_id).count
-    { schedules: schedules, makeups: makeups, deducted_schedules: deducted, enrollment_remaining: remaining }
+    { schedules: schedules, makeups: makeups, deducted_schedules: deducted, passed_schedules: passed, enrollment_remaining: remaining }
   end
 
   def today_arrival_schedules

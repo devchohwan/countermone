@@ -48,8 +48,17 @@ class DashboardController < ApplicationController
                               .where(enrollments: { status: "active" })
                               .where(teachers: { military: false })
 
+    # 시간대별 수업 텍스트용: 당일 패스/긴급패스/공휴일/보강등록 처리된 수업
+    raw_passed = Schedule.includes(:student, :teacher, :enrollment)
+                         .joins(:enrollment, :teacher)
+                         .where(lesson_date: @date, status: %w[pass emergency_pass holiday makeup_scheduled])
+                         .where(enrollments: { status: "active" })
+                         .where(teachers: { military: false })
+                         .where(trial: false)
+    @today_passed = raw_passed.to_a.reject { |s| s.status == "makeup_scheduled" && s.makeup_date == @date }
+
     # 시간대별 수업 텍스트용: 수강권별 잔여 scheduled 횟수 (정규 + 보강 모두 포함)
-    enrollment_ids = (@today_schedules + @today_makeups + @today_deducted.to_a).map(&:enrollment_id).uniq
+    enrollment_ids = (@today_schedules + @today_makeups + @today_deducted.to_a + @today_passed).map(&:enrollment_id).uniq
     @enrollment_remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled], trial: false)
                                     .group(:enrollment_id).count
 

@@ -2,7 +2,8 @@
   regular_by_hour  = (schedules || []).reject { |s| s.status.in?(%w[makeup_scheduled makeup_done]) }.group_by { |s| s.lesson_time.in_time_zone('Seoul').hour }
   makeup_by_hour   = (makeups || []).group_by { |s| s.makeup_time&.in_time_zone('Seoul')&.hour }.compact
   deducted_by_hour = (deducted_schedules || []).group_by { |s| s.lesson_time.in_time_zone('Seoul').hour }
-  all_hours = (regular_by_hour.keys + makeup_by_hour.keys + deducted_by_hour.keys).uniq.sort
+  passed_by_hour   = (passed_schedules || []).group_by { |s| s.lesson_time.in_time_zone('Seoul').hour }
+  all_hours = (regular_by_hour.keys + makeup_by_hour.keys + deducted_by_hour.keys + passed_by_hour.keys).uniq.sort
 
   # 첫수업 판단
   seq1_schedules = (schedules || []).select { |s| s.sequence == 1 }
@@ -22,18 +23,23 @@
     combined = {}
     (regular_by_hour[hour] || []).each do |s|
       key = s.teacher.name
-      combined[key] ||= { regulars: [], makeups: [], deducted: [] }
+      combined[key] ||= { regulars: [], makeups: [], deducted: [], passed: [] }
       combined[key][:regulars] << s
     end
     (makeup_by_hour[hour] || []).each do |s|
       key = s.makeup_teacher.name
-      combined[key] ||= { regulars: [], makeups: [], deducted: [] }
+      combined[key] ||= { regulars: [], makeups: [], deducted: [], passed: [] }
       combined[key][:makeups] << s
     end
     (deducted_by_hour[hour] || []).each do |s|
       key = s.teacher.name
-      combined[key] ||= { regulars: [], makeups: [], deducted: [] }
+      combined[key] ||= { regulars: [], makeups: [], deducted: [], passed: [] }
       combined[key][:deducted] << s
+    end
+    (passed_by_hour[hour] || []).each do |s|
+      key = s.teacher.name
+      combined[key] ||= { regulars: [], makeups: [], deducted: [], passed: [] }
+      combined[key][:passed] << s
     end
     combined.sort_by { |name, _| teacher_order.fetch(name, 999) }.to_h
   end
@@ -70,6 +76,20 @@
               group[:deducted].each do |s|
                 remaining = enrollment_remaining[s.enrollment_id] || 0
                 copy_lines << "#{s.student.name} #{remaining}>당취"
+              end
+              group[:passed].each do |s|
+                remaining = enrollment_remaining[s.enrollment_id] || 0
+                label = case s.status
+                        when "pass" then "패스"
+                        when "emergency_pass" then "긴급패스"
+                        when "holiday" then "공휴일"
+                        when "makeup_scheduled" then "보강"
+                        end
+                if s.status == "pass"
+                  copy_lines << "#{s.student.name} #{remaining}>#{label}"
+                else
+                  copy_lines << "#{s.student.name}>#{label}"
+                end
               end
             end
             copy_lines << ""
@@ -108,7 +128,11 @@
                 %>
                 <p>
                   <%= link_to s.student.name, student_path(s.student, tab: s.enrollment_id), class: "hover:underline", data: { turbo_frame: "_top" } %><% if s.trial? %><span class="text-accent">(체험)</span><% elsif is_first %><span class="text-success">(첫)</span><% end %>
-                  <% if attended %>
+                  <% if s.trial? %>
+                    <% if attended %>
+                      <span class="text-base-content/40">></span><span class="text-success text-xs">등원</span>
+                    <% end %>
+                  <% elsif attended %>
                     <span class="text-base-content/40"><%= remaining + 1 %>-<%= remaining %></span>
                   <% else %>
                     <span class="text-base-content/40"><%= remaining %></span>
@@ -135,7 +159,28 @@
                 <% remaining = enrollment_remaining[s.enrollment_id] || 0 %>
                 <p>
                   <%= link_to s.student.name, student_path(s.student, tab: s.enrollment_id), class: "hover:underline", data: { turbo_frame: "_top" } %>
-                  <span class="text-base-content/40"><%= remaining %></span><span class="text-base-content/40">></span><span class="text-error text-xs">당취</span>
+                  <span class="text-base-content/40"><%= remaining %>></span><span class="text-error text-xs">당취</span>
+                </p>
+              <% end %>
+
+              <% group[:passed].each do |s| %>
+                <% remaining = enrollment_remaining[s.enrollment_id] || 0 %>
+                <%
+                  pass_label = case s.status
+                               when "pass" then "패스"
+                               when "emergency_pass" then "긴급패스"
+                               when "holiday" then "공휴일"
+                               when "makeup_scheduled" then "보강"
+                               end
+                %>
+                <p>
+                  <%= link_to s.student.name, student_path(s.student, tab: s.enrollment_id), class: "hover:underline", data: { turbo_frame: "_top" } %>
+                  <% if s.status == "pass" %>
+                    <span class="text-base-content/40"><%= remaining %>></span>
+                  <% else %>
+                    <span class="text-base-content/40">></span>
+                  <% end %>
+                  <span class="text-warning text-xs"><%= pass_label %></span>
                 </p>
               <% end %>
             <% end %>

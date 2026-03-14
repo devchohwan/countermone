@@ -94,18 +94,17 @@ class PaymentsController < ApplicationController
     if @enrollment
       @is_renewal = @enrollment.payments.exists?
       if @is_renewal
-        @multi_class_discount = 0
-        @multi_class_memo     = nil
         last_lesson = @enrollment.schedules.order(:lesson_date).last
         @default_starts_at = last_lesson ? last_lesson.lesson_date + 7.days : Date.today
-      else
-        has_qualifying = @enrollment.student.enrollments
-          .where(status: "active")
-          .where.not(id: @enrollment.id)
-          .exists?
-        @multi_class_discount = has_qualifying ? 50_000 : 0
-        @multi_class_memo     = has_qualifying ? "다중 수강 할인" : nil
       end
+      has_qualifying = @enrollment.student.enrollments
+        .where(status: "active")
+        .where.not(id: @enrollment.id)
+        .exists?
+      @multi_class_discount = has_qualifying ? 50_000 : 0
+      @multi_class_memo     = has_qualifying ? "다중 수강 할인" : nil
+      student = @enrollment.student
+      @show_interview_discount = student.interview_completed? && !student.interview_discount_applied?
     end
   end
 
@@ -119,10 +118,12 @@ class PaymentsController < ApplicationController
 
     # 다개월 할인 자동 적용
     apply_multi_month_discount(@payment) if @payment.months.to_i > 1
-    # 중복 수강 할인
+    # 중복 수강 할인 (신규·연장 모두)
     apply_multi_class_discount(@payment)
     # 후기 할인
     apply_review_discounts(@payment)
+    # 인터뷰 할인
+    apply_interview_discount(@payment)
     # 신규 등록 시 waiting_expires_at 초기화
     @payment.enrollment.student.update!(waiting_expires_at: nil) if @payment.fully_paid?
 
@@ -269,6 +270,14 @@ class PaymentsController < ApplicationController
     end
   end
 
+  def apply_interview_discount(payment)
+    return unless params[:interview_discount] == "1"
+    student = payment.enrollment.student
+    return unless student.interview_completed? && !student.interview_discount_applied?
+    payment.discounts.build(discount_type: "interview", amount: 50_000, memo: "인터뷰 할인")
+    student.update_column(:interview_discount_applied, true)
+  end
+
   def apply_multi_month_discount(payment)
     plan_price     = PricePlan.find_amount(payment.subject, 1)
     multi_price    = PricePlan.find_amount(payment.subject, payment.months)
@@ -284,9 +293,7 @@ class PaymentsController < ApplicationController
 
   def apply_multi_class_discount(payment)
     enrollment = payment.enrollment
-    # 연장결제: 이미 결제 내역 있으면 할인 없음
-    return if enrollment.payments.exists?
-    # 신규클래스: 다른 active enrollment 중 잔여≥1 있으면 5만원
+    # 신규·연장 모두: 다른 active enrollment 있으면 5만원
     has_qualifying = enrollment.student.enrollments
       .where(status: "active")
       .where.not(id: enrollment.id)

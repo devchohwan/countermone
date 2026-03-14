@@ -74,11 +74,18 @@
           const REFERRAL_DISCOUNT    = <%= (@enrollment&.student&.referral_discount_pending || 0) * 50_000 %>;
           const REVIEW_DISCOUNT_EACH = 50000;
 
-          const cafeReviewEl  = document.getElementById("cafe_review_check");
-          const videoReviewEl = document.getElementById("video_review_check");
+          const INTERVIEW_DISCOUNT = <%= @show_interview_discount ? 50_000 : 0 %>;
+
+          const cafeReviewEl      = document.getElementById("cafe_review_check");
+          const videoReviewEl     = document.getElementById("video_review_check");
+          const interviewDiscEl   = document.getElementById("interview_discount_check");
 
           function reviewDiscount() {
             return ((cafeReviewEl?.checked ? 1 : 0) + (videoReviewEl?.checked ? 1 : 0)) * REVIEW_DISCOUNT_EACH;
+          }
+
+          function interviewDiscount() {
+            return (interviewDiscEl?.checked ? 1 : 0) * INTERVIEW_DISCOUNT;
           }
 
           const monthsEl        = document.getElementById("payment_months");
@@ -114,7 +121,7 @@
             }
 
             if (totalDiscountEl) {
-              const total = MULTI_CLASS_DISCOUNT + multiMonthDiscount + reviewDiscount();
+              const total = MULTI_CLASS_DISCOUNT + multiMonthDiscount + reviewDiscount() + interviewDiscount();
               totalDiscountEl.textContent = formatWon(total);
             }
           }
@@ -130,7 +137,7 @@
             // 금액 자동 입력 (다중수강 + 추천인 할인 적용)
             const price = PRICE_TABLE[subject + "_" + months];
             if (price) {
-              const totalDiscount = MULTI_CLASS_DISCOUNT + REFERRAL_DISCOUNT + reviewDiscount();
+              const totalDiscount = MULTI_CLASS_DISCOUNT + REFERRAL_DISCOUNT + reviewDiscount() + interviewDiscount();
               amountEl.value = Math.max(0, price - totalDiscount);
               hintEl.textContent = totalDiscount > 0 ? "자동 입력 (할인 적용)" : "자동 입력";
               hintEl.classList.remove("hidden");
@@ -178,7 +185,8 @@
             const multiClassDisc  = MULTI_CLASS_DISCOUNT || 0;
             const referralDisc    = REFERRAL_DISCOUNT || 0;
             const reviewDisc      = reviewDiscount();
-            const totalDisc       = multiMonthDisc + multiClassDisc + referralDisc + reviewDisc;
+            const interviewDisc   = interviewDiscount();
+            const totalDisc       = multiMonthDisc + multiClassDisc + referralDisc + reviewDisc + interviewDisc;
             const balance        = payType === "deposit" ? Math.max(0, amount - deposit) : 0;
 
             let rows = "";
@@ -186,8 +194,9 @@
             if (multiMonthDisc > 0)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-primary">${months}개월 할인</td><td class="py-0.5 text-xs text-primary text-right">-${formatWonPos(multiMonthDisc)}</td></tr>`;
             if (multiClassDisc > 0)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-secondary">다중수강 할인</td><td class="py-0.5 text-xs text-secondary text-right">-${formatWonPos(multiClassDisc)}</td></tr>`;
             if (referralDisc > 0)    rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">친구 추천 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(referralDisc)}</td></tr>`;
-            if (cafeReviewEl?.checked)  rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">3개월 카페후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
-            if (videoReviewEl?.checked) rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">6개월 영상후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
+            if (cafeReviewEl?.checked)    rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">3개월 카페후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
+            if (videoReviewEl?.checked)   rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">6개월 영상후기 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(REVIEW_DISCOUNT_EACH)}</td></tr>`;
+            if (interviewDiscEl?.checked) rows += `<tr><td class="py-0.5 pl-3 text-xs text-success">인터뷰 할인</td><td class="py-0.5 text-xs text-success text-right">-${formatWonPos(INTERVIEW_DISCOUNT)}</td></tr>`;
             rows += `<tr class="border-t border-base-200"><td class="py-1 text-xs font-semibold">결제 금액</td><td class="py-1 text-xs font-semibold text-right">${formatWonPos(amount)}</td></tr>`;
             if (payType === "deposit") {
               rows += `<tr><td class="py-0.5 pl-3 text-xs text-base-content/60">예약금</td><td class="py-0.5 text-xs text-right">${formatWonPos(deposit)}</td></tr>`;
@@ -217,8 +226,9 @@
           payTypeEl?.addEventListener("change", toggleDepositSection);
           toggleDepositSection();
 
-          cafeReviewEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
-          videoReviewEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
+          cafeReviewEl?.addEventListener("change",    function() { lookupPrice(); updateReceipt(); });
+          videoReviewEl?.addEventListener("change",   function() { lookupPrice(); updateReceipt(); });
+          interviewDiscEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
 
           updateReceipt();
         })();
@@ -236,22 +246,29 @@
             <%= f.number_field :balance_amount, class: "input input-bordered w-full text-sm" %>
           </div>
         </div>
-        <div class="border-t pt-3 space-y-2">
-          <h4 class="text-sm font-medium">후기 할인 (각 5만원)</h4>
+      </div>
+
+      <div class="border-t pt-3 space-y-2">
+        <h4 class="text-sm font-medium">할인 적용</h4>
+        <label class="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" name="cafe_review" value="1" id="cafe_review_check" class="checkbox checkbox-sm">
+          <span>3개월 카페후기 <span class="text-success font-medium">-50,000원</span></span>
+        </label>
+        <label class="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" name="video_review" value="1" id="video_review_check" class="checkbox checkbox-sm">
+          <span>6개월 영상후기 <span class="text-success font-medium">-50,000원</span></span>
+        </label>
+        <% if @show_interview_discount %>
           <label class="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" name="cafe_review" value="1" id="cafe_review_check" class="checkbox checkbox-sm">
-            <span>3개월 카페후기 <span class="text-success font-medium">-50,000원</span></span>
+            <input type="checkbox" name="interview_discount" value="1" id="interview_discount_check" class="checkbox checkbox-sm">
+            <span>인터뷰 할인 <span class="text-success font-medium">-50,000원</span></span>
           </label>
-          <label class="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" name="video_review" value="1" id="video_review_check" class="checkbox checkbox-sm">
-            <span>6개월 영상후기 <span class="text-success font-medium">-50,000원</span></span>
-          </label>
-        </div>
+        <% end %>
       </div>
     </div>
 
-    <%# ── 예상 할인 안내 (신규클래스 등록 시에만 표시) ── %>
-    <% if @enrollment && !@is_renewal %>
+    <%# ── 예상 할인 안내 (다중수강 할인 있을 때 표시) ── %>
+    <% if @enrollment && @multi_class_discount.to_i > 0 %>
       <div class="bg-base-100 border border-primary/30 rounded-lg p-4 space-y-2" id="discount-preview">
         <h4 class="text-sm font-semibold text-primary">예상 할인 안내</h4>
         <div class="space-y-1 text-sm" id="discount-lines">

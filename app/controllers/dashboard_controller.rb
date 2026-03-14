@@ -114,8 +114,10 @@ class DashboardController < ApplicationController
         relevant_date = last_remaining.status == "makeup_scheduled" ? last_remaining.makeup_date : last_remaining.lesson_date
         next unless relevant_date == date
       elsif remaining.count == 0
-        # 이미 등원 처리된 경우: 오늘 마지막 수업을 출석했으면 여전히 표시
-        next unless last_payment.schedules.where(lesson_date: date, status: %w[attended late]).exists?
+        # 이미 등원 처리된 경우: 오늘 마지막 수업(정규 or 보강)을 출석했으면 여전히 표시
+        today_done = last_payment.schedules.where(lesson_date: date, status: %w[attended late]).exists? ||
+                     last_payment.schedules.where(makeup_date: date, status: "makeup_done").exists?
+        next unless today_done
       else
         next
       end

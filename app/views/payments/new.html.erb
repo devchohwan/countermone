@@ -63,7 +63,7 @@
 
       <%# 금액 자동 조회용 데이터 %>
       <script>
-        (function initPaymentForm() {
+        document.addEventListener("DOMContentLoaded", function initPaymentForm() {
           const PRICE_TABLE = {
             <% @price_plans.each do |pp| %>
               "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,
@@ -231,7 +231,7 @@
           interviewDiscEl?.addEventListener("change", function() { lookupPrice(); updateReceipt(); });
 
           updateReceipt();
-        })();
+        });
       </script>
 
       <div id="deposit-section" class="border-t pt-3 space-y-3 hidden">

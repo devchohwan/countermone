@@ -21,7 +21,8 @@ class DashboardController < ApplicationController
     effective_today  = Time.current.hour >= 21 ? Date.tomorrow : Date.today
     @date            = params[:date].present? ? Date.parse(params[:date]) : effective_today
     @dual_date_mode  = Time.current.hour >= 21 || Time.current.hour < 3  # 21:00~02:59: 오늘·내일 동시 처리 구간
-    @is_today        = @date == effective_today || (@dual_date_mode && @date == Date.today)
+    @prev_date       = effective_today - 1.day
+    @is_today        = @date == effective_today || (@dual_date_mode && @date == @prev_date)
     @effective_today = effective_today
     @current_hour    = @is_today ? Time.current.hour : nil
     @current_date    = @date

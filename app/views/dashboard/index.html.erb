@@ -21,10 +21,10 @@
               class: "join-item btn btn-sm btn-ghost #{@date >= @effective_today ? 'btn-disabled opacity-30' : ''}" %>
       </div>
       <% if @dual_date_mode %>
-        <%= link_to "#{Date.today.strftime('%-m/%-d')} 오늘", root_path(date: Date.today.to_s),
-              class: "btn btn-xs #{@date == Date.today ? 'btn-primary' : 'btn-outline'}" %>
-        <%= link_to "#{Date.tomorrow.strftime('%-m/%-d')} 내일", root_path(date: Date.tomorrow.to_s),
-              class: "btn btn-xs #{@date == Date.tomorrow ? 'btn-primary' : 'btn-outline'}" %>
+        <%= link_to "#{@prev_date.strftime('%-m/%-d')} #{Time.current.hour >= 21 ? '오늘' : '어제'}", root_path(date: @prev_date.to_s),
+              class: "btn btn-xs #{@date == @prev_date ? 'btn-primary' : 'btn-outline'}" %>
+        <%= link_to "#{@effective_today.strftime('%-m/%-d')} #{Time.current.hour >= 21 ? '내일' : '오늘'}", root_path(date: @effective_today.to_s),
+              class: "btn btn-xs #{@date == @effective_today ? 'btn-primary' : 'btn-outline'}" %>
       <% elsif !@is_today %>
         <%= link_to "오늘", root_path, class: "btn btn-xs btn-primary" %>
       <% end %>

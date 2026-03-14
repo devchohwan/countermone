@@ -665,6 +665,7 @@
 
 <% if @is_today %>
 <script>
+  (function() {
   const DAYS_KO = ['일','월','화','수','목','금','토'];
   function updateTime() {
     const now = new Date();
@@ -686,5 +687,6 @@
       btn.classList.add('btn-success');
     }
   };
+  })();
 </script>
 <% end %>

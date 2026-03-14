@@ -45,10 +45,12 @@
   <%# Row 1: 시간대별수업 / 시간대별등하원 / 지금이순간(오늘만) %>
   <div class="grid <%= @is_today ? 'grid-cols-3' : 'grid-cols-2' %> gap-4">
 
-    <%= render "hourly_schedule_text",
-          schedules: @today_schedules,
-          makeups: @today_makeups,
-          enrollment_remaining: @enrollment_remaining %>
+    <%= turbo_frame_tag "hourly_schedule" do %>
+      <%= render "hourly_schedule_text",
+            schedules: @today_schedules,
+            makeups: @today_makeups,
+            enrollment_remaining: @enrollment_remaining %>
+    <% end %>
 
     <%= render "hourly_arrival_text", schedules: @today_schedules, readonly: !@is_today %>
 

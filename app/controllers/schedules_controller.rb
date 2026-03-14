@@ -57,6 +57,11 @@ class SchedulesController < ApplicationController
           streams << turbo_stream.replace("payment-chunk-header-#{payment.id}",
             partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
         end
+        # 시간대별 수업 패널 업데이트
+        hs = hourly_schedule_locals
+        streams << turbo_stream.replace("hourly_schedule",
+          partial: "dashboard/hourly_schedule_text",
+          locals: { schedules: hs[:schedules], makeups: hs[:makeups], enrollment_remaining: hs[:enrollment_remaining] })
         render turbo_stream: streams
       end
       format.html { tab_redirect(notice: "출석 처리되었습니다.") }
@@ -486,6 +491,17 @@ class SchedulesController < ApplicationController
   def remove_pass_schedule_if_needed(schedule)
     return unless schedule.status.in?(%w[pass emergency_pass holiday])
     schedule.payment.schedules.where(from_pass: true).order(lesson_date: :desc).first&.destroy
+  end
+
+  def hourly_schedule_locals
+    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
+    schedules = today_arrival_schedules
+    makeups   = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment)
+                        .where(makeup_date: effective, status: %w[makeup_scheduled makeup_done])
+    enrollment_ids = (schedules + makeups.to_a).map(&:enrollment_id).uniq
+    remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled], trial: false)
+                        .group(:enrollment_id).count
+    { schedules: schedules, makeups: makeups, enrollment_remaining: remaining }
   end
 
   def today_arrival_schedules

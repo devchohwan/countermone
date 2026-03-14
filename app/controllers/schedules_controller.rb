@@ -527,7 +527,7 @@ class SchedulesController < ApplicationController
   end
 
   def hourly_schedule_locals
-    effective = (Time.current.hour >= 21 || Time.current.hour == 0) ? Date.tomorrow : Date.today
+    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
     schedules  = today_arrival_schedules
     makeups    = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment)
                          .where(makeup_date: effective, status: %w[makeup_scheduled makeup_done])

@@ -18,6 +18,8 @@ class Enrollment < ApplicationRecord
   validate :teacher_teaches_subject
   validate :lesson_time_within_business_hours
 
+  after_update :sync_scheduled_lesson_time, if: :saved_change_to_lesson_time?
+
   def leave!(reason = nil)
     # 보강 예정 스케줄 취소 (makeup_date가 오늘 이후인 것만)
     Schedule.where(enrollment_id: id, status: "makeup_scheduled")
@@ -62,6 +64,10 @@ class Enrollment < ApplicationRecord
     first = start_date.dup
     first += 1.day until first.wday == target_wday
     first + (n * 7).days
+  end
+
+  def sync_scheduled_lesson_time
+    schedules.where(status: "scheduled").update_all(lesson_time: lesson_time)
   end
 
   def teacher_teaches_subject

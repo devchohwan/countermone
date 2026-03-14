@@ -1,4 +1,7 @@
 <% content_for :title, "대시보드 — 모네뮤직" %>
+<% content_for :head do %>
+  <meta name="turbo-cache-control" content="no-cache">
+<% end %>
 
 <% if @is_today %>
   <%= turbo_stream_from "dashboard_current" %>

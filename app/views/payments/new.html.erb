@@ -63,7 +63,7 @@
 
       <%# 금액 자동 조회용 데이터 %>
       <script>
-        document.addEventListener("DOMContentLoaded", function initPaymentForm() {
+        document.addEventListener("turbo:load", function initPaymentForm() {
           const PRICE_TABLE = {
             <% @price_plans.each do |pp| %>
               "<%= pp.subject %>_<%= pp.months %>": <%= pp.amount %>,

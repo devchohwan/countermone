@@ -99,7 +99,13 @@ class SchedulesController < ApplicationController
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "deducted",
                       makeup_date: nil, makeup_time: nil, makeup_teacher_id: nil)
-    tab_redirect(notice: "결석 차감 처리되었습니다.")
+    hs = hourly_schedule_locals
+    extra = [turbo_stream.replace("hourly_schedule",
+      partial: "dashboard/hourly_schedule_text",
+      locals: { schedules: hs[:schedules], makeups: hs[:makeups],
+                deducted_schedules: hs[:deducted_schedules],
+                enrollment_remaining: hs[:enrollment_remaining] })]
+    tab_redirect(notice: "결석 차감 처리되었습니다.", extra_streams: extra)
   end
 
   def pass
@@ -423,7 +429,7 @@ class SchedulesController < ApplicationController
   end
 
   # 수강생 상세 페이지에서 온 경우 해당 클래스 탭을 유지해서 리다이렉트
-  def tab_redirect(notice: nil, alert: nil)
+  def tab_redirect(notice: nil, alert: nil, extra_streams: [])
     respond_to do |format|
       format.turbo_stream do
         enrollment = @schedule.enrollment
@@ -442,6 +448,7 @@ class SchedulesController < ApplicationController
           streams << turbo_stream.replace("payment-chunk-header-#{payment.id}",
             partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
         end
+        streams.concat(extra_streams)
         render turbo_stream: streams
       end
       format.html do
@@ -495,13 +502,18 @@ class SchedulesController < ApplicationController
 
   def hourly_schedule_locals
     effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
-    schedules = today_arrival_schedules
-    makeups   = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment)
-                        .where(makeup_date: effective, status: %w[makeup_scheduled makeup_done])
-    enrollment_ids = (schedules + makeups.to_a).map(&:enrollment_id).uniq
+    schedules  = today_arrival_schedules
+    makeups    = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment)
+                         .where(makeup_date: effective, status: %w[makeup_scheduled makeup_done])
+    deducted   = Schedule.includes(:student, :teacher, :enrollment)
+                         .joins(:enrollment, :teacher)
+                         .where(lesson_date: effective, status: "deducted")
+                         .where(enrollments: { status: "active" })
+                         .where(teachers: { military: false })
+    enrollment_ids = (schedules + makeups.to_a + deducted.to_a).map(&:enrollment_id).uniq
     remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled], trial: false)
                         .group(:enrollment_id).count
-    { schedules: schedules, makeups: makeups, enrollment_remaining: remaining }
+    { schedules: schedules, makeups: makeups, deducted_schedules: deducted, enrollment_remaining: remaining }
   end
 
   def today_arrival_schedules

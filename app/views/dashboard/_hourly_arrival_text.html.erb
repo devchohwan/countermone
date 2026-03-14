@@ -1,7 +1,7 @@
 <% readonly = local_assigns.fetch(:readonly, false) %>
 <%= turbo_frame_tag "hourly_arrival" do %>
-  <div class="card bg-base-100 shadow-sm">
-    <div class="card-body p-4">
+  <div class="card bg-base-100 shadow-sm h-96">
+    <div class="card-body p-4 flex flex-col overflow-hidden">
       <h3 class="card-title text-sm mb-2">시간대별 등하원</h3>
 
       <%
@@ -22,7 +22,7 @@
       <% if hourly_groups.empty? %>
         <p class="text-sm text-base-content/40">수업이 없습니다.</p>
       <% else %>
-        <div class="flex flex-col gap-3 overflow-y-auto max-h-72">
+        <div class="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0">
           <% hourly_groups.each do |hour, by_teacher| %>
             <div>
               <p class="text-xs font-bold text-base-content/50 mb-1"><%= hour %>시</p>

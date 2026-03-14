@@ -171,8 +171,8 @@
         }
       </script>
 
-      <div class="card bg-base-100 shadow-sm">
-        <div class="card-body p-4">
+      <div class="card bg-base-100 shadow-sm h-96">
+        <div class="card-body p-4 flex flex-col overflow-hidden">
 
           <div class="flex justify-end mb-1">
             <button id="todo-copy-btn"
@@ -200,7 +200,7 @@
               <% if @payment_due_today.empty? %>
                 <p class="text-sm text-base-content/40">오늘 결제 예정 없음</p>
               <% else %>
-                <div class="flex flex-col gap-3 font-mono text-sm leading-snug overflow-y-auto max-h-60">
+                <div class="flex flex-col gap-3 font-mono text-sm leading-snug overflow-y-auto max-h-52">
                   <% grouped.each do |hour, by_teacher| %>
                     <div>
                       <p class="text-xs font-bold text-base-content/50 mb-1"><%= hour %>시</p>
@@ -354,10 +354,10 @@
 
     <%# 해당일 결제 내역 (오늘/과거 공통) %>
     <% unless @daily_payments.empty? %>
-      <div class="card bg-base-100 shadow-sm">
-        <div class="card-body p-4">
+      <div class="card bg-base-100 shadow-sm h-96">
+        <div class="card-body p-4 flex flex-col overflow-hidden">
           <h3 class="card-title text-sm mb-2">결제 내역</h3>
-          <ul class="space-y-1">
+          <ul class="space-y-1 overflow-y-auto flex-1 min-h-0">
             <% @daily_payments.each do |p| %>
               <li class="text-sm flex items-center gap-2">
                 <%= link_to p.student.name, student_path(p.student), class: "hover:underline" %> — <%= p.subject %> (<%= format_amount(p.amount) %>)
@@ -376,13 +376,15 @@
 
 
     <%# 마감 %>
-    <div class="card bg-base-100 shadow-sm">
-      <div class="card-body p-4">
+    <div class="card bg-base-100 shadow-sm h-96">
+      <div class="card-body p-4 flex flex-col overflow-hidden">
         <div class="flex items-center justify-between mb-1">
           <h3 class="card-title text-sm"><%= @is_today ? "오늘 마감" : @date.strftime("%m/%d 마감") %></h3>
           <%= link_to "마감 톡 생성 →", statistics_path(date: @date), class: "btn btn-xs btn-primary" %>
         </div>
-        <%= render "daily_summary" %>
+        <div class="overflow-y-auto flex-1 min-h-0">
+          <%= render "daily_summary" %>
+        </div>
       </div>
     </div>
 

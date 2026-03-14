@@ -104,15 +104,21 @@ class DashboardController < ApplicationController
       end
     end
 
-    # 2. 잔여 횟수 1회 + 마지막 수업이 오늘인 경우 (완납)
+    # 2. 잔여 횟수 1회(미등원) or 마지막 수업 오늘 등원완료 — 결제 안내 (등하원과 독립)
     Enrollment.where(status: "active").includes(:student, :payments).each do |e|
       last_payment = e.payments.where(fully_paid: true).order(:created_at).last
       next unless last_payment
       remaining = last_payment.schedules.where(status: %w[scheduled makeup_scheduled])
-      next unless remaining.count == 1
-      last_remaining = remaining.first
-      relevant_date = last_remaining.status == "makeup_scheduled" ? last_remaining.makeup_date : last_remaining.lesson_date
-      next unless relevant_date == date
+      if remaining.count == 1
+        last_remaining = remaining.first
+        relevant_date = last_remaining.status == "makeup_scheduled" ? last_remaining.makeup_date : last_remaining.lesson_date
+        next unless relevant_date == date
+      elsif remaining.count == 0
+        # 이미 등원 처리된 경우: 오늘 마지막 수업을 출석했으면 여전히 표시
+        next unless last_payment.schedules.where(lesson_date: date, status: %w[attended late]).exists?
+      else
+        next
+      end
       results << { student: e.student, enrollment: e, type: :next_payment_due, payment: last_payment }
     end
 

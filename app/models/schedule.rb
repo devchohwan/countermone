@@ -33,7 +33,7 @@ class Schedule < ApplicationRecord
                            .where("lesson_date > ?", lesson_date)
                            .order(:lesson_date).first
 
-    lower = prev_schedule ? prev_schedule.lesson_date + 1.day : payment.starts_at
+    lower = prev_schedule ? prev_schedule.lesson_date + 1.day : lesson_date - 7.days
 
     upper = if next_schedule
       next_schedule.lesson_date - 1.day

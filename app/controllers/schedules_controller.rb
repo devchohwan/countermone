@@ -16,7 +16,22 @@ class SchedulesController < ApplicationController
     if @schedule.payment && @schedule.payment.fully_paid == false && @schedule.payment.payment_type == "deposit"
       first = @schedule.payment.schedules.order(:lesson_date, :id).first
       if first&.id == @schedule.id
-        return redirect_back fallback_location: root_path, alert: "완납 후 등원 처리 가능합니다."
+        respond_to do |format|
+          format.turbo_stream do
+            toast_html = <<~HTML.html_safe
+              <div id="flash-toast-alert" class="toast toast-top toast-end z-50">
+                <div class="alert alert-error shadow-md">
+                  <span class="text-sm">먼저 완납처리 부탁드립니다!</span>
+                  <button onclick="this.closest('#flash-toast-alert').remove()" class="btn btn-xs btn-ghost">✕</button>
+                </div>
+              </div>
+              <script>setTimeout(() => document.getElementById('flash-toast-alert')?.remove(), 6000)</script>
+            HTML
+            render turbo_stream: turbo_stream.replace("flash-toast-alert", html: toast_html)
+          end
+          format.html { redirect_back fallback_location: root_path, alert: "먼저 완납처리 부탁드립니다!" }
+        end
+        return
       end
     end
 

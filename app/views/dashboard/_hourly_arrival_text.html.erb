@@ -39,8 +39,7 @@
                     <% elsif s.status.in?(%w[scheduled makeup_scheduled]) && !readonly %>
                       <%= button_to "등원", attend_schedule_path(s),
                             method: :patch,
-                            class: "btn btn-xs btn-outline btn-success w-12",
-                            data: { turbo_frame: "_top" } %>
+                            class: "btn btn-xs btn-outline btn-success w-12" %>
                     <% elsif s.status.in?(%w[attended late makeup_done]) %>
                       <span class="text-success w-12">✓</span>
                     <% else %>
@@ -53,8 +52,7 @@
                     <% elsif s.attendance&.checked_in_at && !readonly %>
                       <%= button_to "하원", checkout_schedule_path(s),
                             method: :patch,
-                            class: "btn btn-xs btn-outline btn-info w-12",
-                            data: { turbo_frame: "_top" } %>
+                            class: "btn btn-xs btn-outline btn-info w-12" %>
                     <% else %>
                       <span class="w-12 text-base-content/20">-</span>
                     <% end %>

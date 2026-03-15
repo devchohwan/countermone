@@ -12,6 +12,7 @@ class SchedulesController < ApplicationController
   def show; end
 
   def attend
+    @current_date = @schedule.lesson_date
     # 완납필요: 예약금 미완납 + 첫 수업이면 등원 차단 (trial 수업은 payment 없으므로 스킵)
     if @schedule.payment && @schedule.payment.fully_paid == false && @schedule.payment.payment_type == "deposit"
       first = @schedule.payment.schedules.order(:lesson_date, :id).first
@@ -87,6 +88,7 @@ class SchedulesController < ApplicationController
   end
 
   def checkout
+    @current_date = @schedule.lesson_date
     attendance = @schedule.attendance
     if attendance
       attendance.update!(checked_out_at: Time.current)
@@ -111,6 +113,7 @@ class SchedulesController < ApplicationController
   end
 
   def late
+    @current_date = @schedule.lesson_date
     remove_pass_schedule_if_needed(@schedule)
     @schedule.update!(status: "late")
     create_attendance_record(@schedule)
@@ -120,6 +123,7 @@ class SchedulesController < ApplicationController
   end
 
   def deduct
+    @current_date = @schedule.lesson_date
     # 패스 → 차감 전환 시 from_pass schedule 삭제
     remove_pass_schedule_if_needed(@schedule)
     was_makeup = @schedule.status == "makeup_scheduled"
@@ -131,6 +135,7 @@ class SchedulesController < ApplicationController
   end
 
   def pass
+    @current_date = @schedule.lesson_date
     enrollment = @schedule.enrollment
 
     # 믹싱 패스 불가 → 보강 유도
@@ -171,6 +176,7 @@ class SchedulesController < ApplicationController
   end
 
   def emergency_pass
+    @current_date = @schedule.lesson_date
     @schedule.update!(status: "emergency_pass", pass_reason: params[:pass_reason])
     create_pass_schedule(@schedule)
     respond_to do |format|
@@ -207,12 +213,14 @@ class SchedulesController < ApplicationController
   end
 
   def holiday
+    @current_date = @schedule.lesson_date
     @schedule.update!(status: "holiday", pass_reason: params[:pass_reason])
     create_pass_schedule(@schedule)
     tab_redirect(notice: "공휴일 처리되었습니다.")
   end
 
   def move_date
+    @current_date = @schedule.lesson_date
     new_date = Date.parse(params[:new_date])
     old_date = @schedule.lesson_date
     @schedule.update!(lesson_date: new_date)
@@ -227,6 +235,7 @@ class SchedulesController < ApplicationController
   end
 
   def cancel_pass
+    @current_date = @schedule.lesson_date
     unless @schedule.status.in?(%w[pass emergency_pass holiday])
       return redirect_back fallback_location: schedules_path, alert: "패스 상태가 아닙니다."
     end
@@ -236,6 +245,7 @@ class SchedulesController < ApplicationController
   end
 
   def makeup
+    @current_date = @schedule.lesson_date
     makeup_date = Date.parse(params[:makeup_date])
     makeup_time = params[:makeup_time]
     teacher_id  = params[:makeup_teacher_id].to_i
@@ -404,6 +414,7 @@ class SchedulesController < ApplicationController
   end
 
   def undo_deduct
+    @current_date = @schedule.lesson_date
     unless @schedule.status == "deducted"
       return redirect_back fallback_location: schedules_path, alert: "차감 상태인 수업만 취소 가능합니다."
     end
@@ -422,6 +433,7 @@ class SchedulesController < ApplicationController
   end
 
   def undo_attend
+    @current_date = @schedule.lesson_date
     is_makeup = @schedule.status == "makeup_done"
     unless @schedule.status.in?(%w[attended late makeup_done])
       return redirect_back fallback_location: schedules_path, alert: "출석/지각/보강완료 상태인 수업만 취소 가능합니다."
@@ -548,7 +560,7 @@ class SchedulesController < ApplicationController
   end
 
   def hourly_schedule_locals
-    effective = Time.current.hour >= 21 ? Date.tomorrow : Date.today
+    effective = @current_date || (Time.current.hour >= 21 ? Date.tomorrow : Date.today)
     schedules  = today_arrival_schedules
     makeups    = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment)
                          .where(makeup_date: effective, status: %w[makeup_scheduled makeup_done])
@@ -572,7 +584,14 @@ class SchedulesController < ApplicationController
                               .where(trial: false)
                               .where.not(lesson_date: effective)
                               .where("makeup_date != ? OR makeup_date IS NULL", effective)
-    passed = raw_passed.to_a + ongoing_makeups.to_a
+    same_day_makeups = Schedule.includes(:student, :teacher, :enrollment)
+                               .joins(:enrollment, :teacher)
+                               .where(status: "makeup_scheduled", lesson_date: effective)
+                               .where(enrollments: { status: "active" })
+                               .where(teachers: { military: false })
+                               .where(trial: false)
+                               .where("makeup_date IS NULL OR makeup_date != ?", effective)
+    passed = raw_passed.to_a + ongoing_makeups.to_a + same_day_makeups.to_a
     enrollment_ids = (schedules + makeups.to_a + deducted.to_a + passed).map(&:enrollment_id).uniq
     remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled], trial: false)
                         .group(:enrollment_id).count
@@ -580,7 +599,7 @@ class SchedulesController < ApplicationController
   end
 
   def today_arrival_schedules
-    today    = Date.today
+    today    = @current_date || Date.today
     regular  = Schedule.includes(:student, :teacher, :makeup_teacher, :enrollment, :attendance)
                        .joins(:enrollment, :teacher)
                        .where(lesson_date: today, status: %w[scheduled attended late])

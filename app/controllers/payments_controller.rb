@@ -186,7 +186,18 @@ class PaymentsController < ApplicationController
     }
     if @payment.update(update_attrs)
       @payment.enrollment.student.update!(waiting_expires_at: nil)
-      redirect_back fallback_location: root_path, notice: "#{@payment.student.name} 완납 처리되었습니다."
+      respond_to do |format|
+        format.turbo_stream do
+          date = @payment.created_at.to_date
+          daily_payments = Payment.where(created_at: date.all_day).includes(:student)
+          render turbo_stream: turbo_stream.replace(
+            "daily_payments",
+            partial: "dashboard/daily_payments",
+            locals: { daily_payments: daily_payments }
+          )
+        end
+        format.html { redirect_back fallback_location: root_path, notice: "#{@payment.student.name} 완납 처리되었습니다." }
+      end
     else
       redirect_back fallback_location: root_path, alert: "처리 실패"
     end

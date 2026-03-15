@@ -107,6 +107,7 @@ class DashboardController < ApplicationController
 
     # 2. 잔여 횟수 1회(미등원) or 마지막 수업 오늘 등원완료 — 결제 안내 (등하원과 독립)
     Enrollment.where(status: "active").includes(:student, :payments).each do |e|
+      next if e.payments.where(fully_paid: false).exists?  # 미완납 결제(예약금 등)가 있으면 건너뜀
       last_payment = e.payments.where(fully_paid: true).order(:created_at).last
       next unless last_payment
       remaining = last_payment.schedules.where(status: %w[scheduled makeup_scheduled])

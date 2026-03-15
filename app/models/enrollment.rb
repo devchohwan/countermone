@@ -85,8 +85,9 @@ class Enrollment < ApplicationRecord
     minutes = start_hour * 60 + start_min
 
     max_hour = teacher&.max_lesson_hour || 22
+    mon_max  = teacher&.monday_max_lesson_hour || 17
     valid = if lesson_day == "monday"
-      minutes >= 14 * 60 && minutes <= 17 * 60
+      minutes >= 14 * 60 && minutes <= mon_max * 60
     else
       minutes >= 13 * 60 && minutes <= max_hour * 60
     end

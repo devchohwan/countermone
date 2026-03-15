@@ -93,10 +93,17 @@ class SchedulesController < ApplicationController
     end
     respond_to do |format|
       format.turbo_stream do
+        hs = hourly_schedule_locals
         render turbo_stream: [
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
           turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
-                               locals: { schedules: today_arrival_schedules })
+                               locals: { schedules: today_arrival_schedules }),
+          turbo_stream.update("hourly_schedule",
+            partial: "dashboard/hourly_schedule_text",
+            locals: { schedules: hs[:schedules], makeups: hs[:makeups],
+                      deducted_schedules: hs[:deducted_schedules],
+                      passed_schedules: hs[:passed_schedules],
+                      enrollment_remaining: hs[:enrollment_remaining] })
         ]
       end
       format.html { redirect_back fallback_location: root_path, notice: "하원 처리되었습니다." }

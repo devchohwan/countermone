@@ -1,4 +1,6 @@
 class PaymentsController < ApplicationController
+  include DashboardData
+
   before_action :set_payment, only: %i[show edit update refund pay_balance complete_deposit destroy]
 
   def index
@@ -190,11 +192,14 @@ class PaymentsController < ApplicationController
         format.turbo_stream do
           date = @payment.created_at.to_date
           daily_payments = Payment.where(created_at: date.all_day).includes(:student)
-          render turbo_stream: turbo_stream.replace(
-            "daily_payments",
-            partial: "dashboard/daily_payments",
-            locals: { daily_payments: daily_payments }
-          )
+          todo_panel_data(date)
+          render turbo_stream: [
+            turbo_stream.replace("daily_payments",
+              partial: "dashboard/daily_payments",
+              locals: { daily_payments: daily_payments }),
+            turbo_stream.replace("todo_panel",
+              partial: "dashboard/todo_panel")
+          ]
         end
         format.html { redirect_back fallback_location: root_path, notice: "#{@payment.student.name} 완납 처리되었습니다." }
       end

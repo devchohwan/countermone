@@ -238,7 +238,7 @@
   <div class="modal-box max-w-sm">
     <h3 class="font-bold text-base mb-1">휴원 처리</h3>
     <p class="text-sm text-base-content/60 mb-4"><%= enrollment.subject %></p>
-    <form action="<%= leave_enrollment_path(enrollment) %>" method="post" data-turbo="false">
+    <form action="<%= leave_enrollment_path(enrollment) %>" method="post">
       <input type="hidden" name="_method" value="patch">
       <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
       <div class="space-y-3">

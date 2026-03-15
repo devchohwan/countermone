@@ -1,4 +1,6 @@
 class EnrollmentsController < ApplicationController
+  include DashboardData
+
   before_action :set_enrollment, only: %i[show edit update destroy leave return dropout reschedule_form reschedule dismiss_attendance_event add_lesson update_stat]
   before_action :set_student,    only: %i[new create]
 
@@ -82,7 +84,23 @@ class EnrollmentsController < ApplicationController
 
   def leave
     @enrollment.leave!(params[:leave_reason].presence)
-    redirect_to student_path(@enrollment.student, tab: @enrollment.id), notice: "클래스 휴원 처리되었습니다."
+    respond_to do |format|
+      format.turbo_stream do
+        todo_panel_data(Date.today)
+        streams = [
+          turbo_stream.replace("todo_panel",
+            partial: "dashboard/todo_panel"),
+          turbo_stream.replace("enrollment-#{@enrollment.id}",
+            partial: "students/enrollment_tab",
+            locals: { enrollment: @enrollment, student: @enrollment.student })
+        ]
+        render turbo_stream: streams
+      end
+      format.html {
+        redirect_to student_path(@enrollment.student, tab: @enrollment.id),
+                    notice: "클래스 휴원 처리되었습니다."
+      }
+    end
   end
 
   def return

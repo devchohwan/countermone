@@ -1,5 +1,5 @@
 <% readonly = local_assigns.fetch(:readonly, false) %>
-<%= turbo_frame_tag "hourly_arrival" do %>
+<div id="hourly_arrival">
   <div class="card bg-base-100 shadow-sm h-96">
     <div class="card-body p-4 flex flex-col overflow-hidden">
       <h3 class="card-title text-sm mb-2">시간대별 등하원</h3>
@@ -39,7 +39,8 @@
                     <% elsif s.status.in?(%w[scheduled makeup_scheduled]) && !readonly %>
                       <%= button_to "등원", attend_schedule_path(s),
                             method: :patch,
-                            class: "btn btn-xs btn-outline btn-success w-12" %>
+                            class: "btn btn-xs btn-outline btn-success w-12",
+                            data: { turbo_frame: "_top" } %>
                     <% elsif s.status.in?(%w[attended late makeup_done]) %>
                       <span class="text-success w-12">✓</span>
                     <% else %>
@@ -52,7 +53,8 @@
                     <% elsif s.attendance&.checked_in_at && !readonly %>
                       <%= button_to "하원", checkout_schedule_path(s),
                             method: :patch,
-                            class: "btn btn-xs btn-outline btn-info w-12" %>
+                            class: "btn btn-xs btn-outline btn-info w-12",
+                            data: { turbo_frame: "_top" } %>
                     <% else %>
                       <span class="w-12 text-base-content/20">-</span>
                     <% end %>
@@ -81,4 +83,4 @@
       <% end %>
     </div>
   </div>
-<% end %>
+</div>

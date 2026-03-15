@@ -54,7 +54,7 @@ class SchedulesController < ApplicationController
         streams = [
           # 대시보드 타깃
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
-          turbo_stream.replace("hourly_arrival", method: :morph,    partial: "dashboard/hourly_arrival_text",
+          turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
                                locals: { schedules: today_arrival_schedules }),
           turbo_stream.replace("attendance-events-panel", partial: "dashboard/attendance_events_panel",
                                locals: { attendance_events: attendance_events }),
@@ -95,7 +95,7 @@ class SchedulesController < ApplicationController
       format.turbo_stream do
         render turbo_stream: [
           turbo_stream.replace("current_schedules", partial: "dashboard/current_schedules"),
-          turbo_stream.replace("hourly_arrival", method: :morph,    partial: "dashboard/hourly_arrival_text",
+          turbo_stream.replace("hourly_arrival",    partial: "dashboard/hourly_arrival_text",
                                locals: { schedules: today_arrival_schedules })
         ]
       end
@@ -170,7 +170,7 @@ class SchedulesController < ApplicationController
         payment    = @schedule.payment
         hs = hourly_schedule_locals
         render turbo_stream: [
-          turbo_stream.replace("hourly_arrival", method: :morph, partial: "dashboard/hourly_arrival_text",
+          turbo_stream.replace("hourly_arrival", partial: "dashboard/hourly_arrival_text",
                                locals: { schedules: today_arrival_schedules }),
           turbo_stream.replace("schedule-badge-#{@schedule.id}",
             partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),
@@ -455,7 +455,7 @@ class SchedulesController < ApplicationController
         student    = enrollment.student
         payment    = @schedule.payment
         streams = [
-          turbo_stream.replace("hourly_arrival", method: :morph, partial: "dashboard/hourly_arrival_text",
+          turbo_stream.replace("hourly_arrival", partial: "dashboard/hourly_arrival_text",
                                locals: { schedules: today_arrival_schedules }),
           turbo_stream.replace("schedule-badge-#{@schedule.id}",
             partial: "students/schedule_badge", locals: { s: @schedule, enrollment: enrollment }),

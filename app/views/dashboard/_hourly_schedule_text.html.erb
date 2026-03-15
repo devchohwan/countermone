@@ -159,7 +159,7 @@
                 <% remaining = enrollment_remaining[s.enrollment_id] || 0 %>
                 <p>
                   <%= link_to s.student.name, student_path(s.student, tab: s.enrollment_id), class: "hover:underline", data: { turbo_frame: "_top" } %>
-                  <span class="text-base-content/40"><%= remaining + 1 %>></span><span class="text-error text-xs">당취</span>
+                  <span class="text-base-content/40"><%= remaining + 1 %>></span><span class="text-error text-xs">당취</span><span class="text-base-content/40"> <%= remaining %></span>
                 </p>
               <% end %>
 
@@ -175,11 +175,7 @@
                 %>
                 <p>
                   <%= link_to s.student.name, student_path(s.student, tab: s.enrollment_id), class: "hover:underline", data: { turbo_frame: "_top" } %>
-                  <% if s.status == "pass" %>
-                    <span class="text-base-content/40"><%= remaining %>></span>
-                  <% else %>
-                    <span class="text-base-content/40">></span>
-                  <% end %>
+                  <span class="text-base-content/40"><%= remaining %>></span>
                   <span class="text-warning text-xs"><%= pass_label %></span>
                 </p>
               <% end %>

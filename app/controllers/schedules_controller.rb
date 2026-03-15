@@ -115,8 +115,11 @@ class SchedulesController < ApplicationController
   def deduct
     # 패스 → 차감 전환 시 from_pass schedule 삭제
     remove_pass_schedule_if_needed(@schedule)
+    was_makeup = @schedule.status == "makeup_scheduled"
     @schedule.update!(status: "deducted",
-                      makeup_date: nil, makeup_time: nil, makeup_teacher_id: nil)
+                      makeup_date: (was_makeup ? @schedule.makeup_date : nil),
+                      makeup_time: (was_makeup ? @schedule.makeup_time : nil),
+                      makeup_teacher_id: (was_makeup ? @schedule.makeup_teacher_id : nil))
     tab_redirect(notice: "결석 차감 처리되었습니다.")
   end
 
@@ -533,16 +536,25 @@ class SchedulesController < ApplicationController
                          .where(makeup_date: effective, status: %w[makeup_scheduled makeup_done])
     deducted   = Schedule.includes(:student, :teacher, :enrollment)
                          .joins(:enrollment, :teacher)
-                         .where(lesson_date: effective, status: "deducted")
+                         .where(status: "deducted")
+                         .where("lesson_date = :d OR makeup_date = :d", d: effective)
                          .where(enrollments: { status: "active" })
                          .where(teachers: { military: false })
     raw_passed = Schedule.includes(:student, :teacher, :enrollment)
                          .joins(:enrollment, :teacher)
-                         .where(lesson_date: effective, status: %w[pass emergency_pass holiday makeup_scheduled])
+                         .where(lesson_date: effective, status: %w[pass emergency_pass holiday])
                          .where(enrollments: { status: "active" })
                          .where(teachers: { military: false })
                          .where(trial: false)
-    passed = raw_passed.to_a.reject { |s| s.status == "makeup_scheduled" && s.makeup_date == effective }
+    ongoing_makeups = Schedule.includes(:student, :teacher, :enrollment)
+                              .joins(:enrollment, :teacher)
+                              .where(status: "makeup_scheduled")
+                              .where(enrollments: { status: "active" })
+                              .where(teachers: { military: false })
+                              .where(trial: false)
+                              .where.not(lesson_date: effective)
+                              .where("makeup_date != ? OR makeup_date IS NULL", effective)
+    passed = raw_passed.to_a + ongoing_makeups.to_a
     enrollment_ids = (schedules + makeups.to_a + deducted.to_a + passed).map(&:enrollment_id).uniq
     remaining = Schedule.where(enrollment_id: enrollment_ids, status: %w[scheduled makeup_scheduled], trial: false)
                         .group(:enrollment_id).count

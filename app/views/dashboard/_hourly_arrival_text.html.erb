@@ -39,7 +39,8 @@
                     <% elsif s.status.in?(%w[scheduled makeup_scheduled]) && !readonly %>
                       <%= button_to "등원", attend_schedule_path(s),
                             method: :patch,
-                            class: "btn btn-xs btn-outline btn-success w-12" %>
+                            class: "btn btn-xs btn-outline btn-success w-12",
+                            form: { data: { turbo_stream: true } } %>
                     <% elsif s.status.in?(%w[attended late makeup_done]) %>
                       <span class="text-success w-12">✓</span>
                     <% else %>
@@ -52,7 +53,8 @@
                     <% elsif s.attendance&.checked_in_at && !readonly %>
                       <%= button_to "하원", checkout_schedule_path(s),
                             method: :patch,
-                            class: "btn btn-xs btn-outline btn-info w-12" %>
+                            class: "btn btn-xs btn-outline btn-info w-12",
+                            form: { data: { turbo_stream: true } } %>
                     <% else %>
                       <span class="w-12 text-base-content/20">-</span>
                     <% end %>
@@ -62,7 +64,8 @@
                       <%= button_to "🎁 지류상품권", gift_vouchers_path(enrollment_id: s.enrollment.id),
                             method: :post,
                             class: "btn btn-xs btn-warning",
-                            data: { turbo_confirm: "#{s.student.name} 지류상품권을 발급하시겠습니까?" } %>
+                            data: { turbo_confirm: "#{s.student.name} 지류상품권을 발급하시겠습니까?" },
+                            form: { data: { turbo_stream: true } } %>
                     <% end %>
 
                     <%# 당취 — scheduled/makeup_scheduled 상태면 항상 표시 (체험 수업은 당취 없음) %>

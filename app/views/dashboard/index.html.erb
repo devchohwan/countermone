@@ -128,6 +128,7 @@
     const f = document.createElement('form');
     f.method = 'POST';
     f.action = url;
+    f.dataset.turboStream = 'true';
     f.innerHTML = `<input type="hidden" name="authenticity_token" value="${csrf()}">
                    <input type="hidden" name="_method" value="patch">` + (extra || '');
     document.body.appendChild(f);

@@ -74,7 +74,7 @@ class SchedulesController < ApplicationController
         end
         # 시간대별 수업 패널 업데이트
         hs = hourly_schedule_locals
-        streams << turbo_stream.replace("hourly_schedule",
+        streams << turbo_stream.update("hourly_schedule",
           partial: "dashboard/hourly_schedule_text",
           locals: { schedules: hs[:schedules], makeups: hs[:makeups],
                     deducted_schedules: hs[:deducted_schedules],
@@ -178,7 +178,7 @@ class SchedulesController < ApplicationController
             partial: "students/enrollment_stats", locals: { student: student, enrollment: enrollment }),
           turbo_stream.replace("payment-chunk-header-#{payment.id}",
             partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true }),
-          turbo_stream.replace("hourly_schedule",
+          turbo_stream.update("hourly_schedule",
             partial: "dashboard/hourly_schedule_text",
             locals: { schedules: hs[:schedules], makeups: hs[:makeups],
                       deducted_schedules: hs[:deducted_schedules],
@@ -468,7 +468,7 @@ class SchedulesController < ApplicationController
             partial: "students/payment_chunk_header", locals: { payment: payment, is_open: true })
         end
         hs = hourly_schedule_locals
-        streams << turbo_stream.replace("hourly_schedule",
+        streams << turbo_stream.update("hourly_schedule",
           partial: "dashboard/hourly_schedule_text",
           locals: { schedules: hs[:schedules], makeups: hs[:makeups],
                     deducted_schedules: hs[:deducted_schedules],

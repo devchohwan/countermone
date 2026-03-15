@@ -9,7 +9,7 @@
 <div id="schedule-badge-<%= s.id %>" class="schedule-item-<%= enrollment.id %> badge badge-sm badge-outline <%= frozen_style %>"
      data-filter="<%= filter_key %>"
      title="<%= s.lesson_date.strftime('%Y.%m.%d') %> <%= schedule_status_ko(s.status) %><%= enrollment.status == 'leave' && s.status == 'scheduled' ? ' (휴원 중 동결)' : '' %>"
-     onclick="<%= enrollment.status == 'leave' && s.status == 'scheduled' ? '' : "openScheduleAction('#{s.id}', '#{s.lesson_date.strftime('%m/%d')}', '#{s.status}', '#{s.lesson_date.to_s}', '#{enrollment.subject}', '#{s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', '#{s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', #{s.teacher_id})" %>">
+     onclick="<%= enrollment.status == 'leave' && s.status == 'scheduled' ? '' : "openScheduleAction('#{s.id}', '#{s.lesson_date.strftime('%m/%d')}', '#{s.status}', '#{s.lesson_date.to_s}', '#{enrollment.subject}', '#{s.attendance&.checked_in_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', '#{s.attendance&.checked_out_at&.in_time_zone('Seoul')&.strftime('%H:%M')}', #{s.teacher_id}, '#{s.teacher.name}', '#{s.lesson_time.hour}시', '#{s.makeup_teacher&.name || ''}', '#{s.makeup_time ? s.makeup_time.hour.to_s + '시' : ''}')" %>">
   <% if s.status.in?(%w[makeup_scheduled makeup_done]) && s.makeup_date %>
     <span class="text-base-content/50"><%= s.lesson_date.strftime("%-m/%-d") %></span><span class="text-purple-400 mx-0.5">→</span><%= s.makeup_date.strftime("%-m/%-d") %>
   <% else %>

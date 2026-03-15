@@ -400,7 +400,7 @@
   };
 
   // 수업 처리 모달
-  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr, subject, checkedIn, checkedOut, teacherId) {
+  window.openScheduleAction = function(scheduleId, dateLabel, status, lessonDateStr, subject, checkedIn, checkedOut, teacherId, origTeacher, origTime, makeupTeacher, makeupTime) {
     const el = document.querySelector(`[onclick*="openScheduleAction('${scheduleId}'"]`);
     if (!el) return;
     const classMatch = el.className.match(/schedule-item-(\d+)/);
@@ -413,7 +413,11 @@
     const actionsEl = document.getElementById('modal-actions-' + enrollmentId);
     const csrf      = document.querySelector('meta[name="csrf-token"]').content;
 
-    dateEl.textContent = dateLabel;
+    if (makeupTeacher) {
+      dateEl.textContent = `${origTeacher} ${origTime} → ${makeupTeacher} ${makeupTime}`;
+    } else {
+      dateEl.textContent = dateLabel;
+    }
 
     // 공통 form submit 헬퍼 (window에 노출 — inline onclick에서 호출)
     window._mkPatchForm = function(url, extra) {
@@ -444,6 +448,7 @@
     // ── 메인 화면 ──────────────────────────────────────────
     function showMain() {
       titleEl.textContent = '출결 처리';
+      dateEl.textContent = makeupTeacher ? `${origTeacher} ${origTime} → ${makeupTeacher} ${makeupTime}` : dateLabel;
       let html = '';
       if (['scheduled', 'pass', 'emergency_pass', 'holiday', 'makeup_scheduled'].includes(status)) {
         if (status === 'makeup_scheduled') {

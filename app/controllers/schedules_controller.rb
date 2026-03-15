@@ -1,5 +1,5 @@
 class SchedulesController < ApplicationController
-  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct undo_attend makeup_slots cancel_pass move_date destroy]
+  before_action :set_schedule, only: %i[show attend checkout late deduct pass emergency_pass holiday makeup approve_makeup complete_makeup undo_deduct undo_attend makeup_slots cancel_pass cancel_makeup move_date destroy]
 
   def index
     date = params[:date] ? Date.parse(params[:date]) : Date.today
@@ -300,6 +300,17 @@ class SchedulesController < ApplicationController
       notice += "믹싱 #{@schedule.subject == '믹싱2차' ? '2차전직 — 상담원 승인 필요' : '1차전직 — 같은 주차 슬롯 없음, 상담원 확인 필요'}."
     end
     tab_redirect(notice: notice)
+  end
+
+  def cancel_makeup
+    @schedule.update!(
+      status:            "scheduled",
+      makeup_date:       nil,
+      makeup_time:       nil,
+      makeup_teacher_id: nil,
+      makeup_approved:   false
+    )
+    tab_redirect(notice: "보강이 취소되었습니다.")
   end
 
   def approve_makeup
